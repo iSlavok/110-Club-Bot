@@ -12,6 +12,20 @@ with materials to a dedicated forum topic. Lessons, homework and materials are m
 - **Infrastructure:** PostgreSQL, Redis, Docker Compose, GitHub Actions
 - **Frontend:** React (planned)
 
+## Development
+
+Requirements: [uv](https://docs.astral.sh/uv/), Docker, make.
+
+```bash
+cp .env.example .env   # fill in the secrets
+make dev               # postgres + redis in docker, backend on the host
+make prod              # the whole stack in docker, as on the server
+make lint
+make test
+```
+
+Run `make help` for the full list of commands.
+
 ## License
 
 [MIT](LICENSE)
