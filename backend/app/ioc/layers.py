@@ -1,8 +1,22 @@
 from dishka import Provider, Scope, provide_all
 
 from app.queries import SystemQueries
-from app.repositories import AdminSessionRepository, AdminUserRepository, LoginCodeRepository, UserRepository
-from app.services import AdminAccessResolver, AdminSessionService, HealthService, LoginService, UserService
+from app.repositories import (
+    AdminSessionRepository,
+    AdminUserRepository,
+    LoginCodeRepository,
+    RoleRepository,
+    UserRepository,
+)
+from app.services import (
+    AdminAccessResolver,
+    AdminSessionService,
+    AdminUserService,
+    HealthService,
+    LoginService,
+    RoleService,
+    UserService,
+)
 
 
 class RepositoriesProvider(Provider):
@@ -12,6 +26,7 @@ class RepositoriesProvider(Provider):
         AdminSessionRepository,
         AdminUserRepository,
         LoginCodeRepository,
+        RoleRepository,
         UserRepository,
     )
 
@@ -28,7 +43,9 @@ class ServicesProvider(Provider):
     services = provide_all(
         AdminAccessResolver,
         AdminSessionService,
+        AdminUserService,
         HealthService,
         LoginService,
+        RoleService,
         UserService,
     )
