@@ -15,7 +15,7 @@ class _Server(uvicorn.Server):
 
 
 def create_server(app: FastAPI, settings: ApiSettings) -> uvicorn.Server:
-    # Forwarded headers are trusted from any peer: the port is reachable only from the reverse proxy and 127.0.0.1.
+    # Forwarded headers are trusted from any peer: in docker only the web container can reach this port.
     config = uvicorn.Config(
         app,
         host=settings.host,
