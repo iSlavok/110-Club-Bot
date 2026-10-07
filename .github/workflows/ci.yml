@@ -70,6 +70,33 @@ jobs:
         env:
           TEST_DATABASE_URL: postgresql+asyncpg://test:test@localhost:5433/test
 
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+      - run: npm ci
+      - name: Generated API client matches the backend schema
+        run: |
+          (cd ../backend && uv sync --frozen && uv run python -m api.openapi_export) > openapi.json
+          npm run gen
+          git diff --exit-code -- . || (echo "Run 'make gen' and commit the result" && exit 1)
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  # One job for both images: its name is a required status check in the branch rulesets.
   docker:
     runs-on: ubuntu-latest
     steps:
@@ -80,5 +107,12 @@ jobs:
           context: .
           file: docker/backend.Dockerfile
           push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/web.Dockerfile
+          push: false
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
