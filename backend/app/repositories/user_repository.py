@@ -1,8 +1,8 @@
-from sqlalchemy import select
+from sqlalchemy import ColumnElement, func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import BaseRepository
+from app.database import BaseRepository, PageResult
 from app.models import User
 
 
@@ -29,3 +29,29 @@ class UserRepository(BaseRepository[User]):
         )
         result = await self._session.scalars(statement)
         return result.one()
+
+    async def search_page(self, *, query: str | None, limit: int, offset: int) -> PageResult[User]:
+        conditions = self._search_conditions(query)
+
+        count_statement = (
+            select(func.count())
+            .select_from(User)
+            .where(*conditions)
+        )
+        total = await self._session.scalar(count_statement) or 0
+
+        statement = (
+            select(User).where(*conditions).order_by(User.created_at.desc(), User.id.desc()).limit(limit).offset(offset)
+        )
+        users = await self._session.scalars(statement)
+        return PageResult(items=list(users), total=total)
+
+    @staticmethod
+    def _search_conditions(query: str | None) -> list[ColumnElement[bool]]:
+        if not query:
+            return []
+        escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        conditions = [User.full_name.ilike(f"%{escaped}%"), User.tg_username.ilike(f"%{escaped}%")]
+        if query.isdecimal():
+            conditions += [User.tg_id == int(query), User.vk_id == int(query)]
+        return [or_(*conditions)]
