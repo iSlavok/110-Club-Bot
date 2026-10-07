@@ -1,3 +1,13 @@
+from app.exceptions.admins import (
+    AdminAlreadyExistsError,
+    AdminUserNotFoundError,
+    OwnAccessChangeError,
+    OwnerNotEditableError,
+    PermissionEscalationError,
+    RoleInUseError,
+    RoleNotFoundError,
+    RoleTitleTakenError,
+)
 from app.exceptions.auth import (
     AdminAccessDeniedError,
     InvalidLoginCodeError,
@@ -21,6 +31,8 @@ from app.exceptions.common import EmptyUpdateError
 
 __all__ = [
     "AdminAccessDeniedError",
+    "AdminAlreadyExistsError",
+    "AdminUserNotFoundError",
     "AppError",
     "AuthenticationError",
     "AuthorizationError",
@@ -32,7 +44,13 @@ __all__ = [
     "InvalidWidgetDataError",
     "NotAuthenticatedError",
     "NotFoundError",
+    "OwnAccessChangeError",
+    "OwnerNotEditableError",
     "PermissionDeniedError",
+    "PermissionEscalationError",
+    "RoleInUseError",
+    "RoleNotFoundError",
+    "RoleTitleTakenError",
     "TooManyLoginAttemptsError",
     "TooManyRequestsError",
     "WidgetLoginDisabledError",
