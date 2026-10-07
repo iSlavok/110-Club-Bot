@@ -59,7 +59,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "migrations/versions/*" = ["INP001", "E501"]
 "migrations/env.py" = ["INP001"]
-"tests/**" = ["S101", "PLR2004", "ANN", "SLF001", "ARG001", "FBT", "INP001"]
+"tests/**" = ["S101", "S105", "S106", "PLR2004", "ANN", "SLF001", "ARG001", "FBT", "INP001"]
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]

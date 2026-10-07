@@ -1,14 +1,19 @@
 from dishka import Provider, Scope, provide_all
 
 from app.queries import SystemQueries
-from app.repositories import UserRepository
-from app.services import HealthService, UserService
+from app.repositories import AdminSessionRepository, AdminUserRepository, LoginCodeRepository, UserRepository
+from app.services import AdminAccessResolver, AdminSessionService, HealthService, LoginService, UserService
 
 
 class RepositoriesProvider(Provider):
     scope = Scope.REQUEST
 
-    repositories = provide_all(UserRepository)
+    repositories = provide_all(
+        AdminSessionRepository,
+        AdminUserRepository,
+        LoginCodeRepository,
+        UserRepository,
+    )
 
 
 class QueriesProvider(Provider):
@@ -20,4 +25,10 @@ class QueriesProvider(Provider):
 class ServicesProvider(Provider):
     scope = Scope.REQUEST
 
-    services = provide_all(HealthService, UserService)
+    services = provide_all(
+        AdminAccessResolver,
+        AdminSessionService,
+        HealthService,
+        LoginService,
+        UserService,
+    )

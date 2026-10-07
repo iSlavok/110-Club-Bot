@@ -1,6 +1,7 @@
 import os
 from collections.abc import AsyncIterator
 from pathlib import Path
+from typing import cast
 
 import pytest
 from alembic import command
@@ -11,6 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engin
 from sqlalchemy.pool import NullPool
 
 from app.ioc import QueriesProvider, RepositoriesProvider, ServicesProvider
+from app.utils import Clock
+from tests.fakes import FrozenClock
 from tests.providers import TestDatabaseProvider, TestInfraProvider
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -64,3 +67,8 @@ async def container(db_session: AsyncSession) -> AsyncIterator[AsyncContainer]:
 async def request_container(container: AsyncContainer) -> AsyncIterator[AsyncContainer]:
     async with container() as request_container:
         yield request_container
+
+
+@pytest.fixture
+async def clock(container: AsyncContainer) -> FrozenClock:
+    return cast("FrozenClock", await container.get(Clock))

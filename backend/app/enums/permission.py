@@ -15,3 +15,7 @@ class PermissionGroup(StrEnum):
     CLUBS = "clubs"
     USERS = "users"
     ADMINS = "admins"
+
+
+def known_permissions(values: list[str]) -> frozenset[Permission]:
+    return frozenset(Permission(value) for value in values if value in Permission)

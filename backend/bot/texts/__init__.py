@@ -1,3 +1,3 @@
-from bot.texts import common, errors
+from bot.texts import auth, common, errors
 
-__all__ = ["common", "errors"]
+__all__ = ["auth", "common", "errors"]

@@ -6,7 +6,8 @@ from aiogram.enums import ParseMode
 from dishka import Provider, Scope, from_context, provide
 from redis.asyncio import Redis
 
-from app.config import ApiSettings, BotSettings, DatabaseSettings, RedisSettings, Settings
+from app.clients import LoginThrottle, RedisLoginThrottle
+from app.config import ApiSettings, AuthSettings, BotSettings, DatabaseSettings, RedisSettings, Settings
 from app.utils import Clock, SystemClock
 
 
@@ -31,11 +32,16 @@ class SettingsProvider(Provider):
     def api(self, settings: Settings) -> ApiSettings:
         return settings.api
 
+    @provide
+    def auth(self, settings: Settings) -> AuthSettings:
+        return settings.auth
+
 
 class InfraProvider(Provider):
     scope = Scope.APP
 
     clock = provide(SystemClock, provides=Clock)
+    login_throttle = provide(RedisLoginThrottle, provides=LoginThrottle)
 
     @provide
     async def bot(self, settings: BotSettings) -> AsyncIterator[Bot]:
