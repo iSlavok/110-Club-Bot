@@ -4,10 +4,14 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from api import create_app
-from app.exceptions import AppError, NotFoundError
+from app.exceptions import AppError, NotFoundError, TooManyRequestsError
 
 
 class WidgetNotFoundError(NotFoundError):
+    pass
+
+
+class SlowDownError(TooManyRequestsError):
     pass
 
 
@@ -23,6 +27,7 @@ def _echo(n: int) -> int:
 def app(container: AsyncContainer) -> FastAPI:
     app = create_app(container)
     app.add_api_route("/boom/not-found", lambda: _raise(WidgetNotFoundError("widget 1 not found")))
+    app.add_api_route("/boom/throttled", lambda: _raise(SlowDownError("slow down")))
     app.add_api_route("/boom/untagged", lambda: _raise(AppError("weird")))
     app.add_api_route("/boom/crash", lambda: _raise(RuntimeError("secret details")))
     app.add_api_route("/boom/validated", _echo)
@@ -40,6 +45,13 @@ async def test_tagged_error_maps_to_status_and_code(client) -> None:
 
     assert response.status_code == 404
     assert response.json() == {"code": "WIDGET_NOT_FOUND", "message": "widget 1 not found"}
+
+
+async def test_too_many_requests_maps_to_429(client) -> None:
+    response = await client.get("/boom/throttled")
+
+    assert response.status_code == 429
+    assert response.json()["code"] == "SLOW_DOWN"
 
 
 async def test_untagged_app_error_is_500(client) -> None:
@@ -60,4 +72,6 @@ async def test_request_validation_uses_common_contract(client) -> None:
     response = await client.get("/boom/validated", params={"n": "not-a-number"})
 
     assert response.status_code == 422
-    assert response.json()["code"] == "VALIDATION_FAILED"
+    body = response.json()
+    assert body["code"] == "VALIDATION_FAILED"
+    assert [field["loc"] for field in body["fields"]] == [["query", "n"]]

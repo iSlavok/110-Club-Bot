@@ -43,3 +43,7 @@ class AuthorizationError(AppError):
 
 class ExternalServiceError(AppError):
     pass
+
+
+class TooManyRequestsError(AppError):
+    pass

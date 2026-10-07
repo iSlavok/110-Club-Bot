@@ -4,8 +4,8 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from loguru import logger
-from pydantic import BaseModel, Field
 
+from api.schemas import ErrorResponse, FieldError, ValidationErrorResponse
 from app.exceptions import (
     AppError,
     AuthenticationError,
@@ -14,6 +14,7 @@ from app.exceptions import (
     ExternalServiceError,
     InvalidInputError,
     NotFoundError,
+    TooManyRequestsError,
 )
 
 _STATUS_BY_TAG: dict[type[AppError], int] = {
@@ -22,13 +23,14 @@ _STATUS_BY_TAG: dict[type[AppError], int] = {
     ConflictError: status.HTTP_409_CONFLICT,
     AuthenticationError: status.HTTP_401_UNAUTHORIZED,
     AuthorizationError: status.HTTP_403_FORBIDDEN,
+    TooManyRequestsError: status.HTTP_429_TOO_MANY_REQUESTS,
     ExternalServiceError: status.HTTP_502_BAD_GATEWAY,
 }
 
-
-class ErrorResponse(BaseModel):
-    code: str = Field(description="Machine-readable error code, e.g. LESSON_NOT_FOUND")
-    message: str = Field(description="Human-readable description")
+ERROR_RESPONSES: dict[int | str, dict[str, object]] = {
+    "4XX": {"model": ErrorResponse, "description": "Domain or auth error"},
+    status.HTTP_422_UNPROCESSABLE_CONTENT: {"model": ValidationErrorResponse, "description": "Invalid request"},
+}
 
 
 def _status_for(exc: AppError) -> int:
@@ -48,8 +50,13 @@ async def _app_error_handler(_: Request, exc: Exception) -> JSONResponse:
 
 
 async def _validation_error_handler(_: Request, exc: Exception) -> JSONResponse:
-    validation_error = cast("RequestValidationError", exc)
-    return _error(status.HTTP_422_UNPROCESSABLE_CONTENT, "VALIDATION_FAILED", str(validation_error.errors()))
+    errors = cast("RequestValidationError", exc).errors()
+    body = ValidationErrorResponse(
+        code="VALIDATION_FAILED",
+        message="Request validation failed",
+        fields=[FieldError(loc=list(error["loc"]), message=error["msg"]) for error in errors],
+    )
+    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, content=body.model_dump())
 
 
 async def _unhandled_error_handler(request: Request, _: Exception) -> JSONResponse:
