@@ -40,6 +40,13 @@ class ApiSettings(BaseModel):
     port: int = 8000
 
 
+class AuthSettings(BaseModel):
+    owner_ids: list[int] = []
+    widget_enabled: bool = False
+    cookie_secure: bool = True
+    session_ttl_days: int = 30
+
+
 class LogSettings(BaseModel):
     level: str = "INFO"
 
@@ -52,4 +59,5 @@ class Settings(BaseSettings):
     redis: RedisSettings
     bot: BotSettings
     api: ApiSettings = ApiSettings()
+    auth: AuthSettings = AuthSettings()
     log: LogSettings = LogSettings()

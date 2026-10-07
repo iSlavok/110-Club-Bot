@@ -1,6 +1,7 @@
-from app.exceptions import AppError, ExternalServiceError, NotFoundError
+from app.exceptions import AdminAccessDeniedError, AppError, ExternalServiceError, NotFoundError
 
 _MESSAGES: dict[type[AppError], str] = {
+    AdminAccessDeniedError: "У тебя нет доступа к админке.",
     NotFoundError: "Не нашёл то, что ты ищешь.",
     ExternalServiceError: "Внешний сервис сейчас недоступен. Попробуй позже.",
 }

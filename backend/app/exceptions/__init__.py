@@ -1,3 +1,12 @@
+from app.exceptions.auth import (
+    AdminAccessDeniedError,
+    InvalidLoginCodeError,
+    InvalidWidgetDataError,
+    NotAuthenticatedError,
+    PermissionDeniedError,
+    TooManyLoginAttemptsError,
+    WidgetLoginDisabledError,
+)
 from app.exceptions.base import (
     AppError,
     AuthenticationError,
@@ -11,6 +20,7 @@ from app.exceptions.base import (
 from app.exceptions.common import EmptyUpdateError
 
 __all__ = [
+    "AdminAccessDeniedError",
     "AppError",
     "AuthenticationError",
     "AuthorizationError",
@@ -18,6 +28,12 @@ __all__ = [
     "EmptyUpdateError",
     "ExternalServiceError",
     "InvalidInputError",
+    "InvalidLoginCodeError",
+    "InvalidWidgetDataError",
+    "NotAuthenticatedError",
     "NotFoundError",
+    "PermissionDeniedError",
+    "TooManyLoginAttemptsError",
     "TooManyRequestsError",
+    "WidgetLoginDisabledError",
 ]

@@ -27,7 +27,7 @@ async def make_role(session: AsyncSession, *permissions: Permission, **overrides
 
 async def make_admin_user(session: AsyncSession, role: Role | None = None, **overrides: Any) -> AdminUser:
     n = next(_ids)
-    admin = AdminUser(**{"tg_id": 900_000 + n, "name": f"Admin {n}", "role_id": role.id if role else None, **overrides})
+    admin = AdminUser(**{"tg_id": 900_000 + n, "name": f"Admin {n}", "role": role, **overrides})
     session.add(admin)
     await session.flush()
     return admin

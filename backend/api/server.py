@@ -15,7 +15,15 @@ class _Server(uvicorn.Server):
 
 
 def create_server(app: FastAPI, settings: ApiSettings) -> uvicorn.Server:
+    # Forwarded headers are trusted from any peer: the port is reachable only from the reverse proxy and 127.0.0.1.
     config = uvicorn.Config(
-        app, host=settings.host, port=settings.port, log_config=None, access_log=False, lifespan="off"
+        app,
+        host=settings.host,
+        port=settings.port,
+        log_config=None,
+        access_log=False,
+        lifespan="off",
+        proxy_headers=True,
+        forwarded_allow_ips="*",
     )
     return _Server(config)
