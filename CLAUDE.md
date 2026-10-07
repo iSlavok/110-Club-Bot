@@ -122,6 +122,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
   ```
 - `app/repositories/` и `app/queries/` исключены из `ruff format` (он склеивает цепочки обратно), формат там держится вручную; `ruff check` работает как обычно.
 - Репозиторий возвращает ORM-объекты, только сервисам. Нужные выше связи грузятся жадно (`selectinload` / `joinedload`) внутри метода. Ленивые связи наверх не отдаются.
+- Список страницами — один метод репозитория → `PageResult[Model]` (`items`, `total`). Условия собираются один раз в `conditions`, из них оба запроса: `select(func.count()).select_from(Model).where(*conditions)` и запрос страницы с сортировкой, `limit` / `offset`. Отдельных `count_*` под список не пишем: фильтры разойдутся.
 - Join/агрегация по нескольким моделям — класс `XQueries(session)`, возвращает dataclass `XRow` из `app/queries/rows/`. Дальше сервиса `XRow` не уходит.
 
 ### Services
@@ -143,11 +144,14 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 ### API (FastAPI)
 
 - Роут: вызывает сервис, возвращает результат. Доменные исключения не ловит, в `HTTPException` не превращает — это делает общий `app_error_handler`.
-- Ручной `HTTPException` — только в инфраструктурных guard'ах (auth, права).
+- `HTTPException` не используем совсем: guard'ы auth тоже бросают доменные `NotAuthenticatedError` / `PermissionDeniedError` — формат ошибки один.
+- Доступ — только `require(...)` прямо в роуте, без алиасов и констант в начале файла: `dependencies=[require(Permission.X)]`; нужен сам админ — параметр `actor: Annotated[AdminPrincipal, require(Permission.X)]`; `require()` без права — любой вошедший. Право — enum `Permission` + строка в `PERMISSION_CATALOG` (подпись и группа для админки). Выдавать права ролям и роли админам — только через `ensure_within_own_permissions`.
+- Владельцы (`AUTH_OWNER_IDS`) не в БД: все права, админка их не правит. Сессия — непрозрачный токен в httpOnly cookie, в БД только sha256.
 - DTO и прочие модели из `app/schemas/` наружу не уходят. Роут всегда мапит результат сервиса в схему ответа из `api/schemas/` через `from_dto` (или `from_<имя>`). В API попадают только явно перечисленные поля, новое поле DTO не утечёт во фронт само.
 - Тело запроса один в один с командой сервиса (create, update, PATCH) → роут принимает внутреннюю схему из `app/schemas/`, передаёт в сервис как есть. HTTP-специфичное тело — отдельная схема в `api/schemas/`.
 - Схемы в OpenAPI описывают поля через `Field(description=...)`: из них генерируется фронт.
-- Списки — общая пагинация (`Page[T]`, `limit` / `offset`), свою в каждом роуте не изобретай.
+- Списки — общая пагинация, свою в каждом роуте не изобретай. Параметры — модель `PageParams` (`page` с 1, `per_page`) или наследник с фильтрами, через `Annotated[..., Query()]`: FastAPI разворачивает модель, только если она единственный query-параметр. Сервис отдаёт `Paginated[T]` (`items`, `total`), роут — `Page.from_paginated(...)` → `items`, `page`, `per_page`, `total_items`, `total_pages`.
+- PATCH — `XUpdate(PatchSchema)` с полями `Maybe[T]` (не передано ≠ `null`), сервис применяет `patch.field.apply(obj.field)`, пустой патч → `EmptyUpdateError`. Ограничения — на внутреннем типе через `type`-алиас с `Annotated`; `AwareDatetime` внутри `Maybe` — только как `Annotated[datetime, AwareDatetime]`.
 - Роутеры подключаются в одном месте с префиксом `/api/v1/...`.
 - Пробы `/livez` и `/readyz` вне `/api/v1`, не в OpenAPI. `/readyz` проверяет все внешние зависимости с таймаутом, отвечает `200` или `503` со списком `checks`.
 
@@ -190,7 +194,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 
 ### Тесты
 
-- Общие фикстуры: `db_session`, `container` / `request_container` (тестовый dishka) — в `tests/conftest.py`; `api_client` (httpx) — в `tests/api/conftest.py`. Тестовые провайдеры — `tests/providers.py`, фейки — `tests/fakes.py`.
+- Общие фикстуры: `db_session`, `container` / `request_container` (тестовый dishka), `clock` (`FrozenClock`) — в `tests/conftest.py`; `api_client` (httpx) и `login_as(admin)` (сессия в cookie клиента) — в `tests/api/conftest.py`. Владелец в тестах — `OWNER_TG_ID` из `tests/providers.py`. Тестовые провайдеры — `tests/providers.py`, фейки — `tests/fakes.py`.
 - Структура: `tests/unit/` (без БД и IO), `tests/integration/` (Postgres), `tests/api/` (httpx `ASGITransport`), `tests/bot/`, `tests/worker/`. Файл теста повторяет путь модуля.
 - Настоящий Postgres, схема через `alembic upgrade head`. Изоляция: транзакция на тест с откатом. `commit()` сервиса в тесте → release savepoint.
 - Зависимости — из **тестового dishka-контейнера**: прод-провайдеры + тестовая сессия, фейковые клиенты (Google Sheets, VK, хранилище), `AsyncMock(spec=Bot)`, фиксированный `Clock`. Граф руками не собирается.
@@ -202,6 +206,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 ### Стиль
 
 - PEP 695 generics (`class BaseRepository[ModelType: Base]`), аннотации типов везде.
+- `await` не прячем внутри выражения (`X.from_dto(await ...)`, `bool(await ...)`, `[... for x in await ...]`, `total=await ...` в аргументах): результат — в переменную, отдельной строкой преобразование. `return await repo.get(...)` без обёртки — можно.
 - `__init__.py` — только импорты и `__all__`. Фабрики, роутеры, прочая логика — в отдельных модулях (`router.py`, `container.py`).
 - ruff (line length 120, двойные кавычки, trailing commas), `ruff format`. pyright без ошибок. Версии ruff и pyright в pre-commit, CI и `uv.lock` совпадают.
 - Без `print`: только loguru, плейсхолдеры `{}` вместо f-строк.
