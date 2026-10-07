@@ -1,4 +1,4 @@
-from app.enums.admin_role import AdminRole
 from app.enums.health import CheckStatus, HealthStatus
+from app.enums.permission import Permission, PermissionGroup
 
-__all__ = ["AdminRole", "CheckStatus", "HealthStatus"]
+__all__ = ["CheckStatus", "HealthStatus", "Permission", "PermissionGroup"]
