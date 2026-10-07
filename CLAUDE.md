@@ -13,7 +13,7 @@ Telegram-бот + веб-админка для клубов «110» онлайн
 | `backend/migrations/` | Alembic. |
 | `backend/tests/` | pytest. |
 | `frontend/` | React-админка. Правила в `frontend/CLAUDE.md`. |
-| `docker/` | Dockerfile'ы, конфиги reverse proxy. |
+| `docker/` | Dockerfile'ы (`backend`, `web` = сборка админки + nginx), `nginx.conf`. |
 | `docker-compose.yml` | Эталонная топология для одного VPS. |
 | `Makefile` | Оркестратор, делегирует в backend и frontend. |
 
@@ -22,14 +22,16 @@ Telegram-бот + веб-админка для клубов «110» онлайн
 ```bash
 make infra       # postgres, redis, postgres-test в docker (порты только на 127.0.0.1)
 make dev         # infra в docker + migrate + backend на хосте (отладчик, быстрый рестарт)
-make prod        # весь стек в docker как на сервере (отдельный compose-проект club110-prod)
+make front       # админка: Vite :5173, /api проксируется на backend :8000 (рядом с make dev)
+make prod        # весь стек в docker как на сервере (отдельный compose-проект club110-prod), админка на http://localhost:8080
 make prod-down   # остановить prod-стек; make prod-logs — логи backend
-make lint        # ruff check + ruff format --check + pyright
-make fmt         # ruff format + ruff check --fix
-make test        # pytest против postgres-test (:5433); аргументы: make test args="-k user --cov"
+make lint        # backend: ruff + pyright; frontend: eslint + prettier + tsc
+make fmt         # форматирование backend и frontend
+make test        # pytest против postgres-test (:5433) + vitest; аргументы pytest: make test args="-k user --cov"
+make gen         # OpenAPI из backend → frontend/openapi.json → orval-клиент
 make migration m="add lessons"   # alembic autogenerate против dev-базы
 make migrate     # alembic upgrade head
-make build       # docker-образ club110-backend:latest
+make build       # docker-образы club110-backend:latest и club110-web:latest
 ```
 
 Env — `.env` в корне (шаблон `.env.example`). Там только секреты и имена; хосты по умолчанию (`postgres`, `redis`) заданы в `Settings` под docker-сеть. Запуск на хосте: `Makefile` подставляет `DB_HOST=localhost REDIS_HOST=localhost`, запускает `uv run --env-file ../.env` из `backend/`. Run configuration в PyCharm — то же: `.env` + эти две переменные. Python-окружение — `backend/.venv`.
@@ -39,7 +41,7 @@ Env — `.env` в корне (шаблон `.env.example`). Там только 
 ## Сквозные правила
 
 - **Зависимости направлены в одну сторону.** Backend: `models ← repositories/queries ← services ← api / bot / worker`. Frontend: `shared ← entities ← features ← pages ← app`. Нарушение = ошибка, не стиль.
-- **Контракт API генерируется.** Pydantic-схемы ответов → `openapi.json` → orval → TS-типы и хуки. Сгенерированный код руками не правим. Изменил схему → `make gen` (появится с фронтом), коммить оба конца. CI проверяет пустой `git diff` после генерации.
+- **Контракт API генерируется.** Pydantic-схемы ответов → `openapi.json` → orval → TS-типы и хуки. Сгенерированный код руками не правим. Изменил схему → `make gen`, коммить оба конца. CI проверяет пустой `git diff` после генерации.
 - **Тесты обязательны при изменении логики.** Добавил/удалил/изменил поведение (сервис, репозиторий, хендлер, роут, компонент, хук) → в том же изменении пиши/правь/удаляй тесты. Без тестов не готово. Багфикс начинается с красного теста, воспроизводящего баг.
 - **Комментарии и коммиты на английском**, документация и CLAUDE.md на русском.
 - **Весь IO асинхронный**, event loop не блокируем. Синхронная библиотека — через `asyncio.to_thread`.
