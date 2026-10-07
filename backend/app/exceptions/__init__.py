@@ -6,14 +6,18 @@ from app.exceptions.base import (
     ExternalServiceError,
     InvalidInputError,
     NotFoundError,
+    TooManyRequestsError,
 )
+from app.exceptions.common import EmptyUpdateError
 
 __all__ = [
     "AppError",
     "AuthenticationError",
     "AuthorizationError",
     "ConflictError",
+    "EmptyUpdateError",
     "ExternalServiceError",
     "InvalidInputError",
     "NotFoundError",
+    "TooManyRequestsError",
 ]
