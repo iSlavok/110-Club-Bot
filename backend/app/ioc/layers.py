@@ -4,7 +4,10 @@ from app.queries import SystemQueries
 from app.repositories import (
     AdminSessionRepository,
     AdminUserRepository,
+    BlockRepository,
+    ClubRepository,
     LoginCodeRepository,
+    MembershipRepository,
     RoleRepository,
     UserRepository,
 )
@@ -12,6 +15,8 @@ from app.services import (
     AdminAccessResolver,
     AdminSessionService,
     AdminUserService,
+    BlockService,
+    ClubService,
     HealthService,
     LoginService,
     RoleService,
@@ -25,7 +30,10 @@ class RepositoriesProvider(Provider):
     repositories = provide_all(
         AdminSessionRepository,
         AdminUserRepository,
+        BlockRepository,
+        ClubRepository,
         LoginCodeRepository,
+        MembershipRepository,
         RoleRepository,
         UserRepository,
     )
@@ -44,6 +52,8 @@ class ServicesProvider(Provider):
         AdminAccessResolver,
         AdminSessionService,
         AdminUserService,
+        BlockService,
+        ClubService,
         HealthService,
         LoginService,
         RoleService,

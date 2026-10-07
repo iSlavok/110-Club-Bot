@@ -27,6 +27,14 @@ from app.exceptions.base import (
     NotFoundError,
     TooManyRequestsError,
 )
+from app.exceptions.clubs import (
+    BlockColumnTakenError,
+    BlockHasMembersError,
+    BlockNotFoundError,
+    ClubNotFoundError,
+    ClubTitleTakenError,
+    InvalidBlockPeriodError,
+)
 from app.exceptions.common import EmptyUpdateError
 
 __all__ = [
@@ -36,9 +44,15 @@ __all__ = [
     "AppError",
     "AuthenticationError",
     "AuthorizationError",
+    "BlockColumnTakenError",
+    "BlockHasMembersError",
+    "BlockNotFoundError",
+    "ClubNotFoundError",
+    "ClubTitleTakenError",
     "ConflictError",
     "EmptyUpdateError",
     "ExternalServiceError",
+    "InvalidBlockPeriodError",
     "InvalidInputError",
     "InvalidLoginCodeError",
     "InvalidWidgetDataError",

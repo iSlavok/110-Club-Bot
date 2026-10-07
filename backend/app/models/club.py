@@ -3,11 +3,13 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 
+CLUB_TEXT_MAX_LEN = 100
+
 
 class Club(Base):
-    title: Mapped[str] = mapped_column(String(100), unique=True)
+    title: Mapped[str] = mapped_column(String(CLUB_TEXT_MAX_LEN), unique=True)
     chat_id: Mapped[int | None] = mapped_column(BigInteger)
     reminders_topic_id: Mapped[int | None]
-    spreadsheet_id: Mapped[str | None] = mapped_column(String(100))
-    sheet_name: Mapped[str | None] = mapped_column(String(100))
+    spreadsheet_id: Mapped[str | None] = mapped_column(String(CLUB_TEXT_MAX_LEN))
+    sheet_name: Mapped[str | None] = mapped_column(String(CLUB_TEXT_MAX_LEN))
     is_active: Mapped[bool] = mapped_column(server_default=true())

@@ -4,6 +4,7 @@ from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, UniqueCons
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
+from app.models.club import CLUB_TEXT_MAX_LEN
 
 
 class Block(Base):
@@ -13,7 +14,7 @@ class Block(Base):
     )
 
     club_id: Mapped[int] = mapped_column(ForeignKey("clubs.id", ondelete="RESTRICT"), index=True)
-    title: Mapped[str] = mapped_column(String(100))
-    sheet_column_title: Mapped[str] = mapped_column(String(100))
+    title: Mapped[str] = mapped_column(String(CLUB_TEXT_MAX_LEN))
+    sheet_column_title: Mapped[str] = mapped_column(String(CLUB_TEXT_MAX_LEN))
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
