@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from api.core.errors import ERROR_RESPONSES
-from api.v1 import admins, auth, clubs, roles
+from api.v1 import admins, auth, clubs, dashboard, roles, users
 
 
 def create_v1_router() -> APIRouter:
@@ -10,4 +10,6 @@ def create_v1_router() -> APIRouter:
     router.include_router(admins.router)
     router.include_router(roles.router)
     router.include_router(clubs.router)
+    router.include_router(users.router)
+    router.include_router(dashboard.router)
     return router
