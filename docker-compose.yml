@@ -41,12 +41,21 @@ services:
     image: ${BACKEND_IMAGE:-club110-backend}:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: .env
-    ports:
-      - "127.0.0.1:${API_PUBLISHED_PORT:-8000}:8000"
+    # No published port: only the web container reaches it, which is what makes trusting forwarded headers safe.
     depends_on:
       migrate:
         condition: service_completed_successfully
       redis:
+        condition: service_healthy
+
+  # The single entry point: the host's reverse proxy terminates TLS and forwards the admin domain here.
+  web:
+    image: ${WEB_IMAGE:-club110-web}:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:80"
+    depends_on:
+      backend:
         condition: service_healthy
 
 volumes:
