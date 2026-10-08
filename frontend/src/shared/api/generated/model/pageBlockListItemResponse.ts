@@ -4,11 +4,11 @@
  * 110 Club Admin API
  * OpenAPI spec version: 0.1.0
  */
-import type { BlockResponse } from './blockResponse';
+import type { BlockListItemResponse } from './blockListItemResponse';
 
-export interface PageBlockResponse {
+export interface PageBlockListItemResponse {
   /** Items of the current page */
-  items: BlockResponse[];
+  items: BlockListItemResponse[];
   /** Current page number, starting from 1 */
   page: number;
   /** Requested page size */

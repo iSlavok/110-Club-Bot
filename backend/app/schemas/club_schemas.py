@@ -80,6 +80,22 @@ class BlockDTO(BaseModel):
         )
 
 
+class BlockSummary(BaseModel):
+    block: BlockDTO
+    members_count: int
+
+
+class BlockMemberUser(BaseModel):
+    id: int
+    full_name: str
+    tg_username: str | None
+
+
+class BlockMember(BaseModel):
+    vk_id: int
+    user: BlockMemberUser | None
+
+
 class BlockCreate(BaseModel):
     title: ClubText = Field(description="Block name shown to admins")
     sheet_column_title: ClubText = Field(description="Header of the sheet column with this block's members")

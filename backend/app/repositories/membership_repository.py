@@ -1,6 +1,6 @@
 from collections.abc import Collection
 
-from sqlalchemy import delete, insert, select
+from sqlalchemy import delete, func, insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import BaseRepository
@@ -19,6 +19,15 @@ class MembershipRepository(BaseRepository[Membership]):
         statement = select(block_members.exists())
         exists = await self._session.scalar(statement)
         return bool(exists)
+
+    async def count_by_block(self, block_ids: Collection[int]) -> dict[int, int]:
+        statement = (
+            select(Membership.block_id, func.count())
+            .where(Membership.block_id.in_(block_ids))
+            .group_by(Membership.block_id)
+        )
+        result = await self._session.execute(statement)
+        return dict(result.all())
 
     async def list_vk_ids(self, block_id: int) -> set[int]:
         statement = (
