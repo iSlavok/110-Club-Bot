@@ -1,5 +1,8 @@
+from enum import StrEnum
+
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
+from pydantic.json_schema import models_json_schema
 
 from app.schemas import Maybe, PatchSchema
 
@@ -7,6 +10,19 @@ from app.schemas import Maybe, PatchSchema
 class NotePatch(PatchSchema):
     title: Maybe[str]
     note: Maybe[str | None]
+
+
+class Color(StrEnum):
+    RED = "red"
+    BLUE = "blue"
+
+
+class ColorPatch(PatchSchema):
+    color: Maybe[Color]
+
+
+class ColorResponse(BaseModel):
+    color: Color
 
 
 def test_omitted_fields_are_unset() -> None:
@@ -45,3 +61,12 @@ def test_json_schema_marks_fields_optional() -> None:
     schema = NotePatch.model_json_schema()
 
     assert "required" not in schema
+
+
+# OpenAPI builds request bodies in validation mode and responses in serialization mode: a shared enum must stay one
+# definition, not split into Color-Input / Color-Output.
+def test_enum_in_patch_keeps_one_shared_definition() -> None:
+    _, schema = models_json_schema([(ColorPatch, "validation"), (ColorResponse, "serialization")])
+
+    assert "Color" in schema["$defs"]
+    assert "Color-Input" not in schema["$defs"]
