@@ -4,6 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import BaseRepository, PageResult
 from app.models import User
+from app.utils import normalize_search_query
+
+# pg_trgm word_similarity: 1 = exact word match. Lower finds more typos and more noise.
+FUZZY_SEARCH_THRESHOLD = 0.4
 
 
 class UserRepository(BaseRepository[User]):
@@ -41,17 +45,33 @@ class UserRepository(BaseRepository[User]):
         total = await self._session.scalar(count_statement) or 0
 
         statement = (
-            select(User).where(*conditions).order_by(User.created_at.desc(), User.id.desc()).limit(limit).offset(offset)
+            select(User)
+            .where(*conditions)
+            .order_by(*self._search_order(query), User.created_at.desc(), User.id.desc())
+            .limit(limit)
+            .offset(offset)
         )
         users = await self._session.scalars(statement)
         return PageResult(items=list(users), total=total)
 
+    # Substring match, or a fuzzy one that survives typos and word order; digits also hit Telegram and VK ids.
     @staticmethod
     def _search_conditions(query: str | None) -> list[ColumnElement[bool]]:
-        if not query:
+        normalized = normalize_search_query(query or "")
+        if not normalized:
             return []
-        escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-        conditions = [User.full_name.ilike(f"%{escaped}%"), User.tg_username.ilike(f"%{escaped}%")]
-        if query.isdecimal():
-            conditions += [User.tg_id == int(query), User.vk_id == int(query)]
+        escaped = normalized.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        conditions = [
+            User.search_text.like(f"%{escaped}%"),
+            func.word_similarity(normalized, User.search_text) >= FUZZY_SEARCH_THRESHOLD,
+        ]
+        if normalized.isdecimal():
+            conditions += [User.tg_id == int(normalized), User.vk_id == int(normalized)]
         return [or_(*conditions)]
+
+    @staticmethod
+    def _search_order(query: str | None) -> list[ColumnElement[float]]:
+        normalized = normalize_search_query(query or "")
+        if not normalized:
+            return []
+        return [func.word_similarity(normalized, User.search_text).desc()]

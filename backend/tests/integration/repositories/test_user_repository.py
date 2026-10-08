@@ -1,3 +1,5 @@
+import pytest
+
 from app.repositories import UserRepository
 from tests.factories import make_user
 
@@ -55,3 +57,35 @@ async def test_search_treats_wildcards_literally(db_session) -> None:
 
     assert (await repository.search_page(query="%", limit=10, offset=0)).total == 0
     assert (await repository.search_page(query="_", limit=10, offset=0)).total == 0
+
+
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    [
+        ("белава", "Анна Белова"),
+        ("Белова Анна", "Анна Белова"),
+        ("  АННА   белова ", "Анна Белова"),
+        ("алёна", "Алена Смирнова"),
+        ("смирнова алена", "Алена Смирнова"),
+    ],
+)
+async def test_fuzzy_search_survives_typos_word_order_and_yo(db_session, query, expected) -> None:
+    await make_user(db_session, full_name="Анна Белова", tg_username=None)
+    await make_user(db_session, full_name="Алена Смирнова", tg_username=None)
+    await make_user(db_session, full_name="Борис Котов", tg_username="boris")
+    repository = UserRepository(db_session)
+
+    found = await repository.search_page(query=query, limit=10, offset=0)
+
+    assert [user.full_name for user in found.items][:1] == [expected]
+    assert "Борис Котов" not in [user.full_name for user in found.items]
+
+
+async def test_closest_match_comes_first(db_session) -> None:
+    await make_user(db_session, full_name="Иван Белоусов", tg_username=None)
+    exact = await make_user(db_session, full_name="Пётр Белов", tg_username=None)
+    repository = UserRepository(db_session)
+
+    found = await repository.search_page(query="белов", limit=10, offset=0)
+
+    assert found.items[0] is exact
