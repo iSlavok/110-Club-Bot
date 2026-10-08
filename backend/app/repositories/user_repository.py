@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import BaseRepository, PageResult
 from app.models import User
+from app.types import INT64_MAX
 from app.utils import normalize_search_query
 
 # pg_trgm word_similarity: 1 = exact word match. Lower finds more typos and more noise.
@@ -65,7 +66,7 @@ class UserRepository(BaseRepository[User]):
             User.search_text.like(f"%{escaped}%"),
             func.word_similarity(normalized, User.search_text) >= FUZZY_SEARCH_THRESHOLD,
         ]
-        if normalized.isdecimal():
+        if normalized.isdecimal() and int(normalized) <= INT64_MAX:
             conditions += [User.tg_id == int(normalized), User.vk_id == int(normalized)]
         return [or_(*conditions)]
 

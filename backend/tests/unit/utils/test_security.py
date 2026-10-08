@@ -34,3 +34,9 @@ def test_widget_signature_rejects_tampered_data() -> None:
     signature = _sign(fields)
 
     assert not is_valid_widget_signature({**fields, "id": 43}, signature, TOKEN)
+
+
+def test_widget_signature_rejects_non_ascii_instead_of_crashing() -> None:
+    fields = {"id": 42, "first_name": "Ann", "auth_date": 1_700_000_000}
+
+    assert not is_valid_widget_signature(fields, "я" * 64, TOKEN)

@@ -1,12 +1,13 @@
 from datetime import datetime
 from typing import Annotated, Self
 
-from pydantic import BaseModel, Field, PositiveInt, StringConstraints
+from pydantic import BaseModel, Field, StringConstraints
 
 from app.models import AdminUser
 from app.models.user import TG_FULL_NAME_MAX_LEN
 from app.schemas.patch_schemas import Maybe, PatchSchema
 from app.schemas.role_schemas import RoleDTO
+from app.types import PositiveBigInt
 
 type AdminName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=TG_FULL_NAME_MAX_LEN)]
 
@@ -55,12 +56,12 @@ class AdminUserWithRoleDTO(AdminUserDTO):
 
 
 class AdminUserCreate(BaseModel):
-    tg_id: PositiveInt = Field(description="Telegram user id of the new admin")
+    tg_id: PositiveBigInt = Field(description="Telegram user id of the new admin")
     name: AdminName = Field(description="Display name")
-    role_id: int = Field(description="Role to assign")
+    role_id: PositiveBigInt = Field(description="Role to assign")
 
 
 class AdminUserUpdate(PatchSchema):
     name: Maybe[AdminName] = Field(description="Display name")
-    role_id: Maybe[int] = Field(description="Role to assign")
+    role_id: Maybe[PositiveBigInt] = Field(description="Role to assign")
     is_active: Maybe[bool] = Field(description="Inactive admins cannot log in")

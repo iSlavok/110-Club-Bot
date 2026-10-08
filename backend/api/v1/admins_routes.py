@@ -4,6 +4,7 @@ from dishka.integrations.fastapi import FromDishka
 from fastapi import APIRouter, Query, status
 
 from api.core.auth import require
+from api.core.params import IdPath
 from api.core.routing import UnitOfWorkRoute
 from api.schemas import Page
 from api.schemas.admin_user_schemas import AdminUserResponse
@@ -36,7 +37,7 @@ async def create_admin(
 @router.patch("/{admin_user_id}")
 async def update_admin(
     actor: Annotated[AdminPrincipal, require(Permission.ADMINS_EDIT)],
-    admin_user_id: int,
+    admin_user_id: IdPath,
     patch: AdminUserUpdate,
     admin_user_service: FromDishka[AdminUserService],
 ) -> AdminUserResponse:

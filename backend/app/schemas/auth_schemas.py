@@ -3,6 +3,10 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from app.enums import Permission
+from app.types import PositiveBigInt
+
+# 9999-12-31T23:59:59Z, the last second datetime can represent.
+MAX_UNIX_TIME = 253_402_300_799
 
 
 class AdminPrincipal(BaseModel):
@@ -33,13 +37,13 @@ class AuthConfig(BaseModel):
 
 
 class TelegramWidgetPayload(BaseModel):
-    id: int = Field(description="Telegram user id")
+    id: PositiveBigInt = Field(description="Telegram user id")
     first_name: str = Field(description="Telegram first name")
     last_name: str | None = Field(default=None, description="Telegram last name")
     username: str | None = Field(default=None, description="Telegram username")
     photo_url: str | None = Field(default=None, description="Avatar URL")
-    auth_date: int = Field(description="Unix time of the authorization")
-    hash: str = Field(description="HMAC-SHA256 signature from Telegram")
+    auth_date: int = Field(ge=0, le=MAX_UNIX_TIME, description="Unix time of the authorization")
+    hash: str = Field(pattern=r"^[0-9a-f]{64}$", description="HMAC-SHA256 signature from Telegram, hex")
 
     def signed_fields(self) -> dict[str, object]:
         return self.model_dump(exclude={"hash"}, exclude_none=True)
