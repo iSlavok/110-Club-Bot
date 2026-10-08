@@ -2,7 +2,7 @@ import asyncio
 from collections import Counter
 from datetime import datetime
 
-from app.clients import LoginThrottleUnavailableError
+from app.clients import LoginThrottleUnavailableError, VkClientError, VkUser
 from app.clients.login_throttle import MAX_FAILURES
 
 
@@ -48,3 +48,52 @@ class FakeLoginThrottle:
     def _ensure_available(self) -> None:
         if not self.available:
             raise LoginThrottleUnavailableError
+
+
+class FakeVkClient:
+    def __init__(self) -> None:
+        self.screen_names: dict[str, int] = {}
+        self.users: dict[int, VkUser] = {}
+        # Authorization code -> VK user id that VK ID returns for it.
+        self.codes: dict[str, int] = {}
+        self.exchanges: list[dict[str, str]] = []
+        self.available = True
+
+    def add_user(self, user_id: int, first_name: str, last_name: str, *, screen_name: str | None = None) -> VkUser:
+        user = VkUser(id=user_id, first_name=first_name, last_name=last_name, is_deactivated=False)
+        self.users[user_id] = user
+        if screen_name is not None:
+            self.screen_names[screen_name] = user_id
+        return user
+
+    async def get_user(self, user_ref: int | str) -> VkUser | None:
+        self._ensure_available()
+        user_id = self.screen_names.get(user_ref) if isinstance(user_ref, str) else user_ref
+        return self.users.get(user_id) if user_id is not None else None
+
+    async def exchange_code(
+        self,
+        *,
+        code: str,
+        code_verifier: str,
+        device_id: str,
+        state: str,
+        redirect_uri: str,
+    ) -> int:
+        self._ensure_available()
+        self.exchanges.append(
+            {
+                "code": code,
+                "code_verifier": code_verifier,
+                "device_id": device_id,
+                "state": state,
+                "redirect_uri": redirect_uri,
+            },
+        )
+        if code not in self.codes:
+            raise VkClientError("invalid_grant")
+        return self.codes[code]
+
+    def _ensure_available(self) -> None:
+        if not self.available:
+            raise VkClientError("VK is down")
