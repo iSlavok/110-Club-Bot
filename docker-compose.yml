@@ -41,6 +41,9 @@ services:
     image: ${BACKEND_IMAGE:-club110-backend}:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: .env
+    # Google service account key and other secret files; the folder is gitignored and may be absent.
+    volumes:
+      - ./secrets:/run/secrets:ro
     # No published port: only the web container reaches it, which is what makes trusting forwarded headers safe.
     depends_on:
       migrate:

@@ -7,13 +7,14 @@ from aiogram.enums import ParseMode
 from dishka import Provider, Scope, from_context, provide
 from redis.asyncio import Redis
 
-from app.clients import HttpxVkClient, LoginThrottle, RedisLoginThrottle, VkClient
+from app.clients import HttpxVkClient, LoginThrottle, RedisLoginThrottle, SheetsClient, VkClient, open_sheets_client
 from app.config import (
     AlertsSettings,
     ApiSettings,
     AuthSettings,
     BotSettings,
     DatabaseSettings,
+    GoogleSettings,
     PublicSettings,
     RedisSettings,
     Settings,
@@ -62,6 +63,10 @@ class SettingsProvider(Provider):
     def vk(self, settings: Settings) -> VkSettings:
         return settings.vk
 
+    @provide
+    def google(self, settings: Settings) -> GoogleSettings:
+        return settings.google
+
 
 class InfraProvider(Provider):
     scope = Scope.APP
@@ -97,3 +102,8 @@ class InfraProvider(Provider):
     async def vk_client(self, settings: VkSettings) -> AsyncIterator[VkClient]:
         async with httpx.AsyncClient(timeout=VK_TIMEOUT_SECONDS) as http:
             yield HttpxVkClient(http, settings)
+
+    @provide
+    async def sheets_client(self, settings: GoogleSettings) -> AsyncIterator[SheetsClient]:
+        async with open_sheets_client(settings) as client:
+            yield client

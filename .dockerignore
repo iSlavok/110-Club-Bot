@@ -12,3 +12,4 @@ backend/tests
 docs
 .env
 *.md
+secrets
