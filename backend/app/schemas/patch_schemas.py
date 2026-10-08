@@ -43,7 +43,9 @@ class Maybe[T]:
 
     @classmethod
     def __get_pydantic_json_schema__(cls, schema: Any, handler: Any) -> dict[str, Any]:  # noqa: ANN401 - pydantic hook contract
-        json_schema = handler(schema)
+        # An inline copy, not the $ref: pydantic resolves a returned $ref to the shared definition and then writes
+        # field keywords into it, which splits an enum into "-Input" and "-Output" variants.
+        json_schema = dict(handler.resolve_ref_schema(handler(schema)))
         json_schema.pop("default", None)
         return json_schema
 
