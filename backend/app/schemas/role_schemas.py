@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, StringConstraints
 from app.enums import Permission, PermissionGroup, known_permissions
 from app.models import Role
 from app.models.role import ROLE_TITLE_MAX_LEN
-from app.schemas.patch import Maybe, PatchSchema
+from app.schemas.patch_schemas import Maybe, PatchSchema
 
 type RoleTitle = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=ROLE_TITLE_MAX_LEN)]
 

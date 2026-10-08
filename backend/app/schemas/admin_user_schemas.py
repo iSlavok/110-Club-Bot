@@ -5,8 +5,8 @@ from pydantic import BaseModel, Field, PositiveInt, StringConstraints
 
 from app.models import AdminUser
 from app.models.user import TG_FULL_NAME_MAX_LEN
-from app.schemas.patch import Maybe, PatchSchema
-from app.schemas.role import RoleDTO
+from app.schemas.patch_schemas import Maybe, PatchSchema
+from app.schemas.role_schemas import RoleDTO
 
 type AdminName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=TG_FULL_NAME_MAX_LEN)]
 

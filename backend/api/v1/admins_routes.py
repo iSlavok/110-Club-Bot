@@ -5,7 +5,7 @@ from fastapi import APIRouter, Query, status
 
 from api.core.auth import require
 from api.schemas import Page
-from api.schemas.admins import AdminUserResponse
+from api.schemas.admin_user_schemas import AdminUserResponse
 from app.enums import Permission
 from app.schemas import AdminPrincipal, AdminUserCreate, AdminUserUpdate, PageParams
 from app.services import AdminUserService

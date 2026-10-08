@@ -5,7 +5,7 @@ from fastapi import APIRouter, Query
 
 from api.core.auth import require
 from api.schemas import Page
-from api.schemas.users import UserListParams, UserResponse
+from api.schemas.user_schemas import UserListParams, UserResponse
 from app.enums import Permission
 from app.services import UserService
 

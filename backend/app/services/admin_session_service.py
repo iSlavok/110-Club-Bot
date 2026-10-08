@@ -7,7 +7,7 @@ from app.exceptions import NotAuthenticatedError
 from app.models import AdminSession
 from app.repositories import AdminSessionRepository
 from app.schemas import AdminPrincipal, SessionGrant
-from app.services.admin_access import AdminAccessResolver
+from app.services.admin_access_resolver import AdminAccessResolver
 from app.utils import Clock, generate_session_token, hash_secret
 
 
