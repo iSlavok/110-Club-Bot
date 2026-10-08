@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from types import MappingProxyType
 
 from sqlalchemy import BigInteger, DateTime, MetaData, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
@@ -17,6 +18,8 @@ _CAMEL_BOUNDARY = re.compile(r"(?<!^)(?=[A-Z])")
 
 class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
+    # Server-generated values come back via RETURNING; otherwise reading them after commit is a lazy load (async error).
+    __mapper_args__ = MappingProxyType({"eager_defaults": True})
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, sort_order=-1)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), sort_order=1)

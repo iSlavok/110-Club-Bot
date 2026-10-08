@@ -79,9 +79,9 @@ backend/
     database/     Base, BaseRepository, engine/sessionmaker factory
     models/       ORM, одна таблица — один файл
     repositories/ один репозиторий на модель
-    queries/      read-агрегации по нескольким моделям (+ dto/)
+    queries/      read-агрегации по нескольким моделям (+ rows/)
     services/     use-cases, бизнес-логика, владеют транзакцией
-    schemas/      pydantic-схемы, которые сервисы отдают наверх
+    schemas/      pydantic: DTO моделей, команды (XCreate / XUpdate) и прочее, что сервисы принимают и отдают
     clients/      внешние API: Google Sheets, VK, хранилище файлов
     exceptions/   доменные исключения
     enums/  types/  utils/
@@ -102,6 +102,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 - `Base` уже содержит `id`, `created_at`, `updated_at`, `__tablename__`. Не объявляй повторно. `MetaData` с naming convention.
 - Enum-колонки только через `str_enum(X)` из `app/database`: в БД строка (`.value`), без нативного PG enum.
 - Все datetime — `DateTime(timezone=True)`, в UTC.
+- `Base` включает `eager_defaults`: серверные значения (`created_at`, `updated_at`, `server_default`) приходят через `RETURNING` сразу после flush. Без этого обращение к ним после `commit()` — ленивая загрузка, в async падает `MissingGreenlet`.
 - Отношения — `Mapped[...]`, импорты типов под `TYPE_CHECKING`.
 
 ### Repositories и queries
@@ -121,13 +122,14 @@ Backend — один процесс: `backend/main.py` (composition root) чит
   ```
 - `app/repositories/` и `app/queries/` исключены из `ruff format` (он склеивает цепочки обратно), формат там держится вручную; `ruff check` работает как обычно.
 - Репозиторий возвращает ORM-объекты, только сервисам. Нужные выше связи грузятся жадно (`selectinload` / `joinedload`) внутри метода. Ленивые связи наверх не отдаются.
-- Join/агрегация по нескольким моделям — класс `XQueries(session)`, возвращает dataclass DTO из `app/queries/dto/`.
+- Join/агрегация по нескольким моделям — класс `XQueries(session)`, возвращает dataclass `XRow` из `app/queries/rows/`. Дальше сервиса `XRow` не уходит.
 
 ### Services
 
 - Зависимости (сессия, репозитории, queries, клиенты, `Bot`) — через конструктор. Создаёт контейнер, сервис сам ничего не создаёт.
 - **Сервис владеет транзакцией**: use-case заканчивается `await self._session.commit()`. Роуты, хендлеры, задачи никогда не коммитят и не получают `AsyncSession`.
-- Наверх — pydantic-схемы из `app/schemas/` или примитивы, не ORM. ORM → схема через classmethod `from_orm_obj` с явным перечислением полей. `model_validate(orm, from_attributes=True)` не используем: неявно обходит связи, прячет, какие поля уходят наверх.
+- Наверх — pydantic-модели из `app/schemas/` или примитивы, не ORM. ORM → DTO через classmethod `from_orm_obj` с явным перечислением полей. `model_validate(orm, from_attributes=True)` не используем: неявно обходит связи, прячет, какие поля уходят наверх.
+- `XDTO` — зеркало модели `X`: все колонки, включая `id`, `created_at`, `updated_at`. Отбор полей — дело схем ответа API. `XWith<Связь>DTO(XDTO)` — плюс связь, загруженная жадно в репозитории (`AdminUserWithRoleDTO.role`). Суффикс `With` — только для связей, не для подмножества колонок. Классы, которые не отражают таблицу (`AdminPrincipal`, `SessionGrant`, команды `XCreate` / `XUpdate`), суффикс `DTO` не носят.
 - Ошибки — доменные исключения из `app/exceptions/`. Никаких `HTTPException` и ответов aiogram в сервисах.
 - Сетевые ошибки клиентов (`app/clients/`) выше сервиса не уходят: сервис ловит, бросает доменную ошибку.
 
@@ -142,7 +144,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 
 - Роут: вызывает сервис, возвращает результат. Доменные исключения не ловит, в `HTTPException` не превращает — это делает общий `app_error_handler`.
 - Ручной `HTTPException` — только в инфраструктурных guard'ах (auth, права).
-- Внутренние схемы из `app/schemas/` наружу не уходят. Роут всегда мапит результат сервиса в схему ответа из `api/schemas/` через `from_dto` (или `from_<имя>`). В API попадают только явно перечисленные поля, новое поле DTO не утечёт во фронт само.
+- DTO и прочие модели из `app/schemas/` наружу не уходят. Роут всегда мапит результат сервиса в схему ответа из `api/schemas/` через `from_dto` (или `from_<имя>`). В API попадают только явно перечисленные поля, новое поле DTO не утечёт во фронт само.
 - Тело запроса один в один с командой сервиса (create, update, PATCH) → роут принимает внутреннюю схему из `app/schemas/`, передаёт в сервис как есть. HTTP-специфичное тело — отдельная схема в `api/schemas/`.
 - Схемы в OpenAPI описывают поля через `Field(description=...)`: из них генерируется фронт.
 - Списки — общая пагинация (`Page[T]`, `limit` / `offset`), свою в каждом роуте не изобретай.
