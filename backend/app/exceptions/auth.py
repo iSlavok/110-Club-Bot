@@ -1,6 +1,7 @@
 from app.exceptions.base import (
     AuthenticationError,
     AuthorizationError,
+    ExternalServiceError,
     InvalidInputError,
     NotFoundError,
     TooManyRequestsError,
@@ -35,6 +36,16 @@ class TooManyLoginAttemptsError(TooManyRequestsError):
 class InvalidWidgetDataError(InvalidInputError):
     def __init__(self) -> None:
         super().__init__("Telegram login data is invalid or outdated")
+
+
+class LoginUnavailableError(ExternalServiceError):
+    def __init__(self) -> None:
+        super().__init__("Login is temporarily unavailable, try again later")
+
+
+class TelegramUnavailableError(ExternalServiceError):
+    def __init__(self) -> None:
+        super().__init__("Telegram is not reachable right now")
 
 
 class WidgetLoginDisabledError(NotFoundError):

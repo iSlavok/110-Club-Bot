@@ -1,11 +1,17 @@
+from typing import TYPE_CHECKING, cast
+
 import pytest
 
 from api.core.auth import SESSION_COOKIE
+from app.clients import LoginThrottle
 from app.enums import Permission
 from app.schemas import TelegramProfile
 from app.services import LoginService
 from tests.factories import make_admin_user, make_role
 from tests.providers import BOT_USERNAME
+
+if TYPE_CHECKING:
+    from tests.fakes import FakeLoginThrottle
 
 
 @pytest.fixture
@@ -88,3 +94,13 @@ async def test_widget_with_bad_signature(api_client, admin) -> None:
 
     assert response.status_code == 400
     assert response.json()["code"] == "INVALID_WIDGET_DATA"
+
+
+async def test_code_login_reports_unavailable_throttle(api_client, container) -> None:
+    throttle = cast("FakeLoginThrottle", await container.get(LoginThrottle))
+    throttle.available = False
+
+    response = await api_client.post("/api/v1/auth/code", json={"code": "123456"})
+
+    assert response.status_code == 502
+    assert response.json()["code"] == "LOGIN_UNAVAILABLE"

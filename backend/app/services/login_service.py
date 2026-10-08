@@ -1,13 +1,16 @@
 from datetime import UTC, datetime, timedelta
 
 from aiogram import Bot
+from aiogram.exceptions import TelegramAPIError
 
-from app.clients import LoginThrottle
+from app.clients import ClientError, LoginThrottle
 from app.config import AuthSettings, BotSettings
 from app.exceptions import (
     AdminAccessDeniedError,
     InvalidLoginCodeError,
     InvalidWidgetDataError,
+    LoginUnavailableError,
+    TelegramUnavailableError,
     TooManyLoginAttemptsError,
     WidgetLoginDisabledError,
 )
@@ -47,7 +50,10 @@ class LoginService:
         self._bot = bot
 
     async def get_config(self) -> AuthConfig:
-        me = await self._bot.me()
+        try:
+            me = await self._bot.me()
+        except TelegramAPIError as error:
+            raise TelegramUnavailableError from error
         return AuthConfig(widget_enabled=self._settings.widget_enabled, bot_username=me.username or "")
 
     async def issue_code(self, profile: TelegramProfile) -> IssuedLoginCode:
@@ -65,13 +71,13 @@ class LoginService:
         return IssuedLoginCode(code=code, expires_at=expires_at)
 
     async def login_with_code(self, code: str, client_key: str) -> SessionGrant:
-        if await self._login_throttle.is_blocked(client_key):
+        if await self._is_throttled(client_key):
             raise TooManyLoginAttemptsError
         now = self._clock.now()
         login_code = await self._login_code_repository.get_active(code_hash=hash_secret(code), now=now)
         principal = self._access_resolver.resolve(login_code.admin_user) if login_code else None
         if login_code is None or principal is None:
-            await self._login_throttle.register_failure(client_key)
+            await self._register_failed_attempt(client_key)
             raise InvalidLoginCodeError
         login_code.used_at = now
         return await self._admin_session_service.start(principal)
@@ -87,6 +93,18 @@ class LoginService:
         if principal is None:
             raise AdminAccessDeniedError
         return await self._admin_session_service.start(principal)
+
+    async def _is_throttled(self, client_key: str) -> bool:
+        try:
+            return await self._login_throttle.is_blocked(client_key)
+        except ClientError as error:
+            raise LoginUnavailableError from error
+
+    async def _register_failed_attempt(self, client_key: str) -> None:
+        try:
+            await self._login_throttle.register_failure(client_key)
+        except ClientError as error:
+            raise LoginUnavailableError from error
 
     def _is_widget_payload_valid(self, payload: TelegramWidgetPayload) -> bool:
         signed_at = datetime.fromtimestamp(payload.auth_date, tz=UTC)

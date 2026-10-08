@@ -1,9 +1,12 @@
 import hashlib
 import hmac
 from datetime import timedelta
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import pytest
+from aiogram import Bot
+from aiogram.exceptions import TelegramNetworkError
+from aiogram.methods import GetMe
 from sqlalchemy import select
 
 from app.clients import LoginThrottle
@@ -13,6 +16,8 @@ from app.exceptions import (
     AdminAccessDeniedError,
     InvalidLoginCodeError,
     InvalidWidgetDataError,
+    LoginUnavailableError,
+    TelegramUnavailableError,
     TooManyLoginAttemptsError,
 )
 from app.models import AdminSession, AdminUser
@@ -22,6 +27,9 @@ from app.services.login_service import LOGIN_CODE_TTL
 from tests.factories import make_admin_user, make_role
 from tests.fakes import FakeLoginThrottle
 from tests.providers import BOT_TOKEN, BOT_USERNAME, DEFAULT_NOW, OWNER_TG_ID
+
+if TYPE_CHECKING:
+    from unittest.mock import AsyncMock
 
 CLIENT = "10.0.0.1"
 
@@ -157,3 +165,18 @@ async def test_widget_rejects_stale_data(service, db_session) -> None:
 async def test_widget_rejects_stranger(service) -> None:
     with pytest.raises(AdminAccessDeniedError):
         await service.login_with_widget(_widget_payload(1, int(DEFAULT_NOW.timestamp())))
+
+
+async def test_redis_outage_makes_code_login_unavailable(service, throttle) -> None:
+    throttle.available = False
+
+    with pytest.raises(LoginUnavailableError):
+        await service.login_with_code("123456", CLIENT)
+
+
+async def test_telegram_outage_is_a_domain_error(service, container) -> None:
+    bot = cast("AsyncMock", await container.get(Bot))
+    bot.me.side_effect = TelegramNetworkError(method=GetMe(), message="timeout")
+
+    with pytest.raises(TelegramUnavailableError):
+        await service.get_config()

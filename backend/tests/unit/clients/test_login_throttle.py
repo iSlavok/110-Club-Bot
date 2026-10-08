@@ -1,5 +1,9 @@
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+from redis.exceptions import ConnectionError as RedisConnectionError
+
+from app.clients import LoginThrottleUnavailableError
 from app.clients.login_throttle import MAX_FAILURES, WINDOW_SECONDS, RedisLoginThrottle
 
 
@@ -25,3 +29,15 @@ async def test_failure_window_starts_at_first_failure() -> None:
     pipe.incr.assert_called_once_with("login-failures:1.2.3.4")
     pipe.expire.assert_called_once_with("login-failures:1.2.3.4", WINDOW_SECONDS, nx=True)
     pipe.execute.assert_awaited_once()
+
+
+async def test_redis_outage_becomes_client_error() -> None:
+    redis = MagicMock()
+    redis.get = AsyncMock(side_effect=RedisConnectionError("redis is down"))
+    redis.pipeline.side_effect = RedisConnectionError("redis is down")
+    throttle = RedisLoginThrottle(redis)
+
+    with pytest.raises(LoginThrottleUnavailableError):
+        await throttle.is_blocked("1.2.3.4")
+    with pytest.raises(LoginThrottleUnavailableError):
+        await throttle.register_failure("1.2.3.4")
