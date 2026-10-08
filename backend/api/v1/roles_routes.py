@@ -1,15 +1,16 @@
 from typing import Annotated
 
-from dishka.integrations.fastapi import DishkaRoute, FromDishka
+from dishka.integrations.fastapi import FromDishka
 from fastapi import APIRouter, status
 
 from api.core.auth import require
+from api.core.routing import UnitOfWorkRoute
 from api.schemas.role_schemas import PermissionResponse, RoleResponse
 from app.enums import Permission
 from app.schemas import AdminPrincipal, RoleCreate, RoleUpdate
 from app.services import RoleService
 
-router = APIRouter(tags=["roles"], route_class=DishkaRoute)
+router = APIRouter(tags=["roles"], route_class=UnitOfWorkRoute)
 
 
 @router.get("/permissions", dependencies=[require(Permission.ADMINS_VIEW)])

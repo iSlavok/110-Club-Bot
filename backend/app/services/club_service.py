@@ -1,5 +1,3 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.exceptions import ClubNotFoundError, ClubTitleTakenError, EmptyUpdateError
 from app.models import Club
 from app.repositories import ClubRepository
@@ -7,8 +5,7 @@ from app.schemas import ClubCreate, ClubDTO, ClubUpdate, PageParams, Paginated
 
 
 class ClubService:
-    def __init__(self, session: AsyncSession, club_repository: ClubRepository) -> None:
-        self._session = session
+    def __init__(self, club_repository: ClubRepository) -> None:
         self._club_repository = club_repository
 
     async def list_page(self, page: PageParams) -> Paginated[ClubDTO]:
@@ -29,7 +26,7 @@ class ClubService:
             sheet_name=data.sheet_name,
         )
         self._club_repository.add(club)
-        await self._session.commit()
+        await self._club_repository.flush()
         return ClubDTO.from_orm_obj(club)
 
     async def update(self, club_id: int, patch: ClubUpdate) -> ClubDTO:
@@ -44,7 +41,7 @@ class ClubService:
         club.spreadsheet_id = patch.spreadsheet_id.apply(club.spreadsheet_id)
         club.sheet_name = patch.sheet_name.apply(club.sheet_name)
         club.is_active = patch.is_active.apply(club.is_active)
-        await self._session.commit()
+        await self._club_repository.flush()
         return ClubDTO.from_orm_obj(club)
 
     async def _get(self, club_id: int) -> Club:

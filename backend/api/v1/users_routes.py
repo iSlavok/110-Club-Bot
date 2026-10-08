@@ -1,15 +1,16 @@
 from typing import Annotated
 
-from dishka.integrations.fastapi import DishkaRoute, FromDishka
+from dishka.integrations.fastapi import FromDishka
 from fastapi import APIRouter, Query
 
 from api.core.auth import require
+from api.core.routing import UnitOfWorkRoute
 from api.schemas import Page
 from api.schemas.user_schemas import UserListParams, UserResponse
 from app.enums import Permission
 from app.services import UserService
 
-router = APIRouter(prefix="/users", tags=["users"], route_class=DishkaRoute)
+router = APIRouter(prefix="/users", tags=["users"], route_class=UnitOfWorkRoute)
 
 
 @router.get("", dependencies=[require(Permission.USERS_VIEW)])

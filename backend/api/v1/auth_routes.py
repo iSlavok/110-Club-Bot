@@ -1,15 +1,16 @@
 from typing import Annotated
 
-from dishka.integrations.fastapi import DishkaRoute, FromDishka
+from dishka.integrations.fastapi import FromDishka
 from fastapi import APIRouter, Depends, Request, Response, status
 
 from api.core.auth import SESSION_COOKIE, require, session_cookie
+from api.core.routing import UnitOfWorkRoute
 from api.schemas.auth_schemas import AuthConfigResponse, CurrentAdminResponse, LoginCodeRequest
 from app.config import AuthSettings
 from app.schemas import AdminPrincipal, SessionGrant, TelegramWidgetPayload
 from app.services import AdminSessionService, LoginService
 
-router = APIRouter(prefix="/auth", tags=["auth"], route_class=DishkaRoute)
+router = APIRouter(prefix="/auth", tags=["auth"], route_class=UnitOfWorkRoute)
 
 
 def _set_session_cookie(response: Response, grant: SessionGrant, settings: AuthSettings) -> None:

@@ -1,7 +1,5 @@
 from datetime import timedelta
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.config import AuthSettings
 from app.exceptions import NotAuthenticatedError
 from app.models import AdminSession
@@ -14,13 +12,11 @@ from app.utils import Clock, generate_session_token, hash_secret
 class AdminSessionService:
     def __init__(
         self,
-        session: AsyncSession,
         admin_session_repository: AdminSessionRepository,
         access_resolver: AdminAccessResolver,
         clock: Clock,
         settings: AuthSettings,
     ) -> None:
-        self._session = session
         self._admin_session_repository = admin_session_repository
         self._access_resolver = access_resolver
         self._clock = clock
@@ -46,9 +42,7 @@ class AdminSessionService:
         self._admin_session_repository.add(
             AdminSession(token_hash=hash_secret(token), admin_user_id=principal.id, expires_at=expires_at),
         )
-        await self._session.commit()
         return SessionGrant(token=token, expires_at=expires_at, admin=principal)
 
     async def end(self, token: str) -> None:
         await self._admin_session_repository.delete_by_token_hash(hash_secret(token))
-        await self._session.commit()

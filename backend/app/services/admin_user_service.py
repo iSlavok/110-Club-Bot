@@ -1,5 +1,3 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.enums import known_permissions
 from app.exceptions import (
     AdminAlreadyExistsError,
@@ -26,13 +24,11 @@ from app.services.permission_guard import ensure_within_own_permissions
 class AdminUserService:
     def __init__(
         self,
-        session: AsyncSession,
         admin_user_repository: AdminUserRepository,
         role_repository: RoleRepository,
         admin_session_repository: AdminSessionRepository,
         access_resolver: AdminAccessResolver,
     ) -> None:
-        self._session = session
         self._admin_user_repository = admin_user_repository
         self._role_repository = role_repository
         self._admin_session_repository = admin_session_repository
@@ -50,7 +46,7 @@ class AdminUserService:
         role = await self._get_assignable_role(actor, data.role_id)
         admin = AdminUser(tg_id=data.tg_id, name=data.name, role=role)
         self._admin_user_repository.add(admin)
-        await self._session.commit()
+        await self._admin_user_repository.flush()
         return self._to_dto(admin)
 
     async def update(self, actor: AdminPrincipal, admin_user_id: int, patch: AdminUserUpdate) -> AdminUserWithRoleDTO:
@@ -73,7 +69,7 @@ class AdminUserService:
         admin.is_active = patch.is_active.apply(admin.is_active)
         if not admin.is_active:
             await self._admin_session_repository.delete_for_admin(admin.id)
-        await self._session.commit()
+        await self._admin_user_repository.flush()
         return self._to_dto(admin)
 
     async def _get_assignable_role(self, actor: AdminPrincipal, role_id: int) -> Role:
