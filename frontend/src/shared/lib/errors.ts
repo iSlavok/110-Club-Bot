@@ -22,6 +22,8 @@ const MESSAGES: Record<string, string> = {
   INVALID_BLOCK_PERIOD: 'Блок должен заканчиваться позже, чем начинается.',
   BLOCK_HAS_MEMBERS: 'В блоке есть участники из таблицы — удалить нельзя.',
   VK_LINK_MODE_NOT_CONFIGURED: 'Этот способ привязки VK не настроен на сервере.',
+  CLUB_NOT_SYNCABLE: 'Клуб выключен или у него не указаны таблица и лист.',
+  SHEET_SYNC_DISABLED: 'Синк выключен: на сервере не настроен ключ Google.',
   VALIDATION_FAILED: 'Проверьте заполнение полей.',
 };
 

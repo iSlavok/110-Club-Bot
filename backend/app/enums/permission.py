@@ -5,6 +5,7 @@ class Permission(StrEnum):
     CLUBS_VIEW = "clubs.view"
     CLUBS_EDIT = "clubs.edit"
     BLOCKS_EDIT = "blocks.edit"
+    SYNC_RUN = "sync.run"
     USERS_VIEW = "users.view"
     ADMINS_VIEW = "admins.view"
     ADMINS_EDIT = "admins.edit"

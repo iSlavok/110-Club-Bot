@@ -9,6 +9,7 @@ PERMISSION_CATALOG = (
     PermissionInfo(code=Permission.CLUBS_VIEW, title="Просмотр клубов и блоков", group=PermissionGroup.CLUBS),
     PermissionInfo(code=Permission.CLUBS_EDIT, title="Создание и изменение клубов", group=PermissionGroup.CLUBS),
     PermissionInfo(code=Permission.BLOCKS_EDIT, title="Управление блоками", group=PermissionGroup.CLUBS),
+    PermissionInfo(code=Permission.SYNC_RUN, title="Запуск синка с таблицей", group=PermissionGroup.CLUBS),
     PermissionInfo(code=Permission.USERS_VIEW, title="Просмотр пользователей бота", group=PermissionGroup.USERS),
     PermissionInfo(code=Permission.ADMINS_VIEW, title="Просмотр админов и ролей", group=PermissionGroup.ADMINS),
     PermissionInfo(code=Permission.ADMINS_EDIT, title="Добавление и изменение админов", group=PermissionGroup.ADMINS),

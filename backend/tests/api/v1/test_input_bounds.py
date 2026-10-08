@@ -32,6 +32,7 @@ async def test_malformed_widget_payload_is_rejected_before_the_service(api_clien
     [
         f"/api/v1/clubs/{TOO_BIG}",
         f"/api/v1/clubs/{TOO_BIG}/blocks",
+        f"/api/v1/clubs/{TOO_BIG}/syncs",
         f"/api/v1/clubs?page={TOO_BIG}",
     ],
 )
