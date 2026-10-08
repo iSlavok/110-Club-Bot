@@ -123,6 +123,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 - `app/repositories/` и `app/queries/` исключены из `ruff format` (он склеивает цепочки обратно), формат там держится вручную; `ruff check` работает как обычно.
 - Репозиторий возвращает ORM-объекты, только сервисам. Нужные выше связи грузятся жадно (`selectinload` / `joinedload`) внутри метода. Ленивые связи наверх не отдаются.
 - Список страницами — один метод репозитория → `PageResult[Model]` (`items`, `total`). Условия собираются один раз в `conditions`, из них оба запроса: `select(func.count()).select_from(Model).where(*conditions)` и запрос страницы с сортировкой, `limit` / `offset`. Отдельных `count_*` под список не пишем: фильтры разойдутся.
+- Нечёткий поиск — `pg_trgm`: служебная generated-колонка с нормализованным текстом + GIN `gin_trgm_ops`, запрос нормализуется так же (`normalize_search_query`), порог `word_similarity` — явно в запросе, не через `set_limit`.
 - Join/агрегация по нескольким моделям — класс `XQueries(session)`, возвращает dataclass `XRow` из `app/queries/rows/`. Дальше сервиса `XRow` не уходит.
 
 ### Services
@@ -130,7 +131,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 - Зависимости (сессия, репозитории, queries, клиенты, `Bot`) — через конструктор. Создаёт контейнер, сервис сам ничего не создаёт.
 - **Сервис владеет транзакцией**: use-case заканчивается `await self._session.commit()`. Роуты, хендлеры, задачи никогда не коммитят и не получают `AsyncSession`.
 - Наверх — pydantic-модели из `app/schemas/` или примитивы, не ORM. ORM → DTO через classmethod `from_orm_obj` с явным перечислением полей. `model_validate(orm, from_attributes=True)` не используем: неявно обходит связи, прячет, какие поля уходят наверх.
-- `XDTO` — зеркало модели `X`: все колонки, включая `id`, `created_at`, `updated_at`. Отбор полей — дело схем ответа API. `XWith<Связь>DTO(XDTO)` — плюс связь, загруженная жадно в репозитории (`AdminUserWithRoleDTO.role`). Суффикс `With` — только для связей, не для подмножества колонок. Классы, которые не отражают таблицу (`AdminPrincipal`, `SessionGrant`, команды `XCreate` / `XUpdate`), суффикс `DTO` не носят.
+- `XDTO` — зеркало модели `X`: все колонки, включая `id`, `created_at`, `updated_at`. Кроме служебных, которые ведёт сама БД или которые нельзя выпускать (поисковые `search_text`, хэши токенов). Отбор полей — дело схем ответа API. `XWith<Связь>DTO(XDTO)` — плюс связь, загруженная жадно в репозитории (`AdminUserWithRoleDTO.role`). Суффикс `With` — только для связей, не для подмножества колонок. Классы, которые не отражают таблицу (`AdminPrincipal`, `SessionGrant`, команды `XCreate` / `XUpdate`), суффикс `DTO` не носят.
 - Ошибки — доменные исключения из `app/exceptions/`. Никаких `HTTPException` и ответов aiogram в сервисах.
 - Сетевые ошибки клиентов (`app/clients/`) выше сервиса не уходят: сервис ловит, бросает доменную ошибку.
 

@@ -1,4 +1,5 @@
 from app.utils.clock import BUSINESS_TZ, Clock, SystemClock
+from app.utils.search import normalize_search_query
 from app.utils.security import (
     LOGIN_CODE_DIGITS,
     generate_login_code,
@@ -16,4 +17,5 @@ __all__ = [
     "generate_session_token",
     "hash_secret",
     "is_valid_widget_signature",
+    "normalize_search_query",
 ]
