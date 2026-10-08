@@ -4,7 +4,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.enums import Permission
+from app.enums import Permission, SheetSyncStatus
 from app.models import (
     AdminSession,
     AdminUser,
@@ -14,6 +14,7 @@ from app.models import (
     LoginCode,
     Membership,
     Role,
+    SheetSync,
     User,
     VkAuthRequest,
 )
@@ -134,3 +135,22 @@ async def make_vk_auth_request(session: AsyncSession, user: User, **overrides: A
     session.add(request)
     await session.flush()
     return request
+
+
+async def make_sheet_sync(session: AsyncSession, club: Club, **overrides: Any) -> SheetSync:
+    started_at = overrides.pop("started_at", datetime(2026, 10, 1, 8, 50, tzinfo=UTC))
+    sync = SheetSync(
+        **{
+            "club_id": club.id,
+            "started_at": started_at,
+            "finished_at": started_at + timedelta(seconds=2),
+            "status": SheetSyncStatus.OK,
+            "added": 0,
+            "removed": 0,
+            "issues": [],
+            **overrides,
+        },
+    )
+    session.add(sync)
+    await session.flush()
+    return sync

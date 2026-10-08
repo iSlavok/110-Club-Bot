@@ -8,11 +8,11 @@ from pydantic import SecretStr
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, async_sessionmaker
 
-from app.clients import LoginThrottle, VkClient
+from app.clients import LoginThrottle, SheetsClient, VkClient
 from app.config import AlertsSettings, AuthSettings, BotSettings, DatabaseSettings, PublicSettings, VkSettings
 from app.telegram import AdminAlerts, CommandMenu, RateLimitMiddleware
 from app.utils import Clock
-from tests.fakes import FakeLoginThrottle, FakeTimer, FakeVkClient, FrozenClock
+from tests.fakes import FakeLoginThrottle, FakeSheetsClient, FakeTimer, FakeVkClient, FrozenClock
 
 DEFAULT_NOW = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
 OWNER_TG_ID = 777
@@ -95,6 +95,10 @@ class TestInfraProvider(Provider):
     @provide
     def vk_client(self) -> VkClient:
         return FakeVkClient()
+
+    @provide
+    def sheets_client(self) -> SheetsClient:
+        return FakeSheetsClient()
 
     @provide
     def bot(self) -> Bot:

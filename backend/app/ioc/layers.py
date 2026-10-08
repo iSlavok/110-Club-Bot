@@ -10,6 +10,7 @@ from app.repositories import (
     LoginCodeRepository,
     MembershipRepository,
     RoleRepository,
+    SheetSyncRepository,
     UserRepository,
     VkAuthRequestRepository,
 )
@@ -26,6 +27,7 @@ from app.services import (
     HealthService,
     LoginService,
     RoleService,
+    SheetSyncService,
     StatusService,
     UserService,
     VkLinkAvailability,
@@ -45,6 +47,7 @@ class RepositoriesProvider(Provider):
         LoginCodeRepository,
         MembershipRepository,
         RoleRepository,
+        SheetSyncRepository,
         UserRepository,
         VkAuthRequestRepository,
     )
@@ -73,6 +76,7 @@ class ServicesProvider(Provider):
         LoginService,
         RoleService,
         StatusService,
+        SheetSyncService,
         UserService,
         VkLinkAvailability,
         VkLinkService,

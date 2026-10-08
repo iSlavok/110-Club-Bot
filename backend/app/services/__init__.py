@@ -10,6 +10,7 @@ from app.services.club_stats_service import ClubStatsService
 from app.services.health_service import HealthService
 from app.services.login_service import LoginService
 from app.services.role_service import RoleService
+from app.services.sheet_sync_service import SheetSyncService
 from app.services.status_service import StatusService
 from app.services.user_service import UserService
 from app.services.vk_link_availability import VkLinkAvailability
@@ -28,6 +29,7 @@ __all__ = [
     "HealthService",
     "LoginService",
     "RoleService",
+    "SheetSyncService",
     "StatusService",
     "UserService",
     "VkLinkAvailability",

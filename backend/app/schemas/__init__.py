@@ -7,6 +7,7 @@ from app.schemas.health_schemas import ReadinessReport
 from app.schemas.pagination_schemas import MAX_PER_PAGE, PageParams, Paginated
 from app.schemas.patch_schemas import Maybe, PatchSchema
 from app.schemas.role_schemas import PermissionInfo, RoleCreate, RoleDTO, RoleUpdate
+from app.schemas.sheet_sync_schemas import SheetIssue, SheetSyncDTO
 from app.schemas.status_schemas import ClubStatus, StatusReport
 from app.schemas.user_schemas import TelegramProfile, UserDTO
 from app.schemas.vk_link_schemas import (
@@ -53,6 +54,8 @@ __all__ = [
     "RoleDTO",
     "RoleUpdate",
     "SessionGrant",
+    "SheetIssue",
+    "SheetSyncDTO",
     "StatusReport",
     "TelegramProfile",
     "TelegramWidgetPayload",

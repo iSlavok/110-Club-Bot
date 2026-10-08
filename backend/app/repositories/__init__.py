@@ -6,6 +6,7 @@ from app.repositories.club_repository import ClubRepository
 from app.repositories.login_code_repository import LoginCodeRepository
 from app.repositories.membership_repository import MembershipRepository
 from app.repositories.role_repository import RoleRepository
+from app.repositories.sheet_sync_repository import SheetSyncRepository
 from app.repositories.user_repository import UserRepository
 from app.repositories.vk_auth_request_repository import VkAuthRequestRepository
 
@@ -18,6 +19,7 @@ __all__ = [
     "LoginCodeRepository",
     "MembershipRepository",
     "RoleRepository",
+    "SheetSyncRepository",
     "UserRepository",
     "VkAuthRequestRepository",
 ]

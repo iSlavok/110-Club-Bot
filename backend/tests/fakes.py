@@ -2,7 +2,14 @@ import asyncio
 from collections import Counter
 from datetime import datetime
 
-from app.clients import LoginThrottleUnavailableError, VkClientError, VkUser
+from app.clients import (
+    CellValue,
+    LoginThrottleUnavailableError,
+    SheetsClientError,
+    SheetsNotConfiguredError,
+    VkClientError,
+    VkUser,
+)
 from app.clients.login_throttle import MAX_FAILURES
 
 
@@ -105,3 +112,25 @@ class FakeVkClient:
     def _ensure_available(self) -> None:
         if not self.available:
             raise VkClientError("VK is down")
+
+
+class FakeSheetsClient:
+    def __init__(self) -> None:
+        self.is_enabled = True
+        self.sheets: dict[tuple[str, str], list[list[CellValue]]] = {}
+        self.errors: dict[tuple[str, str], SheetsClientError] = {}
+
+    def set_sheet(self, spreadsheet_id: str, sheet_name: str, columns: list[list[CellValue]]) -> None:
+        self.sheets[spreadsheet_id, sheet_name] = columns
+
+    def fail(self, spreadsheet_id: str, sheet_name: str, error: SheetsClientError) -> None:
+        self.errors[spreadsheet_id, sheet_name] = error
+
+    async def get_columns(self, spreadsheet_id: str, sheet_name: str) -> list[list[CellValue]]:
+        if not self.is_enabled:
+            raise SheetsNotConfiguredError
+        if (error := self.errors.get((spreadsheet_id, sheet_name))) is not None:
+            raise error
+        if (columns := self.sheets.get((spreadsheet_id, sheet_name))) is None:
+            raise SheetsClientError("Google Sheets API error 404 NOT_FOUND: Requested entity was not found.")
+        return columns

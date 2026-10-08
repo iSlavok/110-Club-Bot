@@ -39,6 +39,7 @@ from app.exceptions.clubs import (
 )
 from app.exceptions.common import EmptyUpdateError
 from app.exceptions.settings import AppSettingsMissingError, VkLinkModeNotConfiguredError
+from app.exceptions.sheet_syncs import ClubNotSyncableError, SheetSyncDisabledError
 from app.exceptions.vk import (
     InvalidVkLinkError,
     UserNotRegisteredError,
@@ -62,6 +63,7 @@ __all__ = [
     "BlockHasMembersError",
     "BlockNotFoundError",
     "ClubNotFoundError",
+    "ClubNotSyncableError",
     "ClubTitleTakenError",
     "ConflictError",
     "EmptyUpdateError",
@@ -81,6 +83,7 @@ __all__ = [
     "RoleInUseError",
     "RoleNotFoundError",
     "RoleTitleTakenError",
+    "SheetSyncDisabledError",
     "TelegramUnavailableError",
     "TooManyLoginAttemptsError",
     "TooManyRequestsError",

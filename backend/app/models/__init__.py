@@ -6,6 +6,7 @@ from app.models.club import Club
 from app.models.login_code import LoginCode
 from app.models.membership import Membership
 from app.models.role import Role
+from app.models.sheet_sync import SheetSync
 from app.models.user import User
 from app.models.vk_auth_request import VkAuthRequest
 
@@ -18,6 +19,7 @@ __all__ = [
     "LoginCode",
     "Membership",
     "Role",
+    "SheetSync",
     "User",
     "VkAuthRequest",
 ]

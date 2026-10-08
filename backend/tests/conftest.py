@@ -13,10 +13,10 @@ from sqlalchemy import Connection, text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from app.clients import VkClient
+from app.clients import SheetsClient, VkClient
 from app.ioc import QueriesProvider, RepositoriesProvider, ServicesProvider
 from app.utils import Clock
-from tests.fakes import FakeVkClient, FrozenClock
+from tests.fakes import FakeSheetsClient, FakeVkClient, FrozenClock
 from tests.providers import TestDatabaseProvider, TestInfraProvider
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -93,3 +93,8 @@ async def bot(container: AsyncContainer) -> AsyncMock:
 @pytest.fixture
 async def vk(container: AsyncContainer) -> FakeVkClient:
     return cast("FakeVkClient", await container.get(VkClient))
+
+
+@pytest.fixture
+async def sheets_client(container: AsyncContainer) -> FakeSheetsClient:
+    return cast("FakeSheetsClient", await container.get(SheetsClient))
