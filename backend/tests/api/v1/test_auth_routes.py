@@ -82,7 +82,7 @@ async def test_me_after_login_and_logout(api_client, request_container, admin) -
 
 
 async def test_widget_with_bad_signature(api_client, admin) -> None:
-    payload = {"id": admin.tg_id, "first_name": "A", "auth_date": 1, "hash": "bad"}
+    payload = {"id": admin.tg_id, "first_name": "A", "auth_date": 1, "hash": "0" * 64}
 
     response = await api_client.post("/api/v1/auth/widget", json=payload)
 

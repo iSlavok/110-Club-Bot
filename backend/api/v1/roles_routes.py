@@ -4,6 +4,7 @@ from dishka.integrations.fastapi import FromDishka
 from fastapi import APIRouter, status
 
 from api.core.auth import require
+from api.core.params import IdPath
 from api.core.routing import UnitOfWorkRoute
 from api.schemas.role_schemas import PermissionResponse, RoleResponse
 from app.enums import Permission
@@ -37,7 +38,7 @@ async def create_role(
 @router.patch("/roles/{role_id}")
 async def update_role(
     actor: Annotated[AdminPrincipal, require(Permission.ROLES_EDIT)],
-    role_id: int,
+    role_id: IdPath,
     patch: RoleUpdate,
     role_service: FromDishka[RoleService],
 ) -> RoleResponse:
@@ -48,7 +49,7 @@ async def update_role(
 @router.delete("/roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_role(
     actor: Annotated[AdminPrincipal, require(Permission.ROLES_EDIT)],
-    role_id: int,
+    role_id: IdPath,
     role_service: FromDishka[RoleService],
 ) -> None:
     await role_service.delete(actor, role_id)

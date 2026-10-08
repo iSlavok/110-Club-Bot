@@ -6,6 +6,7 @@ from pydantic import AfterValidator, AwareDatetime, BaseModel, Field, StringCons
 from app.models import Block, Club
 from app.models.club import CLUB_TEXT_MAX_LEN
 from app.schemas.patch_schemas import Maybe, PatchSchema
+from app.types import BigInt, PositiveInt32
 
 # Annotated form, not bare AwareDatetime: the bare class loses its tz check when wrapped in Maybe.
 type Moment = Annotated[datetime, AwareDatetime, AfterValidator(lambda value: value.astimezone(UTC))]
@@ -40,16 +41,16 @@ class ClubDTO(BaseModel):
 
 class ClubCreate(BaseModel):
     title: ClubText = Field(description="Unique club name")
-    chat_id: int | None = Field(default=None, description="Telegram id of the club chat")
-    reminders_topic_id: int | None = Field(default=None, description="Forum topic id for reminders")
+    chat_id: BigInt | None = Field(default=None, description="Telegram id of the club chat")
+    reminders_topic_id: PositiveInt32 | None = Field(default=None, description="Forum topic id for reminders")
     spreadsheet_id: ClubText | None = Field(default=None, description="Google Sheets document id")
     sheet_name: ClubText | None = Field(default=None, description="Sheet with block columns")
 
 
 class ClubUpdate(PatchSchema):
     title: Maybe[ClubText] = Field(description="Unique club name")
-    chat_id: Maybe[int | None] = Field(description="Telegram id of the club chat")
-    reminders_topic_id: Maybe[int | None] = Field(description="Forum topic id for reminders")
+    chat_id: Maybe[BigInt | None] = Field(description="Telegram id of the club chat")
+    reminders_topic_id: Maybe[PositiveInt32 | None] = Field(description="Forum topic id for reminders")
     spreadsheet_id: Maybe[ClubText | None] = Field(description="Google Sheets document id")
     sheet_name: Maybe[ClubText | None] = Field(description="Sheet with block columns")
     is_active: Maybe[bool] = Field(description="Inactive clubs are skipped by the bot")

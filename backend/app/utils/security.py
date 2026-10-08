@@ -23,4 +23,4 @@ def is_valid_widget_signature(fields: Mapping[str, object], signature: str, bot_
     data_check_string = "\n".join(f"{key}={fields[key]}" for key in sorted(fields))
     secret_key = hashlib.sha256(bot_token.encode()).digest()
     expected = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
-    return hmac.compare_digest(expected, signature)
+    return hmac.compare_digest(expected.encode(), signature.encode())
