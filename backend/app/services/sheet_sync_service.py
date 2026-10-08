@@ -8,7 +8,7 @@ from app.enums import SheetSyncStatus
 from app.exceptions import ClubNotFoundError, ClubNotSyncableError, SheetSyncDisabledError
 from app.models import Club, SheetSync
 from app.repositories import BlockRepository, ClubRepository, MembershipRepository, SheetSyncRepository
-from app.schemas import SheetIssue, SheetSyncDTO
+from app.schemas import PageParams, Paginated, SheetIssue, SheetSyncDTO
 from app.services.sheet_parser import parse_sheet
 from app.utils import Clock
 
@@ -40,6 +40,15 @@ class SheetSyncService:
             return []
         clubs = await self._club_repository.list_syncable()
         return [club.id for club in clubs]
+
+    async def list_page(self, club_id: int, page: PageParams) -> Paginated[SheetSyncDTO]:
+        await self._get_club(club_id)
+        syncs = await self._sheet_sync_repository.list_page_for_club(
+            club_id=club_id,
+            limit=page.per_page,
+            offset=page.offset,
+        )
+        return Paginated(items=[SheetSyncDTO.from_orm_obj(sync) for sync in syncs.items], total=syncs.total)
 
     # Memberships mirror the ready columns exactly; chat access is reconciled against them, so no events are kept.
     async def sync_club(self, club_id: int) -> SheetSyncDTO:

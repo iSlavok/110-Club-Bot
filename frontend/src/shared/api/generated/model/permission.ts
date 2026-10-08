@@ -11,6 +11,7 @@ export const Permission = {
   clubsview: 'clubs.view',
   clubsedit: 'clubs.edit',
   blocksedit: 'blocks.edit',
+  syncrun: 'sync.run',
   usersview: 'users.view',
   adminsview: 'admins.view',
   adminsedit: 'admins.edit',

@@ -1293,6 +1293,152 @@
         }
       }
     },
+    "/api/v1/clubs/{club_id}/sync": {
+      "post": {
+        "tags": [
+          "sync"
+        ],
+        "summary": "Sync Club",
+        "operationId": "sync_club",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "club_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Club Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SheetSyncResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clubs/{club_id}/syncs": {
+      "get": {
+        "tags": [
+          "sync"
+        ],
+        "summary": "List Club Syncs",
+        "operationId": "list_club_syncs",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "club_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Club Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 46116860184273879,
+              "minimum": 1,
+              "description": "Page number, starting from 1",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number, starting from 1"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 50,
+              "title": "Per Page"
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_SheetSyncResponse_"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users": {
       "get": {
         "tags": [
@@ -2260,6 +2406,48 @@
         ],
         "title": "Page[ClubResponse]"
       },
+      "Page_SheetSyncResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SheetSyncResponse"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Items of the current page"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number, starting from 1"
+          },
+          "per_page": {
+            "type": "integer",
+            "title": "Per Page",
+            "description": "Requested page size"
+          },
+          "total_items": {
+            "type": "integer",
+            "title": "Total Items",
+            "description": "Total number of items matching the query"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages",
+            "description": "Total number of pages",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "per_page",
+          "total_items",
+          "total_pages"
+        ],
+        "title": "Page[SheetSyncResponse]"
+      },
       "Page_UserResponse_": {
         "properties": {
           "items": {
@@ -2308,6 +2496,7 @@
           "clubs.view",
           "clubs.edit",
           "blocks.edit",
+          "sync.run",
           "users.view",
           "admins.view",
           "admins.edit",
@@ -2457,6 +2646,143 @@
         "additionalProperties": false,
         "type": "object",
         "title": "RoleUpdate"
+      },
+      "SheetIssueKind": {
+        "type": "string",
+        "enum": [
+          "unknown_column",
+          "missing_column",
+          "duplicate_column",
+          "invalid_value",
+          "duplicate"
+        ],
+        "title": "SheetIssueKind"
+      },
+      "SheetIssueResponse": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/SheetIssueKind",
+            "description": "unknown_column: ready column matches no block; missing_column: a running or future block has no column; duplicate_column: second ready column with the same header, ignored; invalid_value: cell is not a VK id, skipped; duplicate: VK id repeated in the column"
+          },
+          "column": {
+            "type": "string",
+            "title": "Column",
+            "description": "Column header (the block's expected header for missing_column)"
+          },
+          "row": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Row",
+            "description": "Sheet row number, from 1, for cell issues"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value",
+            "description": "Cell content for cell issues"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "column",
+          "row",
+          "value"
+        ],
+        "title": "SheetIssueResponse"
+      },
+      "SheetSyncResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Sync id"
+          },
+          "club_id": {
+            "type": "integer",
+            "title": "Club Id",
+            "description": "Synced club"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At",
+            "description": "Sync start, UTC"
+          },
+          "finished_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Finished At",
+            "description": "Sync end, UTC"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SheetSyncStatus",
+            "description": "failed: the sheet could not be read, memberships were not changed"
+          },
+          "added": {
+            "type": "integer",
+            "title": "Added",
+            "description": "Memberships added"
+          },
+          "removed": {
+            "type": "integer",
+            "title": "Removed",
+            "description": "Memberships removed"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/SheetIssueResponse"
+            },
+            "type": "array",
+            "title": "Issues",
+            "description": "Problems found in the sheet"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Why the sync failed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "club_id",
+          "started_at",
+          "finished_at",
+          "status",
+          "added",
+          "removed",
+          "issues",
+          "error"
+        ],
+        "title": "SheetSyncResponse"
+      },
+      "SheetSyncStatus": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "failed"
+        ],
+        "title": "SheetSyncStatus"
       },
       "TelegramWidgetPayload": {
         "properties": {
