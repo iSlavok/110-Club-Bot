@@ -118,12 +118,12 @@ class FakeSheetsClient:
     def __init__(self) -> None:
         self.is_enabled = True
         self.sheets: dict[tuple[str, str], list[list[CellValue]]] = {}
-        self.errors: dict[tuple[str, str], SheetsClientError] = {}
+        self.errors: dict[tuple[str, str], Exception] = {}
 
     def set_sheet(self, spreadsheet_id: str, sheet_name: str, columns: list[list[CellValue]]) -> None:
         self.sheets[spreadsheet_id, sheet_name] = columns
 
-    def fail(self, spreadsheet_id: str, sheet_name: str, error: SheetsClientError) -> None:
+    def fail(self, spreadsheet_id: str, sheet_name: str, error: Exception) -> None:
         self.errors[spreadsheet_id, sheet_name] = error
 
     async def get_columns(self, spreadsheet_id: str, sheet_name: str) -> list[list[CellValue]]:

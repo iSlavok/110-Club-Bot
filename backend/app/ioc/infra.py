@@ -18,6 +18,7 @@ from app.config import (
     PublicSettings,
     RedisSettings,
     Settings,
+    SyncSettings,
     VkSettings,
 )
 from app.telegram import AdminAlerts, CommandMenu, RateLimitMiddleware, SystemTimer
@@ -66,6 +67,10 @@ class SettingsProvider(Provider):
     @provide
     def google(self, settings: Settings) -> GoogleSettings:
         return settings.google
+
+    @provide
+    def sync(self, settings: Settings) -> SyncSettings:
+        return settings.sync
 
 
 class InfraProvider(Provider):

@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from loguru import logger
 
@@ -11,6 +11,9 @@ from app.repositories import BlockRepository, ClubRepository, MembershipReposito
 from app.schemas import SheetIssue, SheetSyncDTO
 from app.services.sheet_parser import parse_sheet
 from app.utils import Clock
+
+HISTORY_DAYS = 100
+INTERNAL_ERROR_MESSAGE = "Internal error, see the server logs"
 
 
 class SheetSyncService:
@@ -30,6 +33,13 @@ class SheetSyncService:
         self._membership_repository = membership_repository
         self._sheets_client = sheets_client
         self._clock = clock
+
+    # Empty while the client is disabled: without a key there is nothing to sync, and the startup log already says so.
+    async def list_syncable_club_ids(self) -> list[int]:
+        if not self._sheets_client.is_enabled:
+            return []
+        clubs = await self._club_repository.list_syncable()
+        return [club.id for club in clubs]
 
     # Memberships mirror the ready columns exactly; chat access is reconciled against them, so no events are kept.
     async def sync_club(self, club_id: int) -> SheetSyncDTO:
@@ -74,6 +84,17 @@ class SheetSyncService:
             removed=removed,
             issues=parsed.issues,
         )
+
+    # For a sync that crashed: its own transaction was rolled back, so this runs in a new one.
+    async def record_internal_error(self, club_id: int) -> SheetSyncDTO:
+        await self._get_club(club_id)
+        return await self._record(
+            club_id, self._clock.now(), status=SheetSyncStatus.FAILED, error=INTERNAL_ERROR_MESSAGE
+        )
+
+    async def purge_old(self) -> None:
+        cutoff = self._clock.now() - timedelta(days=HISTORY_DAYS)
+        await self._sheet_sync_repository.delete_started_before(cutoff)
 
     async def _get_club(self, club_id: int) -> Club:
         club = await self._club_repository.get_by_id(club_id)

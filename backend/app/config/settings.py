@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import BaseModel, SecretStr, StringConstraints, field_validator
+from pydantic import BaseModel, Field, SecretStr, StringConstraints, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
@@ -95,6 +95,10 @@ class GoogleSettings(BaseModel):
         return None if value == "" else value
 
 
+class SyncSettings(BaseModel):
+    interval_minutes: int = Field(default=10, ge=1)
+
+
 class LogSettings(BaseModel):
     level: str = "INFO"
 
@@ -112,4 +116,5 @@ class Settings(BaseSettings):
     alerts: AlertsSettings = AlertsSettings()
     vk: VkSettings = VkSettings()
     google: GoogleSettings = GoogleSettings()
+    sync: SyncSettings = SyncSettings()
     log: LogSettings = LogSettings()
