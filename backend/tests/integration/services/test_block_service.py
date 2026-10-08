@@ -9,9 +9,9 @@ from app.exceptions import (
     ClubNotFoundError,
     InvalidBlockPeriodError,
 )
-from app.schemas import BlockCreate, BlockUpdate, PageParams
+from app.schemas import BlockCreate, BlockMemberUser, BlockUpdate, PageParams
 from app.services import BlockService
-from tests.factories import make_block, make_club, make_membership
+from tests.factories import make_block, make_club, make_membership, make_user
 
 SEPT = datetime(2026, 9, 1, tzinfo=UTC)
 NOV = datetime(2026, 11, 1, tzinfo=UTC)
@@ -87,4 +87,37 @@ async def test_list_newest_first(service, db_session) -> None:
 
     page = await service.list_page(club.id, PageParams())
 
-    assert [block.title for block in page.items] == ["Новый", "Старый"]
+    assert [summary.block.title for summary in page.items] == ["Новый", "Старый"]
+
+
+async def test_list_counts_members_per_block(service, db_session) -> None:
+    club = await make_club(db_session)
+    full = await make_block(db_session, club, starts_at=NOV)
+    await make_block(db_session, club, starts_at=SEPT)
+    await make_membership(db_session, full)
+    await make_membership(db_session, full)
+
+    page = await service.list_page(club.id, PageParams())
+
+    assert [summary.members_count for summary in page.items] == [2, 0]
+
+
+async def test_members_show_linked_bot_users(service, db_session) -> None:
+    block = await make_block(db_session, await make_club(db_session))
+    await make_membership(db_session, block, vk_id=502)
+    await make_membership(db_session, block, vk_id=501)
+    user = await make_user(db_session, vk_id=501, full_name="Ученик Тестов", tg_username="pupil")
+    other_block = await make_block(db_session, await make_club(db_session))
+    await make_membership(db_session, other_block, vk_id=503)
+
+    page = await service.list_members(block.id, PageParams())
+
+    assert page.total == 2
+    assert [member.vk_id for member in page.items] == [501, 502]
+    assert page.items[0].user == BlockMemberUser(id=user.id, full_name="Ученик Тестов", tg_username="pupil")
+    assert page.items[1].user is None
+
+
+async def test_members_of_unknown_block(service) -> None:
+    with pytest.raises(BlockNotFoundError):
+        await service.list_members(999_999, PageParams())

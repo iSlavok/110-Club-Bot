@@ -33,9 +33,11 @@ import type {
   ClubStatsResponse,
   ClubUpdate,
   ErrorResponse,
+  ListBlockMembersParams,
   ListBlocksParams,
   ListClubsParams,
-  PageBlockResponse,
+  PageBlockListItemResponse,
+  PageBlockMemberResponse,
   PageClubResponse,
   ValidationErrorResponse,
 } from '../model';
@@ -828,8 +830,8 @@ export const listBlocks = async (
   clubId: number,
   params?: ListBlocksParams,
   options?: Parameters<typeof apiFetch>[1],
-): Promise<PageBlockResponse> => {
-  return apiFetch<PageBlockResponse>(getListBlocksUrl(clubId, params), {
+): Promise<PageBlockListItemResponse> => {
+  return apiFetch<PageBlockListItemResponse>(getListBlocksUrl(clubId, params), {
     ...options,
     method: 'GET',
   });
@@ -1221,6 +1223,335 @@ export const useCreateBlock = <
 > => {
   return useMutation(getCreateBlockMutationOptions(options), queryClient);
 };
+export const getListBlockMembersUrl = (blockId: number, params?: ListBlockMembersParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/blocks/${blockId}/members?${stringifiedParams}`
+    : `/api/v1/blocks/${blockId}/members`;
+};
+
+/**
+ * @summary List Block Members
+ */
+export const listBlockMembers = async (
+  blockId: number,
+  params?: ListBlockMembersParams,
+  options?: Parameters<typeof apiFetch>[1],
+): Promise<PageBlockMemberResponse> => {
+  return apiFetch<PageBlockMemberResponse>(getListBlockMembersUrl(blockId, params), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getListBlockMembersInfiniteQueryKey = (
+  blockId: number,
+  params?: ListBlockMembersParams,
+) => {
+  return ['infinite', `/api/v1/blocks/${blockId}/members`, ...(params ? [params] : [])] as const;
+};
+
+export const getListBlockMembersQueryKey = (blockId: number, params?: ListBlockMembersParams) => {
+  return [`/api/v1/blocks/${blockId}/members`, ...(params ? [params] : [])] as const;
+};
+
+export const getListBlockMembersInfiniteQueryOptions = <
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof listBlockMembers>>,
+    ListBlockMembersParams['page']
+  >,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  params?: ListBlockMembersParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listBlockMembers>>,
+        TError,
+        TData,
+        QueryKey,
+        ListBlockMembersParams['page']
+      >
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListBlockMembersInfiniteQueryKey(blockId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBlockMembers>>,
+    QueryKey,
+    ListBlockMembersParams['page']
+  > = ({ signal, pageParam }) =>
+    listBlockMembers(
+      blockId,
+      { ...params, page: pageParam ?? params?.['page'] },
+      { signal, ...requestOptions },
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: blockId !== null && blockId !== undefined,
+    ...queryOptions,
+  } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof listBlockMembers>>,
+    TError,
+    TData,
+    QueryKey,
+    ListBlockMembersParams['page']
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type ListBlockMembersInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBlockMembers>>
+>;
+export type ListBlockMembersInfiniteQueryError = ErrorType<ValidationErrorResponse | ErrorResponse>;
+
+export function useListBlockMembersInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof listBlockMembers>>,
+    ListBlockMembersParams['page']
+  >,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  params: undefined | ListBlockMembersParams,
+  options: {
+    query: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listBlockMembers>>,
+        TError,
+        TData,
+        QueryKey,
+        ListBlockMembersParams['page']
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listBlockMembers>>,
+          TError,
+          Awaited<ReturnType<typeof listBlockMembers>>,
+          QueryKey
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useListBlockMembersInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof listBlockMembers>>,
+    ListBlockMembersParams['page']
+  >,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  params?: ListBlockMembersParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listBlockMembers>>,
+        TError,
+        TData,
+        QueryKey,
+        ListBlockMembersParams['page']
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listBlockMembers>>,
+          TError,
+          Awaited<ReturnType<typeof listBlockMembers>>,
+          QueryKey
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useListBlockMembersInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof listBlockMembers>>,
+    ListBlockMembersParams['page']
+  >,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  params?: ListBlockMembersParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listBlockMembers>>,
+        TError,
+        TData,
+        QueryKey,
+        ListBlockMembersParams['page']
+      >
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary List Block Members
+ */
+
+export function useListBlockMembersInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof listBlockMembers>>,
+    ListBlockMembersParams['page']
+  >,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  params?: ListBlockMembersParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listBlockMembers>>,
+        TError,
+        TData,
+        QueryKey,
+        ListBlockMembersParams['page']
+      >
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListBlockMembersInfiniteQueryOptions(blockId, params, options);
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as UseInfiniteQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+export const getListBlockMembersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBlockMembers>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  params?: ListBlockMembersParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listBlockMembers>>, TError, TData>>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListBlockMembersQueryKey(blockId, params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listBlockMembers>>> = ({ signal }) =>
+    listBlockMembers(blockId, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: blockId !== null && blockId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof listBlockMembers>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+};
+
+export type ListBlockMembersQueryResult = NonNullable<Awaited<ReturnType<typeof listBlockMembers>>>;
+export type ListBlockMembersQueryError = ErrorType<ValidationErrorResponse | ErrorResponse>;
+
+export function useListBlockMembers<
+  TData = Awaited<ReturnType<typeof listBlockMembers>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  params: undefined | ListBlockMembersParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listBlockMembers>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listBlockMembers>>,
+          TError,
+          Awaited<ReturnType<typeof listBlockMembers>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useListBlockMembers<
+  TData = Awaited<ReturnType<typeof listBlockMembers>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  params?: ListBlockMembersParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listBlockMembers>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listBlockMembers>>,
+          TError,
+          Awaited<ReturnType<typeof listBlockMembers>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useListBlockMembers<
+  TData = Awaited<ReturnType<typeof listBlockMembers>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  params?: ListBlockMembersParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listBlockMembers>>, TError, TData>>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary List Block Members
+ */
+
+export function useListBlockMembers<
+  TData = Awaited<ReturnType<typeof listBlockMembers>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  params?: ListBlockMembersParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listBlockMembers>>, TError, TData>>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListBlockMembersQueryOptions(blockId, params, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
 export const getUpdateBlockUrl = (blockId: number) => {
   return `/api/v1/blocks/${blockId}`;
 };

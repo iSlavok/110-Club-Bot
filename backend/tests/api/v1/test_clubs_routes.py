@@ -45,6 +45,7 @@ async def test_club_and_block_flow(api_client, login_as, manager) -> None:
     assert block.status_code == 201
     assert block.json()["starts_at"] == "2026-08-31T21:00:00Z"
     assert blocks.json()["total_items"] == 1
+    assert blocks.json()["items"][0]["members_count"] == 0
     assert deleted.status_code == 204
 
 
@@ -120,3 +121,30 @@ async def test_stats_of_unknown_club_is_404(api_client, login_as, manager) -> No
 
     assert response.status_code == 404
     assert response.json()["code"] == "CLUB_NOT_FOUND"
+
+
+async def test_block_members_need_users_view(api_client, login_as, db_session, manager) -> None:
+    block = await make_block(db_session, await make_club(db_session))
+    await make_membership(db_session, block, vk_id=501)
+    await make_user(db_session, vk_id=501, full_name="Ученик Тестов", tg_username=None)
+
+    await login_as(manager)
+    denied = await api_client.get(f"/api/v1/blocks/{block.id}/members")
+    await login_as(await make_admin_user(db_session, await make_role(db_session, P.USERS_VIEW)))
+    allowed = await api_client.get(f"/api/v1/blocks/{block.id}/members")
+
+    assert denied.status_code == 403
+    assert allowed.status_code == 200
+    item = allowed.json()["items"][0]
+    assert item["vk_id"] == 501
+    assert item["user"]["full_name"] == "Ученик Тестов"
+    assert item["user"]["tg_username"] is None
+
+
+async def test_members_of_unknown_block_is_404(api_client, login_as, db_session) -> None:
+    await login_as(await make_admin_user(db_session, await make_role(db_session, P.USERS_VIEW)))
+
+    response = await api_client.get("/api/v1/blocks/999999/members")
+
+    assert response.status_code == 404
+    assert response.json()["code"] == "BLOCK_NOT_FOUND"

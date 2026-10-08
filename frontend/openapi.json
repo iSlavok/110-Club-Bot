@@ -1079,7 +1079,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page_BlockResponse_"
+                  "$ref": "#/components/schemas/Page_BlockListItemResponse_"
                 }
               }
             }
@@ -1147,6 +1147,93 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BlockResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/blocks/{block_id}/members": {
+      "get": {
+        "tags": [
+          "clubs"
+        ],
+        "summary": "List Block Members",
+        "operationId": "list_block_members",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Block Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 46116860184273879,
+              "minimum": 1,
+              "description": "Page number, starting from 1",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number, starting from 1"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 50,
+              "title": "Per Page"
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_BlockMemberResponse_"
                 }
               }
             }
@@ -1839,6 +1926,117 @@
         ],
         "title": "BlockCreate"
       },
+      "BlockListItemResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Block id"
+          },
+          "club_id": {
+            "type": "integer",
+            "title": "Club Id",
+            "description": "Club the block belongs to"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Block name shown to admins"
+          },
+          "sheet_column_title": {
+            "type": "string",
+            "title": "Sheet Column Title",
+            "description": "Header of the sheet column with this block's members"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At",
+            "description": "Block start, UTC"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ends At",
+            "description": "Block end, UTC"
+          },
+          "members_count": {
+            "type": "integer",
+            "title": "Members Count",
+            "description": "Members of the block from the sheet, including those awaiting removal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "club_id",
+          "title",
+          "sheet_column_title",
+          "starts_at",
+          "ends_at",
+          "members_count"
+        ],
+        "title": "BlockListItemResponse"
+      },
+      "BlockMemberResponse": {
+        "properties": {
+          "vk_id": {
+            "type": "integer",
+            "title": "Vk Id",
+            "description": "VK id from the sheet"
+          },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlockMemberUserResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Bot user who linked this VK profile, if any"
+          }
+        },
+        "type": "object",
+        "required": [
+          "vk_id",
+          "user"
+        ],
+        "title": "BlockMemberResponse"
+      },
+      "BlockMemberUserResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "User id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name",
+            "description": "Telegram display name"
+          },
+          "tg_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tg Username",
+            "description": "Telegram username without @"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "full_name",
+          "tg_username"
+        ],
+        "title": "BlockMemberUserResponse"
+      },
       "BlockResponse": {
         "properties": {
           "id": {
@@ -2322,11 +2520,11 @@
         ],
         "title": "Page[AdminUserResponse]"
       },
-      "Page_BlockResponse_": {
+      "Page_BlockListItemResponse_": {
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/BlockResponse"
+              "$ref": "#/components/schemas/BlockListItemResponse"
             },
             "type": "array",
             "title": "Items",
@@ -2362,7 +2560,49 @@
           "total_items",
           "total_pages"
         ],
-        "title": "Page[BlockResponse]"
+        "title": "Page[BlockListItemResponse]"
+      },
+      "Page_BlockMemberResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BlockMemberResponse"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Items of the current page"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number, starting from 1"
+          },
+          "per_page": {
+            "type": "integer",
+            "title": "Per Page",
+            "description": "Requested page size"
+          },
+          "total_items": {
+            "type": "integer",
+            "title": "Total Items",
+            "description": "Total number of items matching the query"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages",
+            "description": "Total number of pages",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "per_page",
+          "total_items",
+          "total_pages"
+        ],
+        "title": "Page[BlockMemberResponse]"
       },
       "Page_ClubResponse_": {
         "properties": {
