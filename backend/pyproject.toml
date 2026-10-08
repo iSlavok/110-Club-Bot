@@ -39,6 +39,10 @@ target-version = "py313"
 output-format = "concise"
 fix = false
 
+# Queries are hand-formatted as one chained call per line (see CLAUDE.md); the formatter would re-join them.
+[tool.ruff.format]
+exclude = ["app/repositories/*", "app/queries/*"]
+
 [tool.ruff.lint]
 select = [
     "E", "F", "W", "B", "UP", "I", "SIM", "C4", "RUF", "ANN", "N", "S", "T", "Q", "A", "R", "PL", "ISC",

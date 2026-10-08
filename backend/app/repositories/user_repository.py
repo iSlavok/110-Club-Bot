@@ -11,7 +11,10 @@ class UserRepository(BaseRepository[User]):
         super().__init__(session, User)
 
     async def get_by_tg_id(self, tg_id: int) -> User | None:
-        statement = select(User).where(User.tg_id == tg_id)
+        statement = (
+            select(User)
+            .where(User.tg_id == tg_id)
+        )
         return await self._session.scalar(statement)
 
     async def upsert_by_tg_id(self, *, tg_id: int, tg_username: str | None, full_name: str) -> User:
