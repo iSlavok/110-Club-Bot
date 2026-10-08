@@ -5,9 +5,31 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enums import Permission
-from app.models import AdminSession, AdminUser, Block, Club, LoginCode, Membership, Role, User
+from app.models import (
+    AdminSession,
+    AdminUser,
+    AppSettings,
+    Block,
+    Club,
+    LoginCode,
+    Membership,
+    Role,
+    User,
+    VkAuthRequest,
+)
+from app.models.app_settings import APP_SETTINGS_ID
 
 _ids = count(1)
+
+
+# The only settings row comes from the migration, so tests change it instead of creating one.
+async def set_app_settings(session: AsyncSession, **values: Any) -> AppSettings:
+    settings = await session.get(AppSettings, APP_SETTINGS_ID)
+    assert settings is not None, "app_settings row is created by the migration"
+    for name, value in values.items():
+        setattr(settings, name, value)
+    await session.flush()
+    return settings
 
 
 async def make_user(session: AsyncSession, **overrides: Any) -> User:
@@ -96,3 +118,19 @@ async def make_login_code(session: AsyncSession, admin: AdminUser, **overrides: 
     session.add(login_code)
     await session.flush()
     return login_code
+
+
+async def make_vk_auth_request(session: AsyncSession, user: User, **overrides: Any) -> VkAuthRequest:
+    n = next(_ids)
+    request = VkAuthRequest(
+        **{
+            "state_hash": f"{n:064x}",
+            "user_id": user.id,
+            "code_verifier": f"verifier-{n}",
+            "expires_at": datetime(2026, 10, 1, 9, 10, tzinfo=UTC),
+            **overrides,
+        },
+    )
+    session.add(request)
+    await session.flush()
+    return request
