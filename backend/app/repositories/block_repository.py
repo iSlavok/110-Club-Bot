@@ -35,6 +35,15 @@ class BlockRepository(BaseRepository[Block]):
         )
         return await self._session.scalar(statement)
 
+    async def list_for_club(self, club_id: int) -> list[Block]:
+        statement = (
+            select(Block)
+            .where(Block.club_id == club_id)
+            .order_by(Block.starts_at, Block.id)
+        )
+        blocks = await self._session.scalars(statement)
+        return list(blocks)
+
     async def list_page_for_club(self, *, club_id: int, limit: int, offset: int) -> PageResult[Block]:
         conditions = [Block.club_id == club_id]
 
