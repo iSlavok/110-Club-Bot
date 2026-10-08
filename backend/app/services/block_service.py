@@ -1,5 +1,3 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.exceptions import (
     BlockColumnTakenError,
     BlockHasMembersError,
@@ -16,12 +14,10 @@ from app.schemas import BlockCreate, BlockDTO, BlockUpdate, PageParams, Paginate
 class BlockService:
     def __init__(
         self,
-        session: AsyncSession,
         block_repository: BlockRepository,
         club_repository: ClubRepository,
         membership_repository: MembershipRepository,
     ) -> None:
-        self._session = session
         self._block_repository = block_repository
         self._club_repository = club_repository
         self._membership_repository = membership_repository
@@ -46,7 +42,7 @@ class BlockService:
             ends_at=data.ends_at,
         )
         self._block_repository.add(block)
-        await self._session.commit()
+        await self._block_repository.flush()
         return BlockDTO.from_orm_obj(block)
 
     async def update(self, block_id: int, patch: BlockUpdate) -> BlockDTO:
@@ -63,7 +59,7 @@ class BlockService:
         block.sheet_column_title = patch.sheet_column_title.apply(block.sheet_column_title)
         block.starts_at = starts_at
         block.ends_at = ends_at
-        await self._session.commit()
+        await self._block_repository.flush()
         return BlockDTO.from_orm_obj(block)
 
     async def delete(self, block_id: int) -> None:
@@ -71,7 +67,7 @@ class BlockService:
         if await self._membership_repository.exists_for_block(block.id):
             raise BlockHasMembersError
         await self._block_repository.delete(block)
-        await self._session.commit()
+        await self._block_repository.flush()
 
     async def _get(self, block_id: int) -> Block:
         block = await self._block_repository.get_by_id(block_id)

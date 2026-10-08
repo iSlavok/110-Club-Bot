@@ -1,12 +1,9 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.repositories import UserRepository
 from app.schemas import PageParams, Paginated, TelegramProfile, UserDTO
 
 
 class UserService:
-    def __init__(self, session: AsyncSession, user_repository: UserRepository) -> None:
-        self._session = session
+    def __init__(self, user_repository: UserRepository) -> None:
         self._user_repository = user_repository
 
     async def register(self, profile: TelegramProfile) -> UserDTO:
@@ -15,7 +12,6 @@ class UserService:
             tg_username=profile.tg_username,
             full_name=profile.full_name,
         )
-        await self._session.commit()
         return UserDTO.from_orm_obj(user)
 
     async def search_page(self, query: str | None, page: PageParams) -> Paginated[UserDTO]:

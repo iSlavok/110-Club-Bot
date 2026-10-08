@@ -1,5 +1,3 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.enums import Permission, PermissionGroup, known_permissions
 from app.exceptions import EmptyUpdateError, RoleInUseError, RoleNotFoundError, RoleTitleTakenError
 from app.models import Role
@@ -21,11 +19,9 @@ PERMISSION_CATALOG = (
 class RoleService:
     def __init__(
         self,
-        session: AsyncSession,
         role_repository: RoleRepository,
         admin_user_repository: AdminUserRepository,
     ) -> None:
-        self._session = session
         self._role_repository = role_repository
         self._admin_user_repository = admin_user_repository
 
@@ -42,7 +38,7 @@ class RoleService:
         await self._ensure_title_free(data.title)
         role = Role(title=data.title, permissions=sorted(set(data.permissions)))
         self._role_repository.add(role)
-        await self._session.commit()
+        await self._role_repository.flush()
         return RoleDTO.from_orm_obj(role)
 
     async def update(self, actor: AdminPrincipal, role_id: int, patch: RoleUpdate) -> RoleDTO:
@@ -55,7 +51,7 @@ class RoleService:
             await self._ensure_title_free(patch.title.apply(role.title))
         role.title = patch.title.apply(role.title)
         role.permissions = sorted(new_permissions)
-        await self._session.commit()
+        await self._role_repository.flush()
         return RoleDTO.from_orm_obj(role)
 
     async def delete(self, actor: AdminPrincipal, role_id: int) -> None:
@@ -64,7 +60,7 @@ class RoleService:
         if await self._admin_user_repository.exists_with_role(role.id):
             raise RoleInUseError
         await self._role_repository.delete(role)
-        await self._session.commit()
+        await self._role_repository.flush()
 
     async def _get(self, role_id: int) -> Role:
         role = await self._role_repository.get_by_id(role_id)

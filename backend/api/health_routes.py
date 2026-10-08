@@ -1,11 +1,12 @@
-from dishka.integrations.fastapi import DishkaRoute, FromDishka
+from dishka.integrations.fastapi import FromDishka
 from fastapi import APIRouter, Response, status
 
+from api.core.routing import UnitOfWorkRoute
 from api.schemas import HealthResponse
 from app.enums import HealthStatus
 from app.services import HealthService
 
-router = APIRouter(route_class=DishkaRoute, include_in_schema=False)
+router = APIRouter(route_class=UnitOfWorkRoute, include_in_schema=False)
 
 
 @router.get("/livez", response_model_exclude_none=True)

@@ -1,7 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
 from aiogram import Bot
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clients import LoginThrottle
 from app.config import AuthSettings, BotSettings
@@ -27,7 +26,6 @@ class LoginService:
     def __init__(
         self,
         *,
-        session: AsyncSession,
         admin_user_repository: AdminUserRepository,
         login_code_repository: LoginCodeRepository,
         access_resolver: AdminAccessResolver,
@@ -38,7 +36,6 @@ class LoginService:
         bot_settings: BotSettings,
         bot: Bot,
     ) -> None:
-        self._session = session
         self._admin_user_repository = admin_user_repository
         self._login_code_repository = login_code_repository
         self._access_resolver = access_resolver
@@ -64,7 +61,7 @@ class LoginService:
         self._login_code_repository.add(
             LoginCode(code_hash=hash_secret(code), admin_user_id=admin.id, expires_at=expires_at),
         )
-        await self._session.commit()
+        await self._login_code_repository.flush()
         return IssuedLoginCode(code=code, expires_at=expires_at)
 
     async def login_with_code(self, code: str, client_key: str) -> SessionGrant:

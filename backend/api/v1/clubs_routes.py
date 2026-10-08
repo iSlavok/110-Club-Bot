@@ -1,16 +1,17 @@
 from typing import Annotated
 
-from dishka.integrations.fastapi import DishkaRoute, FromDishka
+from dishka.integrations.fastapi import FromDishka
 from fastapi import APIRouter, Query, status
 
 from api.core.auth import require
+from api.core.routing import UnitOfWorkRoute
 from api.schemas import Page
 from api.schemas.club_schemas import BlockResponse, ClubResponse
 from app.enums import Permission
 from app.schemas import BlockCreate, BlockUpdate, ClubCreate, ClubUpdate, PageParams
 from app.services import BlockService, ClubService
 
-router = APIRouter(tags=["clubs"], route_class=DishkaRoute)
+router = APIRouter(tags=["clubs"], route_class=UnitOfWorkRoute)
 
 
 @router.get("/clubs", dependencies=[require(Permission.CLUBS_VIEW)])

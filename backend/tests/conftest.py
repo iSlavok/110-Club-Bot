@@ -8,7 +8,7 @@ from alembic import command
 from alembic.config import Config
 from dishka import AsyncContainer, make_async_container
 from sqlalchemy import Connection, text
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from app.ioc import QueriesProvider, RepositoriesProvider, ServicesProvider
@@ -35,6 +35,14 @@ async def engine() -> AsyncIterator[AsyncEngine]:
         await connection.run_sync(_migrate)
     yield engine
     await engine.dispose()
+
+
+@pytest.fixture
+async def connection(engine: AsyncEngine) -> AsyncIterator[AsyncConnection]:
+    async with engine.connect() as connection:
+        transaction = await connection.begin()
+        yield connection
+        await transaction.rollback()
 
 
 @pytest.fixture

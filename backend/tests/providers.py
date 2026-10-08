@@ -6,10 +6,10 @@ from aiogram.types import User
 from dishka import Provider, Scope, provide
 from pydantic import SecretStr
 from redis.asyncio import Redis
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, async_sessionmaker
 
 from app.clients import LoginThrottle
-from app.config import AuthSettings, BotSettings
+from app.config import AuthSettings, BotSettings, DatabaseSettings
 from app.utils import Clock
 from tests.fakes import FakeLoginThrottle, FrozenClock
 
@@ -27,6 +27,26 @@ class TestDatabaseProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def session(self) -> AsyncSession:
         return self._session
+
+
+# Lets the real DatabaseProvider commit and roll back: "commit" releases a savepoint of the test's outer transaction.
+class ConnectionSessionmakerProvider(Provider):
+    def __init__(self, connection: AsyncConnection) -> None:
+        super().__init__()
+        self._connection = connection
+
+    # The engine factory stays in the graph and needs settings, but is never built.
+    @provide(scope=Scope.APP)
+    def settings(self) -> DatabaseSettings:
+        return DatabaseSettings(name="unused", user="unused", password=SecretStr("unused"))
+
+    @provide(scope=Scope.APP)
+    def sessionmaker(self) -> async_sessionmaker[AsyncSession]:
+        return async_sessionmaker(
+            bind=self._connection,
+            expire_on_commit=False,
+            join_transaction_mode="create_savepoint",
+        )
 
 
 class TestInfraProvider(Provider):

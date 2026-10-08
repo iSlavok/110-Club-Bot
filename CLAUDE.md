@@ -80,7 +80,7 @@ backend/
     models/       ORM, одна таблица — один файл
     repositories/ один репозиторий на модель
     queries/      read-агрегации по нескольким моделям (+ rows/)
-    services/     use-cases, бизнес-логика, владеют транзакцией
+    services/     use-cases, бизнес-логика; не коммитят — транзакция на весь запрос
     schemas/      pydantic: DTO моделей, команды (XCreate / XUpdate) и прочее, что сервисы принимают и отдают
     clients/      внешние API: Google Sheets, VK, хранилище файлов
     exceptions/   доменные исключения
@@ -129,7 +129,10 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 ### Services
 
 - Зависимости (сессия, репозитории, queries, клиенты, `Bot`) — через конструктор. Создаёт контейнер, сервис сам ничего не создаёт.
-- **Сервис владеет транзакцией**: use-case заканчивается `await self._session.commit()`. Роуты, хендлеры, задачи никогда не коммитят и не получают `AsyncSession`.
+- **Транзакция — одна на действие, коммитит DI.** Один request scope (HTTP-запрос, апдейт бота, запуск задачи) = одна транзакция: `DatabaseProvider` коммитит при выходе из scope без исключения и откатывает при исключении. `commit()` не пишет никто: ни сервисы, ни роуты, ни хендлеры, ни задачи — поэтому сервисы свободно вызывают друг друга в одном действии. Роуты, хендлеры и задачи `AsyncSession` не получают.
+- Сервис делает `await self._x_repository.flush()`, когда результат записи нужен дальше в том же действии: `id` и серверные значения для DTO, удаление, которое сразу проверяют, запись, которую нужно гарантировать до внешнего эффекта (код входа до отправки в бот).
+- Уникальность и существование — SELECT'ом в сервисе до записи (`get_by_title` → `ClubTitleTakenError`). Ограничение в БД остаётся страховкой: при гонке двух запросов второй получит 500, для админки это приемлемо.
+- Задача над многими элементами открывает свой scope на элемент (`async with container() as scope:`), чтобы ошибка одного не откатила остальные.
 - Наверх — pydantic-модели из `app/schemas/` или примитивы, не ORM. ORM → DTO через classmethod `from_orm_obj` с явным перечислением полей. `model_validate(orm, from_attributes=True)` не используем: неявно обходит связи, прячет, какие поля уходят наверх.
 - `XDTO` — зеркало модели `X`: все колонки, включая `id`, `created_at`, `updated_at`. Кроме служебных, которые ведёт сама БД или которые нельзя выпускать (поисковые `search_text`, хэши токенов). Отбор полей — дело схем ответа API. `XWith<Связь>DTO(XDTO)` — плюс связь, загруженная жадно в репозитории (`AdminUserWithRoleDTO.role`). Суффикс `With` — только для связей, не для подмножества колонок. Классы, которые не отражают таблицу (`AdminPrincipal`, `SessionGrant`, команды `XCreate` / `XUpdate`), суффикс `DTO` не носят.
 - Ошибки — доменные исключения из `app/exceptions/`. Никаких `HTTPException` и ответов aiogram в сервисах.
@@ -137,10 +140,10 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 
 ### DI (dishka)
 
-- `DatabaseProvider`: engine и sessionmaker в `Scope.APP`, сессия в `Scope.REQUEST`. Одна сессия на HTTP-запрос, апдейт бота или запуск задачи. Провайдер на исключении только откатывает, коммит — сервис.
+- `DatabaseProvider`: engine и sessionmaker в `Scope.APP`, сессия в `Scope.REQUEST`. Одна сессия на HTTP-запрос, апдейт бота или запуск задачи; провайдер коммитит её на выходе из scope или откатывает, если scope закрылся исключением (dishka передаёт его в генератор).
 - `RepositoriesProvider`, `QueriesProvider`, `ServicesProvider` — через `provide_all`. Новый класс = одна строка в провайдере. «Сервис не резолвится» почти всегда = не добавили туда.
 - `Settings` в контейнер через `from_context`, `SettingsProvider` раздаёт части (`DatabaseSettings`, `BotSettings`, ...). Зависи от нужной части, не от всего `Settings`. `Bot`, Redis, клиенты — в `Scope.APP`. Ресурсы с закрытием — `yield`-провайдеры.
-- FastAPI: `setup_dishka(container, app)`, `APIRouter(route_class=DishkaRoute)`, параметры `FromDishka[...]`. aiogram: `setup_dishka(container, router=dp, auto_inject=True)`. APScheduler: `inject_job(container, job)` из `worker/` открывает request scope на каждый запуск задачи.
+- FastAPI: `attach_container(app, container)` и `APIRouter(route_class=UnitOfWorkRoute)` из `api/core/routing.py`, параметры `FromDishka[...]`. `setup_dishka` для FastAPI не используем: его middleware открывает scope вокруг всего приложения — доменная ошибка превращается в ответ раньше, чем доходит до `DatabaseProvider` (коммит вместо отката), а коммит случается после отправки ответа. `UnitOfWorkRoute` открывает scope вокруг самого роута (проверяет `tests/api/test_unit_of_work.py`). aiogram: `setup_dishka(container, router=dp, auto_inject=True)`. APScheduler: `inject_job(container, job)` из `worker/` открывает request scope на каждый запуск задачи.
 
 ### API (FastAPI)
 
@@ -161,7 +164,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 - Хендлеры тонкие: разобрать апдейт, вызвать сервис, ответить. Бизнес-логики нет.
 - Тексты для пользователя — в `bot/texts/`, не строками в хендлерах и клавиатурах.
 - Callback data — только классы `CallbackData`, без сырых строк.
-- Порядок outer middlewares важен: ошибки → контейнер → пользователь.
+- Порядок outer middlewares важен: ошибки → контейнер → пользователь. Ошибки снаружи контейнера: перехваченная доменная ошибка должна выйти из request scope исключением, иначе частичные изменения закоммитятся (проверяет `tests/bot/test_dispatcher.py`).
 - Отправка в Telegram — через общий rate limiter. `TelegramForbiddenError` (бот заблокирован) — ожидаемо, не ошибка.
 
 ### Worker
@@ -197,7 +200,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 
 - Общие фикстуры: `db_session`, `container` / `request_container` (тестовый dishka), `clock` (`FrozenClock`) — в `tests/conftest.py`; `api_client` (httpx) и `login_as(admin)` (сессия в cookie клиента) — в `tests/api/conftest.py`. Владелец в тестах — `OWNER_TG_ID` из `tests/providers.py`. Тестовые провайдеры — `tests/providers.py`, фейки — `tests/fakes.py`.
 - Структура: `tests/unit/` (без БД и IO), `tests/integration/` (Postgres), `tests/api/` (httpx `ASGITransport`), `tests/bot/`, `tests/worker/`. Файл теста повторяет путь модуля.
-- Настоящий Postgres, схема через `alembic upgrade head`. Изоляция: транзакция на тест с откатом. `commit()` сервиса в тесте → release savepoint.
+- Настоящий Postgres, схема через `alembic upgrade head`. Изоляция: транзакция на тест с откатом. Тестовая сессия не коммитит: сервисы и проверки работают в одной сессии, поэтому забытый коммит тесты бы не поймали — его делает только `DatabaseProvider` (у него свой тест).
 - Зависимости — из **тестового dishka-контейнера**: прод-провайдеры + тестовая сессия, фейковые клиенты (Google Sheets, VK, хранилище), `AsyncMock(spec=Bot)`, фиксированный `Clock`. Граф руками не собирается.
 - Данные — только фабрики из `tests/factories.py`, голые конструкторы моделей в тестах запрещены. Новая модель → новая фабрика.
 - API-тесты проверяют статус и тело, включая `code`.

@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator, AsyncIterator
 
 from dishka import Provider, Scope, provide
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
@@ -18,7 +18,14 @@ class DatabaseProvider(Provider):
     def sessionmaker(self, engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
         return create_sessionmaker(engine)
 
+    # One request scope = one unit of work: an HTTP request, a bot update or a job run.
+    # dishka sends the scope's exception back into the generator; closing the session rolls back.
     @provide(scope=Scope.REQUEST)
-    async def session(self, sessionmaker: async_sessionmaker[AsyncSession]) -> AsyncIterator[AsyncSession]:
+    async def session(
+        self,
+        sessionmaker: async_sessionmaker[AsyncSession],
+    ) -> AsyncGenerator[AsyncSession, BaseException | None]:
         async with sessionmaker() as session:
-            yield session
+            exception = yield session
+            if exception is None:
+                await session.commit()
