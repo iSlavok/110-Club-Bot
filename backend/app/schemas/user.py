@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Self
 
 from pydantic import BaseModel
@@ -11,12 +12,14 @@ class TelegramProfile(BaseModel):
     full_name: str
 
 
-class UserSchema(BaseModel):
+class UserDTO(BaseModel):
     id: int
     tg_id: int
     tg_username: str | None
     full_name: str
     vk_id: int | None
+    created_at: datetime
+    updated_at: datetime
 
     @classmethod
     def from_orm_obj(cls, user: User) -> Self:
@@ -26,4 +29,6 @@ class UserSchema(BaseModel):
             tg_username=user.tg_username,
             full_name=user.full_name,
             vk_id=user.vk_id,
+            created_at=user.created_at,
+            updated_at=user.updated_at,
         )

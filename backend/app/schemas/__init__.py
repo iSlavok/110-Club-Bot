@@ -1,7 +1,7 @@
 from app.schemas.health import ReadinessReport
 from app.schemas.pagination import MAX_PER_PAGE, PageParams, Paginated
 from app.schemas.patch import Maybe, PatchSchema
-from app.schemas.user import TelegramProfile, UserSchema
+from app.schemas.user import TelegramProfile, UserDTO
 
 __all__ = [
     "MAX_PER_PAGE",
@@ -11,5 +11,5 @@ __all__ = [
     "PatchSchema",
     "ReadinessReport",
     "TelegramProfile",
-    "UserSchema",
+    "UserDTO",
 ]
