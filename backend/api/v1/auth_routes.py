@@ -4,7 +4,7 @@ from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Depends, Request, Response, status
 
 from api.core.auth import SESSION_COOKIE, require, session_cookie
-from api.schemas.auth import AuthConfigResponse, CurrentAdminResponse, LoginCodeRequest
+from api.schemas.auth_schemas import AuthConfigResponse, CurrentAdminResponse, LoginCodeRequest
 from app.config import AuthSettings
 from app.schemas import AdminPrincipal, SessionGrant, TelegramWidgetPayload
 from app.services import AdminSessionService, LoginService

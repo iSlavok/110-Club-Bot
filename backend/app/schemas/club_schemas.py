@@ -5,7 +5,7 @@ from pydantic import AfterValidator, AwareDatetime, BaseModel, Field, StringCons
 
 from app.models import Block, Club
 from app.models.club import CLUB_TEXT_MAX_LEN
-from app.schemas.patch import Maybe, PatchSchema
+from app.schemas.patch_schemas import Maybe, PatchSchema
 
 # Annotated form, not bare AwareDatetime: the bare class loses its tz check when wrapped in Maybe.
 type Moment = Annotated[datetime, AwareDatetime, AfterValidator(lambda value: value.astimezone(UTC))]

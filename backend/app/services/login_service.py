@@ -15,7 +15,7 @@ from app.exceptions import (
 from app.models import AdminUser, LoginCode
 from app.repositories import AdminUserRepository, LoginCodeRepository
 from app.schemas import AuthConfig, IssuedLoginCode, SessionGrant, TelegramProfile, TelegramWidgetPayload
-from app.services.admin_access import AdminAccessResolver
+from app.services.admin_access_resolver import AdminAccessResolver
 from app.services.admin_session_service import AdminSessionService
 from app.utils import Clock, generate_login_code, hash_secret, is_valid_widget_signature
 

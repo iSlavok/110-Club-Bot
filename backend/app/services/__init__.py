@@ -1,4 +1,4 @@
-from app.services.admin_access import AdminAccessResolver
+from app.services.admin_access_resolver import AdminAccessResolver
 from app.services.admin_session_service import AdminSessionService
 from app.services.admin_user_service import AdminUserService
 from app.services.block_service import BlockService

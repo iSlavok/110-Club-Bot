@@ -5,7 +5,7 @@ from fastapi import APIRouter, Query, status
 
 from api.core.auth import require
 from api.schemas import Page
-from api.schemas.clubs import BlockResponse, ClubResponse
+from api.schemas.club_schemas import BlockResponse, ClubResponse
 from app.enums import Permission
 from app.schemas import BlockCreate, BlockUpdate, ClubCreate, ClubUpdate, PageParams
 from app.services import BlockService, ClubService

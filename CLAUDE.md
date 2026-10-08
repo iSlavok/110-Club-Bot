@@ -208,6 +208,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 
 - PEP 695 generics (`class BaseRepository[ModelType: Base]`), аннотации типов везде.
 - `await` не прячем внутри выражения (`X.from_dto(await ...)`, `bool(await ...)`, `[... for x in await ...]`, `total=await ...` в аргументах): результат — в переменную, отдельной строкой преобразование. `return await repo.get(...)` без обёртки — можно.
+- Имя файла компонента слоя — с суффиксом слоя, сущность в единственном числе: `club_repository.py`, `club_service.py`, `dashboard_queries.py`, `dashboard_rows.py`, `club_schemas.py` (и в `app/schemas/`, и в `api/schemas/`), роуты — во множественном: `clubs_routes.py`. Класс-помощник без суффикса слоя — файл по имени класса (`admin_access_resolver.py`). Без суффикса: `models/` (`club.py`), `enums/`, `exceptions/`, бот (`handlers/start.py`, `texts/auth.py`) и технические модули (`database/`, `config/`, `ioc/`, `utils/`, `api/core/`). Тест — `test_<имя модуля>.py`.
 - `__init__.py` — только импорты и `__all__`. Фабрики, роутеры, прочая логика — в отдельных модулях (`router.py`, `container.py`).
 - ruff (line length 120, двойные кавычки, trailing commas), `ruff format`. pyright без ошибок. Версии ruff и pyright в pre-commit, CI и `uv.lock` совпадают.
 - Без `print`: только loguru, плейсхолдеры `{}` вместо f-строк.

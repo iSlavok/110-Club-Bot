@@ -19,7 +19,7 @@ from app.schemas import (
     PageParams,
     Paginated,
 )
-from app.services.admin_access import AdminAccessResolver
+from app.services.admin_access_resolver import AdminAccessResolver
 from app.services.permission_guard import ensure_within_own_permissions
 
 

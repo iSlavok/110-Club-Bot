@@ -4,7 +4,7 @@ from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, status
 
 from api.core.auth import require
-from api.schemas.roles import PermissionResponse, RoleResponse
+from api.schemas.role_schemas import PermissionResponse, RoleResponse
 from app.enums import Permission
 from app.schemas import AdminPrincipal, RoleCreate, RoleUpdate
 from app.services import RoleService
