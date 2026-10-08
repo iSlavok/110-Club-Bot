@@ -5,7 +5,7 @@ from aiogram import Bot
 from redis.asyncio import Redis
 
 from api import create_app, create_server
-from app.config import ApiSettings, Settings, setup_logging
+from app.config import ApiSettings, Settings, SyncSettings, setup_logging
 from app.ioc import create_container
 from bot import create_dispatcher
 from worker import create_scheduler
@@ -19,7 +19,7 @@ async def run() -> None:
         bot = await container.get(Bot)
         dispatcher = create_dispatcher(container, await container.get(Redis))
         server = create_server(create_app(container), await container.get(ApiSettings))
-        scheduler = create_scheduler(container)
+        scheduler = create_scheduler(container, await container.get(SyncSettings))
 
         stop = asyncio.Event()
         loop = asyncio.get_running_loop()

@@ -40,3 +40,16 @@ class ClubRepository(BaseRepository[Club]):
         )
         clubs = await self._session.scalars(statement)
         return PageResult(items=list(clubs), total=total)
+
+    async def list_syncable(self) -> list[Club]:
+        statement = (
+            select(Club)
+            .where(
+                Club.is_active,
+                Club.spreadsheet_id.is_not(None),
+                Club.sheet_name.is_not(None),
+            )
+            .order_by(Club.id)
+        )
+        clubs = await self._session.scalars(statement)
+        return list(clubs)

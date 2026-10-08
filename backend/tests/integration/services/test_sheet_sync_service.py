@@ -1,15 +1,17 @@
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from sqlalchemy import select
 
 from app.clients import SheetsClientError
 from app.enums import SheetIssueKind, SheetSyncStatus
 from app.exceptions import ClubNotFoundError, ClubNotSyncableError, SheetSyncDisabledError
-from app.models import Block
+from app.models import Block, SheetSync
 from app.repositories import MembershipRepository
 from app.schemas import SheetIssue
 from app.services import SheetSyncService
-from tests.factories import make_block, make_club, make_membership
+from app.services.sheet_sync_service import INTERNAL_ERROR_MESSAGE
+from tests.factories import make_block, make_club, make_membership, make_sheet_sync
 from tests.providers import DEFAULT_NOW
 
 SPREADSHEET_ID = "spreadsheet-1"
@@ -157,3 +159,33 @@ async def test_sync_time_comes_from_clock(service, club, sheets_client, clock) -
     sync = await service.sync_club(club.id)
 
     assert sync.started_at == sync.finished_at == datetime(2026, 10, 5, 12, 0, tzinfo=UTC)
+
+
+async def test_syncable_clubs_are_active_with_a_sheet(service, db_session, club) -> None:
+    await make_club(db_session, spreadsheet_id=SPREADSHEET_ID, sheet_name=SHEET_NAME, is_active=False)
+    await make_club(db_session, spreadsheet_id=SPREADSHEET_ID)
+
+    assert await service.list_syncable_club_ids() == [club.id]
+
+
+async def test_nothing_is_syncable_while_disabled(service, club, sheets_client) -> None:
+    sheets_client.is_enabled = False
+
+    assert await service.list_syncable_club_ids() == []
+
+
+async def test_record_internal_error(service, club) -> None:
+    sync = await service.record_internal_error(club.id)
+
+    assert sync.status is SheetSyncStatus.FAILED
+    assert sync.error == INTERNAL_ERROR_MESSAGE
+    assert sync.started_at == DEFAULT_NOW
+
+
+async def test_purge_keeps_last_100_days(service, db_session, club) -> None:
+    await make_sheet_sync(db_session, club, started_at=DEFAULT_NOW - timedelta(days=101))
+    recent = await make_sheet_sync(db_session, club, started_at=DEFAULT_NOW - timedelta(days=99))
+
+    await service.purge_old()
+
+    assert list(await db_session.scalars(select(SheetSync.id))) == [recent.id]
