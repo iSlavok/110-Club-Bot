@@ -68,7 +68,7 @@ Env — `.env` в корне (шаблон `.env.example`). Там только 
 
 ## Backend
 
-Python 3.13, uv, aiogram 3, FastAPI, SQLAlchemy 2 (async, asyncpg), pydantic v2, pydantic-settings, dishka, alembic, APScheduler, loguru.
+Python 3.13, uv, aiogram 3, FastAPI, SQLAlchemy 2 (async, asyncpg), pydantic v2, pydantic-settings, dishka, alembic, APScheduler (+ apscheduler-dishka), loguru.
 
 ### Слои
 
@@ -143,7 +143,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 - `DatabaseProvider`: engine и sessionmaker в `Scope.APP`, сессия в `Scope.REQUEST`. Одна сессия на HTTP-запрос, апдейт бота или запуск задачи; провайдер коммитит её на выходе из scope или откатывает, если scope закрылся исключением (dishka передаёт его в генератор).
 - `RepositoriesProvider`, `QueriesProvider`, `ServicesProvider` — через `provide_all`. Новый класс = одна строка в провайдере. «Сервис не резолвится» почти всегда = не добавили туда.
 - `Settings` в контейнер через `from_context`, `SettingsProvider` раздаёт части (`DatabaseSettings`, `BotSettings`, ...). Зависи от нужной части, не от всего `Settings`. `Bot`, Redis, клиенты — в `Scope.APP`. Ресурсы с закрытием — `yield`-провайдеры.
-- FastAPI: `attach_container(app, container)` и `APIRouter(route_class=UnitOfWorkRoute)` из `api/core/routing.py`, параметры `FromDishka[...]`. `setup_dishka` для FastAPI не используем: его middleware открывает scope вокруг всего приложения — доменная ошибка превращается в ответ раньше, чем доходит до `DatabaseProvider` (коммит вместо отката), а коммит случается после отправки ответа. `UnitOfWorkRoute` открывает scope вокруг самого роута (проверяет `tests/api/test_unit_of_work.py`). aiogram: `setup_dishka(container, router=dp, auto_inject=True)`. APScheduler: `inject_job(container, job)` из `worker/` открывает request scope на каждый запуск задачи.
+- FastAPI: `attach_container(app, container)` и `APIRouter(route_class=UnitOfWorkRoute)` из `api/core/routing.py`, параметры `FromDishka[...]`. `setup_dishka` для FastAPI не используем: его middleware открывает scope вокруг всего приложения — доменная ошибка превращается в ответ раньше, чем доходит до `DatabaseProvider` (коммит вместо отката), а коммит случается после отправки ответа. `UnitOfWorkRoute` открывает scope вокруг самого роута (проверяет `tests/api/test_unit_of_work.py`). aiogram: `setup_dishka(container, router=dp, auto_inject=True)`. APScheduler: `apscheduler-dishka` — `setup_dishka(container=..., scheduler=..., auto_inject=True)` в `create_scheduler`, задачи — обычный `scheduler.add_job(job, trigger)`; на каждый запуск свой request scope, исключение задачи доходит до `DatabaseProvider` (откат).
 
 ### API (FastAPI)
 
