@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enums import Permission
-from app.models import AdminUser, Block, Club, Membership, Role, User
+from app.models import AdminSession, AdminUser, Block, Club, LoginCode, Membership, Role, User
 
 _ids = count(1)
 
@@ -66,3 +66,33 @@ async def make_membership(session: AsyncSession, block: Block, **overrides: Any)
     session.add(membership)
     await session.flush()
     return membership
+
+
+async def make_admin_session(session: AsyncSession, admin: AdminUser, **overrides: Any) -> AdminSession:
+    n = next(_ids)
+    admin_session = AdminSession(
+        **{
+            "token_hash": f"{n:064x}",
+            "admin_user_id": admin.id,
+            "expires_at": datetime(2026, 10, 2, tzinfo=UTC),
+            **overrides,
+        },
+    )
+    session.add(admin_session)
+    await session.flush()
+    return admin_session
+
+
+async def make_login_code(session: AsyncSession, admin: AdminUser, **overrides: Any) -> LoginCode:
+    n = next(_ids)
+    login_code = LoginCode(
+        **{
+            "code_hash": f"{n:064x}",
+            "admin_user_id": admin.id,
+            "expires_at": datetime(2026, 10, 1, 9, 5, tzinfo=UTC),
+            **overrides,
+        },
+    )
+    session.add(login_code)
+    await session.flush()
+    return login_code

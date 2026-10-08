@@ -121,7 +121,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
   )
   ```
 - `app/repositories/` и `app/queries/` исключены из `ruff format` (он склеивает цепочки обратно), формат там держится вручную; `ruff check` работает как обычно.
-- Репозиторий возвращает ORM-объекты, только сервисам. Нужные выше связи грузятся жадно (`selectinload` / `joinedload`) внутри метода. Ленивые связи наверх не отдаются.
+- Репозиторий возвращает ORM-объекты, только сервисам. Нужные выше связи грузятся жадно внутри метода: «многие к одному» (`session.admin_user`, `admin.role`) — `joinedload`, один запрос с JOIN; «один ко многим» — `selectinload`, без размножения строк. Ленивые связи наверх не отдаются.
 - Список страницами — один метод репозитория → `PageResult[Model]` (`items`, `total`). Условия собираются один раз в `conditions`, из них оба запроса: `select(func.count()).select_from(Model).where(*conditions)` и запрос страницы с сортировкой, `limit` / `offset`. Отдельных `count_*` под список не пишем: фильтры разойдутся.
 - Нечёткий поиск — `pg_trgm`: служебная generated-колонка с нормализованным текстом + GIN `gin_trgm_ops`, запрос нормализуется так же (`normalize_search_query`), порог `word_similarity` — явно в запросе, не через `set_limit`.
 - Join/агрегация по нескольким моделям — класс `XQueries(session)`, возвращает dataclass `XRow` из `app/queries/rows/`. Дальше сервиса `XRow` не уходит.

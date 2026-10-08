@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload
 
 from app.database import BaseRepository
 from app.models import AdminUser, LoginCode
@@ -20,7 +20,7 @@ class LoginCodeRepository(BaseRepository[LoginCode]):
                 LoginCode.used_at.is_(None),
                 LoginCode.expires_at > now,
             )
-            .options(selectinload(LoginCode.admin_user).selectinload(AdminUser.role))
+            .options(joinedload(LoginCode.admin_user).joinedload(AdminUser.role))
             .with_for_update(of=LoginCode)
         )
         return await self._session.scalar(statement)
@@ -47,5 +47,17 @@ class LoginCodeRepository(BaseRepository[LoginCode]):
                 LoginCode.expires_at > now,
             )
             .values(expires_at=now)
+        )
+        await self._session.execute(statement)
+
+    async def delete_spent(self, now: datetime) -> None:
+        statement = (
+            delete(LoginCode)
+            .where(
+                or_(
+                    LoginCode.used_at.is_not(None),
+                    LoginCode.expires_at <= now,
+                ),
+            )
         )
         await self._session.execute(statement)

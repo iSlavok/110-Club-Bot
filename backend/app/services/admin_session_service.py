@@ -36,7 +36,6 @@ class AdminSessionService:
 
     async def start(self, principal: AdminPrincipal) -> SessionGrant:
         now = self._clock.now()
-        await self._admin_session_repository.delete_expired_for_admin(admin_user_id=principal.id, now=now)
         token = generate_session_token()
         expires_at = now + timedelta(days=self._settings.session_ttl_days)
         self._admin_session_repository.add(
