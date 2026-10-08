@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Annotated
 
 from pydantic import BaseModel, SecretStr, StringConstraints, field_validator
@@ -84,6 +85,16 @@ class VkSettings(BaseModel):
         return None if value == "" else value
 
 
+class GoogleSettings(BaseModel):
+    credentials_file: Path | None = None
+
+    # An empty GOOGLE_CREDENTIALS_FILE= in .env means "not set", not the current directory.
+    @field_validator("credentials_file", mode="before")
+    @classmethod
+    def _empty_is_none(cls, value: object) -> object:
+        return None if value == "" else value
+
+
 class LogSettings(BaseModel):
     level: str = "INFO"
 
@@ -100,4 +111,5 @@ class Settings(BaseSettings):
     auth: AuthSettings = AuthSettings()
     alerts: AlertsSettings = AlertsSettings()
     vk: VkSettings = VkSettings()
+    google: GoogleSettings = GoogleSettings()
     log: LogSettings = LogSettings()
