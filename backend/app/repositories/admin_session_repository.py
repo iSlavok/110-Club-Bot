@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload
 
 from app.database import BaseRepository
 from app.models import AdminSession, AdminUser
@@ -19,7 +19,7 @@ class AdminSessionRepository(BaseRepository[AdminSession]):
                 AdminSession.token_hash == token_hash,
                 AdminSession.expires_at > now,
             )
-            .options(selectinload(AdminSession.admin_user).selectinload(AdminUser.role))
+            .options(joinedload(AdminSession.admin_user).joinedload(AdminUser.role))
         )
         return await self._session.scalar(statement)
 
@@ -37,12 +37,9 @@ class AdminSessionRepository(BaseRepository[AdminSession]):
         )
         await self._session.execute(statement)
 
-    async def delete_expired_for_admin(self, *, admin_user_id: int, now: datetime) -> None:
+    async def delete_expired(self, now: datetime) -> None:
         statement = (
             delete(AdminSession)
-            .where(
-                AdminSession.admin_user_id == admin_user_id,
-                AdminSession.expires_at <= now,
-            )
+            .where(AdminSession.expires_at <= now)
         )
         await self._session.execute(statement)

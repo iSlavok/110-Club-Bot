@@ -1,6 +1,7 @@
 from app.services.admin_access_resolver import AdminAccessResolver
 from app.services.admin_session_service import AdminSessionService
 from app.services.admin_user_service import AdminUserService
+from app.services.auth_cleanup_service import AuthCleanupService
 from app.services.block_service import BlockService
 from app.services.club_service import ClubService
 from app.services.dashboard_service import DashboardService
@@ -13,6 +14,7 @@ __all__ = [
     "AdminAccessResolver",
     "AdminSessionService",
     "AdminUserService",
+    "AuthCleanupService",
     "BlockService",
     "ClubService",
     "DashboardService",

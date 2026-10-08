@@ -1,6 +1,8 @@
 from datetime import timedelta
 
 import pytest
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
 
 from app.enums import Permission
 from app.exceptions import NotAuthenticatedError
@@ -80,3 +82,22 @@ async def test_ended_session_is_rejected(service, resolver, db_session) -> None:
 
     with pytest.raises(NotAuthenticatedError):
         await service.authenticate(token)
+
+
+async def test_authentication_takes_a_single_query(service, resolver, db_session) -> None:
+    admin = await make_admin_user(db_session, await make_role(db_session, Permission.USERS_VIEW))
+    token = await _start(service, resolver, admin)
+    await db_session.flush()
+    db_session.expunge_all()
+    statements: list[str] = []
+
+    def record(_conn, _cursor, statement, _parameters, _context, _executemany) -> None:
+        statements.append(statement)
+
+    event.listen(Engine, "before_cursor_execute", record)
+    try:
+        await service.authenticate(token)
+    finally:
+        event.remove(Engine, "before_cursor_execute", record)
+
+    assert len(statements) == 1
