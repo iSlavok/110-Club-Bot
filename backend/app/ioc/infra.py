@@ -1,12 +1,13 @@
 from collections.abc import AsyncIterator
 
+import httpx
 from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from dishka import Provider, Scope, from_context, provide
 from redis.asyncio import Redis
 
-from app.clients import LoginThrottle, RedisLoginThrottle
+from app.clients import HttpxVkClient, LoginThrottle, RedisLoginThrottle, VkClient
 from app.config import (
     AlertsSettings,
     ApiSettings,
@@ -20,6 +21,8 @@ from app.config import (
 )
 from app.telegram import AdminAlerts, CommandMenu, RateLimitMiddleware, SystemTimer
 from app.utils import Clock, SystemClock
+
+VK_TIMEOUT_SECONDS = 10
 
 
 class SettingsProvider(Provider):
@@ -89,3 +92,8 @@ class InfraProvider(Provider):
         )
         yield redis
         await redis.aclose()
+
+    @provide
+    async def vk_client(self, settings: VkSettings) -> AsyncIterator[VkClient]:
+        async with httpx.AsyncClient(timeout=VK_TIMEOUT_SECONDS) as http:
+            yield HttpxVkClient(http, settings)
