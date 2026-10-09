@@ -1,22 +1,44 @@
-import { ActionIcon, Button, Group, Table } from '@mantine/core';
+import { ActionIcon, Button, Group, Table, UnstyledButton } from '@mantine/core';
 import { IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useState } from 'react';
 
 import { BlockStatusBadge } from '@/entities/block';
-import { Can } from '@/entities/session';
-import { BlockFormModal, useDeleteBlockConfirm } from '@/features/block';
-import { useListBlocksInfinite, type BlockResponse } from '@/shared/api';
+import { Can, usePermission } from '@/entities/session';
+import { BlockFormModal, BlockMembersModal, useDeleteBlockConfirm } from '@/features/block';
+import {
+  useListBlocksInfinite,
+  type BlockListItemResponse,
+  type BlockResponse,
+} from '@/shared/api';
 import { useClubId } from '@/shared/lib/club-id';
 import { formatDateTime } from '@/shared/lib/dates';
 import { infinitePage, PER_PAGE, useInfinitePage } from '@/shared/lib/infinite-page';
 import { InfiniteList } from '@/shared/ui/InfiniteList';
 import { PageHeader } from '@/shared/ui/PageHeader';
 
+function MembersCount({ block, onOpen }: { block: BlockListItemResponse; onOpen: () => void }) {
+  const canViewMembers = usePermission('users.view');
+  if (!canViewMembers) {
+    return <>{block.members_count}</>;
+  }
+  return (
+    <UnstyledButton
+      c="blue"
+      td="underline"
+      aria-label={`Участники блока ${block.title}`}
+      onClick={onOpen}
+    >
+      {block.members_count}
+    </UnstyledButton>
+  );
+}
+
 export function ClubBlocksPage() {
   const clubId = useClubId();
   const query = useListBlocksInfinite(clubId, { per_page: PER_PAGE }, infinitePage);
   const blocks = useInfinitePage(query);
   const [editing, setEditing] = useState<BlockResponse | 'new' | null>(null);
+  const [viewingMembers, setViewingMembers] = useState<BlockResponse | null>(null);
   const confirmDelete = useDeleteBlockConfirm();
 
   return (
@@ -47,6 +69,7 @@ export function ClubBlocksPage() {
                   <Table.Th>Начало (МСК)</Table.Th>
                   <Table.Th>Конец (МСК)</Table.Th>
                   <Table.Th>Статус</Table.Th>
+                  <Table.Th>Участников</Table.Th>
                   <Table.Th />
                 </Table.Tr>
               </Table.Thead>
@@ -59,6 +82,14 @@ export function ClubBlocksPage() {
                     <Table.Td>{formatDateTime(block.ends_at)}</Table.Td>
                     <Table.Td>
                       <BlockStatusBadge block={block} />
+                    </Table.Td>
+                    <Table.Td>
+                      <MembersCount
+                        block={block}
+                        onOpen={() => {
+                          setViewingMembers(block);
+                        }}
+                      />
                     </Table.Td>
                     <Table.Td>
                       <Can permission="blocks.edit">
@@ -92,6 +123,16 @@ export function ClubBlocksPage() {
           </Table.ScrollContainer>
         )}
       </InfiniteList>
+      {viewingMembers && (
+        <BlockMembersModal
+          opened
+          key={viewingMembers.id}
+          block={viewingMembers}
+          onClose={() => {
+            setViewingMembers(null);
+          }}
+        />
+      )}
       {editing && (
         <BlockFormModal
           opened
