@@ -961,6 +961,65 @@
         }
       }
     },
+    "/api/v1/clubs/{club_id}/stats": {
+      "get": {
+        "tags": [
+          "clubs"
+        ],
+        "summary": "Get Club Stats",
+        "operationId": "get_club_stats",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "club_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Club Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubStatsResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/clubs/{club_id}/blocks": {
       "get": {
         "tags": [
@@ -1749,6 +1808,26 @@
         ],
         "title": "ClubResponse"
       },
+      "ClubStatsResponse": {
+        "properties": {
+          "current_block": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CurrentBlockStatsResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Block running now, null between blocks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "current_block"
+        ],
+        "title": "ClubStatsResponse"
+      },
       "ClubText": {
         "type": "string",
         "maxLength": 100,
@@ -1861,6 +1940,31 @@
           "permissions"
         ],
         "title": "CurrentAdminResponse"
+      },
+      "CurrentBlockStatsResponse": {
+        "properties": {
+          "block": {
+            "$ref": "#/components/schemas/BlockResponse",
+            "description": "Block running now"
+          },
+          "members": {
+            "type": "integer",
+            "title": "Members",
+            "description": "Students of the block from the sheet"
+          },
+          "members_with_tg": {
+            "type": "integer",
+            "title": "Members With Tg",
+            "description": "Of them, linked to a Telegram user of the bot"
+          }
+        },
+        "type": "object",
+        "required": [
+          "block",
+          "members",
+          "members_with_tg"
+        ],
+        "title": "CurrentBlockStatsResponse"
       },
       "DashboardStatsResponse": {
         "properties": {

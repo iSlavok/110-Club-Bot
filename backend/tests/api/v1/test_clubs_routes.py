@@ -1,7 +1,9 @@
+from datetime import UTC, datetime
+
 import pytest
 
 from app.enums import Permission
-from tests.factories import make_admin_user, make_role
+from tests.factories import make_admin_user, make_block, make_club, make_membership, make_role, make_user
 
 P = Permission
 
@@ -68,6 +70,53 @@ async def test_unknown_club_is_404(api_client, login_as, manager) -> None:
     await login_as(manager)
 
     response = await api_client.get("/api/v1/clubs/999999")
+
+    assert response.status_code == 404
+    assert response.json()["code"] == "CLUB_NOT_FOUND"
+
+
+async def test_club_stats(api_client, login_as, db_session) -> None:
+    await login_as(await make_admin_user(db_session, await make_role(db_session, P.CLUBS_VIEW)))
+    club = await make_club(db_session)
+    block = await make_block(db_session, club, title="Блок 5", starts_at=datetime(2026, 9, 1, tzinfo=UTC))
+    membership = await make_membership(db_session, block)
+    await make_membership(db_session, block)
+    await make_user(db_session, vk_id=membership.vk_id)
+
+    response = await api_client.get(f"/api/v1/clubs/{club.id}/stats")
+
+    assert response.status_code == 200
+    current_block = response.json()["current_block"]
+    assert current_block["block"]["id"] == block.id
+    assert current_block["block"]["title"] == "Блок 5"
+    assert current_block["members"] == 2
+    assert current_block["members_with_tg"] == 1
+
+
+async def test_club_stats_between_blocks(api_client, login_as, manager, db_session) -> None:
+    await login_as(manager)
+    club = await make_club(db_session)
+
+    response = await api_client.get(f"/api/v1/clubs/{club.id}/stats")
+
+    assert response.status_code == 200
+    assert response.json() == {"current_block": None}
+
+
+async def test_club_stats_require_clubs_view(api_client, login_as, db_session) -> None:
+    await login_as(await make_admin_user(db_session, await make_role(db_session)))
+    club = await make_club(db_session)
+
+    response = await api_client.get(f"/api/v1/clubs/{club.id}/stats")
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "PERMISSION_DENIED"
+
+
+async def test_stats_of_unknown_club_is_404(api_client, login_as, manager) -> None:
+    await login_as(manager)
+
+    response = await api_client.get("/api/v1/clubs/999999/stats")
 
     assert response.status_code == 404
     assert response.json()["code"] == "CLUB_NOT_FOUND"

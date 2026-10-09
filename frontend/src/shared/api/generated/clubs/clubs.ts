@@ -26,6 +26,7 @@ import type {
   BlockUpdate,
   ClubCreate,
   ClubResponse,
+  ClubStatsResponse,
   ClubUpdate,
   ErrorResponse,
   ListBlocksParams,
@@ -523,6 +524,130 @@ export const useUpdateClub = <
 > => {
   return useMutation(getUpdateClubMutationOptions(options), queryClient);
 };
+export const getGetClubStatsUrl = (clubId: number) => {
+  return `/api/v1/clubs/${clubId}/stats`;
+};
+
+/**
+ * @summary Get Club Stats
+ */
+export const getClubStats = async (
+  clubId: number,
+  options?: Parameters<typeof apiFetch>[1],
+): Promise<ClubStatsResponse> => {
+  return apiFetch<ClubStatsResponse>(getGetClubStatsUrl(clubId), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getGetClubStatsQueryKey = (clubId: number) => {
+  return [`/api/v1/clubs/${clubId}/stats`] as const;
+};
+
+export const getGetClubStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getClubStats>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  clubId: number,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getClubStats>>, TError, TData>>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetClubStatsQueryKey(clubId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getClubStats>>> = ({ signal }) =>
+    getClubStats(clubId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: clubId !== null && clubId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getClubStats>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+};
+
+export type GetClubStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getClubStats>>>;
+export type GetClubStatsQueryError = ErrorType<ValidationErrorResponse | ErrorResponse>;
+
+export function useGetClubStats<
+  TData = Awaited<ReturnType<typeof getClubStats>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  clubId: number,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getClubStats>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getClubStats>>,
+          TError,
+          Awaited<ReturnType<typeof getClubStats>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useGetClubStats<
+  TData = Awaited<ReturnType<typeof getClubStats>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  clubId: number,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getClubStats>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getClubStats>>,
+          TError,
+          Awaited<ReturnType<typeof getClubStats>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useGetClubStats<
+  TData = Awaited<ReturnType<typeof getClubStats>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  clubId: number,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getClubStats>>, TError, TData>>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary Get Club Stats
+ */
+
+export function useGetClubStats<
+  TData = Awaited<ReturnType<typeof getClubStats>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  clubId: number,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getClubStats>>, TError, TData>>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetClubStatsQueryOptions(clubId, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
 export const getListBlocksUrl = (clubId: number, params?: ListBlocksParams) => {
   const normalizedParams = new URLSearchParams();
 
