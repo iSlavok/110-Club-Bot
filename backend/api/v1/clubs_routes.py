@@ -8,9 +8,10 @@ from api.core.params import IdPath
 from api.core.routing import UnitOfWorkRoute
 from api.schemas import Page
 from api.schemas.club_schemas import BlockResponse, ClubResponse
+from api.schemas.club_stats_schemas import ClubStatsResponse
 from app.enums import Permission
 from app.schemas import BlockCreate, BlockUpdate, ClubCreate, ClubUpdate, PageParams
-from app.services import BlockService, ClubService
+from app.services import BlockService, ClubService, ClubStatsService
 
 router = APIRouter(tags=["clubs"], route_class=UnitOfWorkRoute)
 
@@ -40,6 +41,12 @@ async def get_club(club_id: IdPath, club_service: FromDishka[ClubService]) -> Cl
 async def update_club(club_id: IdPath, patch: ClubUpdate, club_service: FromDishka[ClubService]) -> ClubResponse:
     club = await club_service.update(club_id, patch)
     return ClubResponse.from_dto(club)
+
+
+@router.get("/clubs/{club_id}/stats", dependencies=[require(Permission.CLUBS_VIEW)])
+async def get_club_stats(club_id: IdPath, club_stats_service: FromDishka[ClubStatsService]) -> ClubStatsResponse:
+    stats = await club_stats_service.get(club_id)
+    return ClubStatsResponse.from_dto(stats)
 
 
 @router.get("/clubs/{club_id}/blocks", dependencies=[require(Permission.CLUBS_VIEW)])

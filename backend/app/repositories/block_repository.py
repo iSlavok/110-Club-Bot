@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +18,20 @@ class BlockRepository(BaseRepository[Block]):
                 Block.club_id == club_id,
                 Block.sheet_column_title == sheet_column_title,
             )
+        )
+        return await self._session.scalar(statement)
+
+    # Blocks should not overlap; if they do, the one started last is current.
+    async def get_current_for_club(self, *, club_id: int, now: datetime) -> Block | None:
+        statement = (
+            select(Block)
+            .where(
+                Block.club_id == club_id,
+                Block.starts_at <= now,
+                Block.ends_at > now,
+            )
+            .order_by(Block.starts_at.desc(), Block.id.desc())
+            .limit(1)
         )
         return await self._session.scalar(statement)
 

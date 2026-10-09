@@ -1,6 +1,7 @@
 from app.schemas.admin_user_schemas import AdminUserCreate, AdminUserDTO, AdminUserUpdate, AdminUserWithRoleDTO
 from app.schemas.auth_schemas import AdminPrincipal, AuthConfig, IssuedLoginCode, SessionGrant, TelegramWidgetPayload
 from app.schemas.club_schemas import BlockCreate, BlockDTO, BlockUpdate, ClubCreate, ClubDTO, ClubUpdate
+from app.schemas.club_stats_schemas import ClubStats, CurrentBlockStats
 from app.schemas.dashboard_schemas import DashboardStats
 from app.schemas.health_schemas import ReadinessReport
 from app.schemas.pagination_schemas import MAX_PER_PAGE, PageParams, Paginated
@@ -21,7 +22,9 @@ __all__ = [
     "BlockUpdate",
     "ClubCreate",
     "ClubDTO",
+    "ClubStats",
     "ClubUpdate",
+    "CurrentBlockStats",
     "DashboardStats",
     "IssuedLoginCode",
     "Maybe",
