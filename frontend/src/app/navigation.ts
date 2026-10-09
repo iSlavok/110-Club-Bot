@@ -3,6 +3,7 @@ import {
   IconBuildingCommunity,
   IconCalendarEvent,
   IconLayoutDashboard,
+  IconRefresh,
   IconSettings,
   IconShieldLock,
   IconUserCog,
@@ -35,6 +36,7 @@ export function clubNav(clubId: number): NavItem[] {
   return [
     { to: routes.club(clubId), label: 'Обзор', icon: IconLayoutDashboard, end: true },
     { to: routes.clubBlocks(clubId), label: 'Блоки', icon: IconCalendarEvent },
+    { to: routes.clubSync(clubId), label: 'Синк таблицы', icon: IconRefresh },
     { to: routes.clubSettings(clubId), label: 'Настройки клуба', icon: IconSettings },
   ];
 }

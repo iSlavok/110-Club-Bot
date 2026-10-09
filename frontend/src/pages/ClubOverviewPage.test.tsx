@@ -43,4 +43,33 @@ describe('ClubOverviewPage', () => {
 
     expect(await screen.findByText('Сейчас блока нет')).toBeInTheDocument();
   });
+
+  it('shows the last sheet sync and links to its page', async () => {
+    renderOverview({
+      current_block: null,
+      last_sync: {
+        id: 1,
+        club_id: 7,
+        started_at: '2026-10-01T09:00:00Z',
+        finished_at: '2026-10-01T09:00:02Z',
+        status: 'failed',
+        added: 0,
+        removal_requested: 0,
+        issues: [],
+        error: 'Google Sheets API error 403',
+      },
+    });
+
+    expect(await screen.findByText('Ошибка')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Подробнее' })).toHaveAttribute(
+      'href',
+      '/clubs/7/sync',
+    );
+  });
+
+  it('says when the club was never synced', async () => {
+    renderOverview({ current_block: null, last_sync: null });
+
+    expect(await screen.findByText('Синков ещё не было')).toBeInTheDocument();
+  });
 });

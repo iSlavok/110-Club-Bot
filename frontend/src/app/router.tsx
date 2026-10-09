@@ -4,6 +4,7 @@ import { AdminsPage } from '@/pages/AdminsPage';
 import { ClubBlocksPage } from '@/pages/ClubBlocksPage';
 import { ClubOverviewPage } from '@/pages/ClubOverviewPage';
 import { ClubSettingsPage } from '@/pages/ClubSettingsPage';
+import { ClubSyncPage } from '@/pages/ClubSyncPage';
 import { ClubsPage } from '@/pages/ClubsPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
@@ -44,6 +45,7 @@ export const appRoutes: RouteObject[] = [
             children: [
               { index: true, element: <ClubOverviewPage /> },
               { path: 'blocks', element: <ClubBlocksPage /> },
+              { path: 'sync', element: <ClubSyncPage /> },
               { path: 'settings', element: <ClubSettingsPage /> },
             ],
           },

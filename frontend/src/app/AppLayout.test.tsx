@@ -49,6 +49,10 @@ describe('AppLayout', () => {
       'href',
       '/clubs/7/blocks',
     );
+    expect(navbar().getByRole('link', { name: 'Синк таблицы' })).toHaveAttribute(
+      'href',
+      '/clubs/7/sync',
+    );
     expect(navbar().getByRole('link', { name: 'Настройки клуба' })).toBeInTheDocument();
     expect(navbar().getByRole('link', { name: 'Пользователи' })).toBeInTheDocument();
 
