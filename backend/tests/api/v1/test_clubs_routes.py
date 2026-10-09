@@ -3,7 +3,15 @@ from datetime import UTC, datetime
 import pytest
 
 from app.enums import Permission
-from tests.factories import make_admin_user, make_block, make_club, make_membership, make_role, make_user
+from tests.factories import (
+    make_admin_user,
+    make_block,
+    make_club,
+    make_membership,
+    make_role,
+    make_sheet_sync,
+    make_user,
+)
 
 P = Permission
 
@@ -101,7 +109,21 @@ async def test_club_stats_between_blocks(api_client, login_as, manager, db_sessi
     response = await api_client.get(f"/api/v1/clubs/{club.id}/stats")
 
     assert response.status_code == 200
-    assert response.json() == {"current_block": None}
+    assert response.json() == {"current_block": None, "last_sync": None}
+
+
+async def test_club_stats_show_the_last_sync(api_client, login_as, manager, db_session) -> None:
+    await login_as(manager)
+    club = await make_club(db_session)
+    sync = await make_sheet_sync(db_session, club, added=3, issues=[{"kind": "missing_column", "column": "Блок 6"}])
+
+    response = await api_client.get(f"/api/v1/clubs/{club.id}/stats")
+
+    last_sync = response.json()["last_sync"]
+    assert last_sync["id"] == sync.id
+    assert last_sync["status"] == "ok"
+    assert last_sync["added"] == 3
+    assert last_sync["issues"] == [{"kind": "missing_column", "column": "Блок 6", "row": None, "value": None}]
 
 
 async def test_club_stats_require_clubs_view(api_client, login_as, db_session) -> None:

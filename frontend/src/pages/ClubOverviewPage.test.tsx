@@ -30,6 +30,7 @@ describe('ClubOverviewPage', () => {
         members: 120,
         members_with_tg: 95,
       },
+      last_sync: null,
     });
 
     expect(await screen.findByText('Блок 5')).toBeInTheDocument();
@@ -38,7 +39,7 @@ describe('ClubOverviewPage', () => {
   });
 
   it('says when no block is running', async () => {
-    renderOverview({ current_block: null });
+    renderOverview({ current_block: null, last_sync: null });
 
     expect(await screen.findByText('Сейчас блока нет')).toBeInTheDocument();
   });

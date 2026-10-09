@@ -3,6 +3,7 @@ from typing import Self
 from pydantic import BaseModel, Field
 
 from api.schemas.club_schemas import BlockResponse
+from api.schemas.sheet_sync_schemas import SheetSyncResponse
 from app.schemas import ClubStats, CurrentBlockStats
 
 
@@ -22,8 +23,10 @@ class CurrentBlockStatsResponse(BaseModel):
 
 class ClubStatsResponse(BaseModel):
     current_block: CurrentBlockStatsResponse | None = Field(description="Block running now, null between blocks")
+    last_sync: SheetSyncResponse | None = Field(description="Latest sheet sync of the club, null if it never ran")
 
     @classmethod
     def from_dto(cls, stats: ClubStats) -> Self:
         current_block = CurrentBlockStatsResponse.from_dto(stats.current_block) if stats.current_block else None
-        return cls(current_block=current_block)
+        last_sync = SheetSyncResponse.from_dto(stats.last_sync) if stats.last_sync else None
+        return cls(current_block=current_block, last_sync=last_sync)

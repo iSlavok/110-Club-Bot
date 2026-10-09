@@ -2263,11 +2263,23 @@
               }
             ],
             "description": "Block running now, null between blocks"
+          },
+          "last_sync": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SheetSyncResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Latest sheet sync of the club, null if it never ran"
           }
         },
         "type": "object",
         "required": [
-          "current_block"
+          "current_block",
+          "last_sync"
         ],
         "title": "ClubStatsResponse"
       },
