@@ -28,7 +28,10 @@ async def offer_vk_link(message: Message, state: FSMContext, tg_id: int, vk_link
             await state.set_state(VkLinkStates.waiting_for_profile)
             await message.answer(texts.vk_link.ASK_PROFILE_LINK)
         case VkLinkByOAuth():
-            await message.answer(texts.vk_link.OAUTH_OFFER, reply_markup=keyboards.oauth_keyboard(offer.authorize_url))
+            await message.answer(
+                texts.vk_link.oauth_offer(offer),
+                reply_markup=keyboards.oauth_keyboard(offer.authorize_url),
+            )
         case VkLinkUnavailable():
             await message.answer(texts.vk_link.UNAVAILABLE)
 

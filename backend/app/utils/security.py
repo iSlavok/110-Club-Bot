@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import hmac
 import secrets
@@ -12,6 +13,21 @@ def hash_secret(value: str) -> str:
 
 def generate_session_token() -> str:
     return secrets.token_urlsafe(32)
+
+
+# VK ID wants a state of at least 32 characters from [A-Za-z0-9_-]; token_urlsafe(32) gives 43.
+def generate_oauth_state() -> str:
+    return secrets.token_urlsafe(32)
+
+
+# RFC 7636: the verifier is 43-128 characters, the challenge is BASE64URL(SHA256(verifier)) without padding.
+def generate_code_verifier() -> str:
+    return secrets.token_urlsafe(64)
+
+
+def pkce_code_challenge(code_verifier: str) -> str:
+    digest = hashlib.sha256(code_verifier.encode()).digest()
+    return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
 
 
 def generate_login_code() -> str:

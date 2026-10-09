@@ -1,7 +1,15 @@
 import hashlib
 import hmac
+import re
 
-from app.utils import generate_login_code, hash_secret, is_valid_widget_signature
+from app.utils import (
+    generate_code_verifier,
+    generate_login_code,
+    generate_oauth_state,
+    hash_secret,
+    is_valid_widget_signature,
+    pkce_code_challenge,
+)
 
 TOKEN = "123456:test-token"
 
@@ -40,3 +48,19 @@ def test_widget_signature_rejects_non_ascii_instead_of_crashing() -> None:
     fields = {"id": 42, "first_name": "Ann", "auth_date": 1_700_000_000}
 
     assert not is_valid_widget_signature(fields, "я" * 64, TOKEN)
+
+
+def test_oauth_state_fits_vk_id_rules() -> None:
+    assert re.fullmatch(r"[A-Za-z0-9_-]{32,}", generate_oauth_state())
+
+
+def test_code_verifier_fits_rfc_7636() -> None:
+    assert re.fullmatch(r"[A-Za-z0-9_~.-]{43,128}", generate_code_verifier())
+
+
+# Test vector from RFC 7636, appendix B.
+def test_code_challenge_is_s256() -> None:
+    assert (
+        pkce_code_challenge("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")
+        == "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+    )

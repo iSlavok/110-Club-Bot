@@ -159,3 +159,18 @@ async def test_cancel_asks_for_another_link(service, state, db_session) -> None:
     confirm, confirm_data = _callback(VkLinkAction.CONFIRM)
     await confirm_profile(confirm, confirm_data, state, service)
     confirm.answer.assert_awaited_once_with(texts.vk_link.STALE_CONFIRMATION, show_alert=True)
+
+
+async def test_vk_command_offers_vk_id_button(service, state, db_session) -> None:
+    await make_user(db_session, tg_id=TG_ID)
+    message = _message()
+
+    await vk(message, state, service)
+
+    keyboard: InlineKeyboardMarkup = message.answer.await_args.kwargs["reply_markup"]
+    button = keyboard.inline_keyboard[0][0]
+    assert button.text == texts.vk_link.OAUTH_BUTTON
+    assert button.url is not None
+    assert button.url.startswith("https://id.vk.ru/authorize?")
+    assert "до 12:10 по Москве" in message.answer.await_args.args[0]
+    assert await state.get_state() is None
