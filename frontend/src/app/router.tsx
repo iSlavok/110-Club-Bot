@@ -8,6 +8,7 @@ import { ClubsPage } from '@/pages/ClubsPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { RolesPage } from '@/pages/RolesPage';
+import { SettingsPage } from '@/pages/SettingsPage';
 import { UsersPage } from '@/pages/UsersPage';
 import { routes } from '@/shared/config/routes';
 
@@ -70,6 +71,7 @@ export const appRoutes: RouteObject[] = [
               </RequirePermission>
             ),
           },
+          { path: routes.settings, element: <SettingsPage /> },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

@@ -1,4 +1,5 @@
 import {
+  IconAdjustments,
   IconBuildingCommunity,
   IconCalendarEvent,
   IconLayoutDashboard,
@@ -26,6 +27,7 @@ export const GLOBAL_NAV: NavItem[] = [
   { to: routes.users, label: 'Пользователи', icon: IconUsers, permission: 'users.view' },
   { to: routes.admins, label: 'Админы', icon: IconUserCog, permission: 'admins.view' },
   { to: routes.roles, label: 'Роли', icon: IconShieldLock, permission: 'admins.view' },
+  { to: routes.settings, label: 'Настройки бота', icon: IconAdjustments },
 ];
 
 /** Sections inside a club; the whole club area needs `clubs.view`. */

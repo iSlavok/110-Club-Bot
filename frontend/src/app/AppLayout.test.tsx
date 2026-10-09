@@ -30,6 +30,10 @@ describe('AppLayout', () => {
     expect(navbar().queryByRole('link', { name: 'Пользователи' })).not.toBeInTheDocument();
     expect(navbar().queryByRole('link', { name: 'Админы' })).not.toBeInTheDocument();
     expect(navbar().queryByRole('link', { name: 'Обзор' })).not.toBeInTheDocument();
+    expect(navbar().getByRole('link', { name: 'Настройки бота' })).toHaveAttribute(
+      'href',
+      '/settings',
+    );
   });
 
   it('inside a club shows its sections and lets switch to another club', async () => {
