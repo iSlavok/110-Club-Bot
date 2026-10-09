@@ -195,6 +195,8 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 ### Настройки
 
 - Инфраструктура и секреты — `app/config/settings.py`: корневой `Settings` (pydantic-settings), вложенная `BaseModel` на каждую область. `DB_HOST` → `settings.db.host`: разделитель `_`, одно разбиение. Секреты — `SecretStr`. Добавил поле → обнови `.env.example` с комментарием.
+- Необязательное поле — `X | None = None`, пустое значение в `.env` (`ALERTS_CHAT_ID=`) валидатор превращает в `None`. Без значения фича выключается с warning в лог, процесс не падает.
+- Публичный адрес админки — `PublicSettings.url` (`PUBLIC_URL`, без слэша на конце): ссылки наружу (VK ID callback, `/adminka`) собираются от него.
 - Настройки создаются в composition root, передаются через DI, не импортируются глобально.
 
 ### Время

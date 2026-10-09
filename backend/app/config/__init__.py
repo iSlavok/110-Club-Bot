@@ -6,6 +6,7 @@ from app.config.settings import (
     BotSettings,
     DatabaseSettings,
     LogSettings,
+    PublicSettings,
     RedisSettings,
     Settings,
 )
@@ -17,6 +18,7 @@ __all__ = [
     "BotSettings",
     "DatabaseSettings",
     "LogSettings",
+    "PublicSettings",
     "RedisSettings",
     "Settings",
     "setup_logging",
