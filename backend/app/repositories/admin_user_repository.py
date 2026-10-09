@@ -1,6 +1,6 @@
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.database import BaseRepository, PageResult
 from app.models import AdminUser
@@ -25,6 +25,15 @@ class AdminUserRepository(BaseRepository[AdminUser]):
             .options(selectinload(AdminUser.role))
         )
         return await self._session.scalar(statement)
+
+    async def list_all(self) -> list[AdminUser]:
+        statement = (
+            select(AdminUser)
+            .options(joinedload(AdminUser.role))
+            .order_by(AdminUser.id)
+        )
+        admins = await self._session.scalars(statement)
+        return list(admins)
 
     async def list_page(self, *, limit: int, offset: int) -> PageResult[AdminUser]:
         count_statement = (

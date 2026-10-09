@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, async_sessionm
 
 from app.clients import LoginThrottle
 from app.config import AlertsSettings, AuthSettings, BotSettings, DatabaseSettings, PublicSettings
-from app.telegram import AdminAlerts, RateLimitMiddleware
+from app.telegram import AdminAlerts, CommandMenu, RateLimitMiddleware
 from app.utils import Clock
 from tests.fakes import FakeLoginThrottle, FakeTimer, FrozenClock
 
@@ -56,6 +56,7 @@ class TestInfraProvider(Provider):
     scope = Scope.APP
 
     admin_alerts = provide(AdminAlerts)
+    command_menu = provide(CommandMenu)
 
     @provide
     def clock(self) -> Clock:

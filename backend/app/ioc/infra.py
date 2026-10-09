@@ -17,7 +17,7 @@ from app.config import (
     RedisSettings,
     Settings,
 )
-from app.telegram import AdminAlerts, RateLimitMiddleware, SystemTimer
+from app.telegram import AdminAlerts, CommandMenu, RateLimitMiddleware, SystemTimer
 from app.utils import Clock, SystemClock
 
 
@@ -61,6 +61,7 @@ class InfraProvider(Provider):
     clock = provide(SystemClock, provides=Clock)
     login_throttle = provide(RedisLoginThrottle, provides=LoginThrottle)
     admin_alerts = provide(AdminAlerts)
+    command_menu = provide(CommandMenu)
 
     @provide
     def rate_limit(self) -> RateLimitMiddleware:

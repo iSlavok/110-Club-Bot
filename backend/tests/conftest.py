@@ -2,8 +2,10 @@ import os
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import cast
+from unittest.mock import AsyncMock
 
 import pytest
+from aiogram import Bot
 from alembic import command
 from alembic.config import Config
 from dishka import AsyncContainer, make_async_container
@@ -80,3 +82,8 @@ async def request_container(container: AsyncContainer) -> AsyncIterator[AsyncCon
 @pytest.fixture
 async def clock(container: AsyncContainer) -> FrozenClock:
     return cast("FrozenClock", await container.get(Clock))
+
+
+@pytest.fixture
+async def bot(container: AsyncContainer) -> AsyncMock:
+    return cast("AsyncMock", await container.get(Bot))
