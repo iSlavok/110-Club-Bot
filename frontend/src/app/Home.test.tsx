@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import type { Permission } from '@/shared/api';
@@ -47,9 +47,11 @@ describe('Home', () => {
     });
   });
 
-  it('explains when no section is allowed', async () => {
-    renderHome();
+  it('opens the bot settings, open to every admin, when nothing else is allowed', async () => {
+    const { router } = renderHome();
 
-    expect(await screen.findByText(/нет доступных разделов/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/settings');
+    });
   });
 });

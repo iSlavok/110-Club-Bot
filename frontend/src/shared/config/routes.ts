@@ -10,4 +10,5 @@ export const routes = {
   users: '/users',
   admins: '/admins',
   roles: '/roles',
+  settings: '/settings',
 } as const;
