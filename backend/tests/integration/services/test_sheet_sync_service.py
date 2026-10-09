@@ -191,3 +191,75 @@ async def test_purge_keeps_last_100_days(service, db_session, club) -> None:
     await service.purge_old()
 
     assert list(await db_session.scalars(select(SheetSync.id))) == [recent.id]
+
+
+def _alerts(bot) -> list[str]:
+    return [call.args[1] for call in bot.send_message.await_args_list]
+
+
+async def test_failure_is_alerted_once_and_recovery_too(service, club, sheets_client, bot) -> None:
+    error = SheetsClientError("Google Sheets API error 403 PERMISSION_DENIED")
+    sheets_client.fail(SPREADSHEET_ID, SHEET_NAME, error)
+    await service.sync_club(club.id)
+    await service.sync_club(club.id)
+    sheets_client.errors.clear()
+    sheets_client.set_sheet(SPREADSHEET_ID, SHEET_NAME, [])
+    await service.sync_club(club.id)
+    await service.sync_club(club.id)
+
+    failed, recovered = _alerts(bot)
+    assert "синк таблицы не работает" in failed
+    assert "403 PERMISSION_DENIED" in failed
+    assert "синк таблицы снова работает" in recovered
+
+
+async def test_internal_error_is_alerted(service, club, bot) -> None:
+    await service.record_internal_error(club.id)
+
+    [failed] = _alerts(bot)
+    assert INTERNAL_ERROR_MESSAGE in failed
+
+
+async def test_clean_first_sync_is_silent(service, club, sheets_client, bot) -> None:
+    sheets_client.set_sheet(SPREADSHEET_ID, SHEET_NAME, [])
+
+    await service.sync_club(club.id)
+
+    bot.send_message.assert_not_awaited()
+
+
+async def test_only_new_sheet_problems_are_alerted(service, db_session, club, sheets_client, bot) -> None:
+    await make_block(db_session, club, sheet_column_title="Блок 5")
+    sheets_client.set_sheet(SPREADSHEET_ID, SHEET_NAME, [[True, "Блок 5", "abc"]])
+    await service.sync_club(club.id)
+    sheets_client.set_sheet(SPREADSHEET_ID, SHEET_NAME, [[True, "Блок 5", 501, "abc"], [True, "Блок 9"]])
+    await service.sync_club(club.id)
+
+    first, second = _alerts(bot)
+    assert "«Блок 5», строка 3: «abc» — не VK id" in first
+    assert "abc" not in second
+    assert "«Блок 9»: столбец отмечен, но блока с таким заголовком нет" in second
+
+
+async def test_problems_survive_a_failed_sync_without_new_alerts(service, db_session, club, sheets_client, bot) -> None:
+    await make_block(db_session, club, sheet_column_title="Блок 5")
+    sheets_client.set_sheet(SPREADSHEET_ID, SHEET_NAME, [[True, "Блок 5", "abc"]])
+    await service.sync_club(club.id)
+    sheets_client.fail(SPREADSHEET_ID, SHEET_NAME, SheetsClientError("Google Sheets API is unreachable"))
+    await service.sync_club(club.id)
+    sheets_client.errors.clear()
+    await service.sync_club(club.id)
+
+    assert len(_alerts(bot)) == 3
+
+
+async def test_resolved_problems_are_alerted(service, db_session, club, sheets_client, bot) -> None:
+    await make_block(db_session, club, sheet_column_title="Блок 5")
+    sheets_client.set_sheet(SPREADSHEET_ID, SHEET_NAME, [[True, "Блок 5", "abc"]])
+    await service.sync_club(club.id)
+    sheets_client.set_sheet(SPREADSHEET_ID, SHEET_NAME, [[True, "Блок 5", 501]])
+    await service.sync_club(club.id)
+    await service.sync_club(club.id)
+
+    _, resolved = _alerts(bot)
+    assert "проблем в таблице больше нет" in resolved

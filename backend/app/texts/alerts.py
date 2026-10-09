@@ -1,12 +1,12 @@
 from datetime import datetime
 from html import escape
 
-from app.enums import RemovalRequestStatus
-from app.schemas import RemovalCandidate, RemovalRequestAlert
+from app.enums import RemovalRequestStatus, SheetIssueKind
+from app.schemas import RemovalCandidate, RemovalRequestAlert, SheetIssue
 from app.utils import BUSINESS_TZ
 
-# Keeps the alert far below Telegram's 4096-character message limit.
-MAX_LISTED_CANDIDATES = 15
+# Keeps an alert far below Telegram's 4096-character message limit.
+MAX_LISTED = 15
 
 CONFIRM_REMOVAL_BUTTON = "Подтвердить"
 REJECT_REMOVAL_BUTTON = "Отклонить"
@@ -20,11 +20,32 @@ def removal_request(alert: RemovalRequestAlert) -> str:
     lines = [header, _removal_status(alert)]
     if alert.candidates:
         lines.append("")
-        lines.extend(_candidate(candidate) for candidate in alert.candidates[:MAX_LISTED_CANDIDATES])
-        hidden = len(alert.candidates) - MAX_LISTED_CANDIDATES
-        if hidden > 0:
-            lines.append(f"и ещё {hidden}")
+        lines.extend(_candidate(candidate) for candidate in alert.candidates[:MAX_LISTED])
+        lines.extend(_more(len(alert.candidates)))
     return "\n".join(lines)
+
+
+def sync_failed(club_title: str, error: str) -> str:
+    return (
+        f"⚠️ <b>{escape(club_title)}</b>: синк таблицы не работает, состав блоков не обновляется.\n"
+        f"Ошибка: {escape(error)}\n"
+        "Напишу, когда снова заработает."
+    )
+
+
+def sync_recovered(club_title: str) -> str:
+    return f"✅ <b>{escape(club_title)}</b>: синк таблицы снова работает."
+
+
+def sheet_issues_appeared(club_title: str, issues: list[SheetIssue]) -> str:
+    lines = [f"⚠️ <b>{escape(club_title)}</b>: новые проблемы в таблице."]
+    lines.extend(f"• {_issue(issue)}" for issue in issues[:MAX_LISTED])
+    lines.extend(_more(len(issues)))
+    return "\n".join(lines)
+
+
+def sheet_issues_resolved(club_title: str) -> str:
+    return f"✅ <b>{escape(club_title)}</b>: проблем в таблице больше нет."
 
 
 def removal_decided(status: RemovalRequestStatus) -> str:
@@ -49,6 +70,28 @@ def _removal_status(alert: RemovalRequestAlert) -> str:
             )
         case RemovalRequestStatus.CANCELLED:
             return f"{detected}, но все вернулись в таблицу. Запрос отменён."
+
+
+def _issue(issue: SheetIssue) -> str:
+    column = f"«{escape(issue.column)}»"
+    cell = f"{column}, строка {issue.row}"
+    value = escape(issue.value or "")
+    match issue.kind:
+        case SheetIssueKind.UNKNOWN_COLUMN:
+            return f"{column}: столбец отмечен, но блока с таким заголовком нет"
+        case SheetIssueKind.MISSING_COLUMN:
+            return f"{column}: в таблице нет столбца этого блока"
+        case SheetIssueKind.DUPLICATE_COLUMN:
+            return f"{column}: второй отмеченный столбец с тем же заголовком, пропущен"
+        case SheetIssueKind.INVALID_VALUE:
+            return f"{cell}: «{value}» — не VK id, пропущено"
+        case SheetIssueKind.DUPLICATE:
+            return f"{cell}: VK id {value} повторяется"
+
+
+def _more(total: int) -> list[str]:
+    hidden = total - MAX_LISTED
+    return [f"и ещё {hidden}"] if hidden > 0 else []
 
 
 def _candidate(candidate: RemovalCandidate) -> str:
