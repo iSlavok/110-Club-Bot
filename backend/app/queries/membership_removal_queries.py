@@ -1,6 +1,7 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.enums import RemovalRequestStatus
 from app.models import Block, Club, MembershipRemovalItem, MembershipRemovalRequest, User
 from app.queries.rows import RemovalCandidateRow, RemovalRequestRow
 
@@ -54,3 +55,15 @@ class MembershipRemovalQueries:
             RemovalCandidateRow(vk_id=vk_id, full_name=full_name, tg_username=tg_username)
             for vk_id, full_name, tg_username in result
         ]
+
+    async def count_pending_for_club(self, club_id: int) -> int:
+        statement = (
+            select(func.count(MembershipRemovalRequest.id))
+            .select_from(MembershipRemovalRequest)
+            .join(Block, Block.id == MembershipRemovalRequest.block_id)
+            .where(
+                Block.club_id == club_id,
+                MembershipRemovalRequest.status == RemovalRequestStatus.PENDING,
+            )
+        )
+        return await self._session.scalar(statement) or 0

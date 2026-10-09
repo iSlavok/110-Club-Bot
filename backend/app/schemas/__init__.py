@@ -19,7 +19,7 @@ from app.schemas.pagination_schemas import MAX_PER_PAGE, PageParams, Paginated
 from app.schemas.patch_schemas import Maybe, PatchSchema
 from app.schemas.role_schemas import PermissionInfo, RoleCreate, RoleDTO, RoleUpdate
 from app.schemas.sheet_sync_schemas import SheetIssue, SheetSyncDTO
-from app.schemas.status_schemas import ClubStatus, StatusReport
+from app.schemas.status_schemas import ClubStatus, ClubSyncStatus, StatusReport
 from app.schemas.user_schemas import TelegramProfile, UserDTO
 from app.schemas.vk_link_schemas import (
     ClubAccess,
@@ -55,6 +55,7 @@ __all__ = [
     "ClubDTO",
     "ClubStats",
     "ClubStatus",
+    "ClubSyncStatus",
     "ClubUpdate",
     "CurrentBlockStats",
     "IssuedLoginCode",

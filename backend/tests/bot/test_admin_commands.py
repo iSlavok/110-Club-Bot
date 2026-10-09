@@ -90,3 +90,4 @@ async def test_status_replies_with_active_clubs(request_container, db_session) -
     assert "<b>Химия</b>" in text
     assert "Блок 5" in text
     assert "Участников: 0, из них в боте: 0" in text
+    assert "Синков ещё не было." in text
