@@ -20,8 +20,8 @@ export interface SheetSyncResponse {
   status: SheetSyncStatus;
   /** Memberships added */
   added: number;
-  /** Memberships removed */
-  removed: number;
+  /** Members gone from the sheet, sent to the owner to confirm the removal */
+  removal_requested: number;
   /** Problems found in the sheet */
   issues: SheetIssueResponse[];
   /** Why the sync failed */

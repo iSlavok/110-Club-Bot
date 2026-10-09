@@ -45,21 +45,23 @@ async def test_ready_column_becomes_block_members(service, db_session, club, she
 
     assert await members(block) == {501, 502}
     assert sync.status is SheetSyncStatus.OK
-    assert (sync.added, sync.removed) == (2, 0)
+    assert (sync.added, sync.removal_requested) == (2, 0)
     assert sync.started_at == DEFAULT_NOW
     assert sync.issues == []
 
 
-async def test_members_gone_from_sheet_are_removed(service, db_session, club, sheets_client, members) -> None:
+async def test_members_gone_from_sheet_wait_for_confirmation(service, db_session, club, sheets_client, members) -> None:
     block = await make_block(db_session, club, sheet_column_title="Блок 5")
     await make_membership(db_session, block, vk_id=501)
     await make_membership(db_session, block, vk_id=502)
     sheets_client.set_sheet(SPREADSHEET_ID, SHEET_NAME, [[True, "Блок 5", 502, 503]])
 
     sync = await service.sync_club(club.id)
+    repeated = await service.sync_club(club.id)
 
-    assert await members(block) == {502, 503}
-    assert (sync.added, sync.removed) == (1, 1)
+    assert await members(block) == {501, 502, 503}
+    assert (sync.added, sync.removal_requested) == (1, 1)
+    assert (repeated.added, repeated.removal_requested) == (0, 0)
 
 
 async def test_column_without_checkbox_keeps_members(service, db_session, club, sheets_client, members) -> None:
@@ -70,7 +72,7 @@ async def test_column_without_checkbox_keeps_members(service, db_session, club, 
     sync = await service.sync_club(club.id)
 
     assert await members(block) == {501}
-    assert (sync.added, sync.removed) == (0, 0)
+    assert (sync.added, sync.removal_requested) == (0, 0)
 
 
 async def test_blocks_are_matched_within_the_club(service, db_session, club, sheets_client, members) -> None:
@@ -111,7 +113,7 @@ async def test_api_error_is_recorded_and_members_kept(service, db_session, club,
     assert await members(block) == {501}
     assert sync.status is SheetSyncStatus.FAILED
     assert sync.error == "Google Sheets API error 403 PERMISSION_DENIED"
-    assert (sync.added, sync.removed) == (0, 0)
+    assert (sync.added, sync.removal_requested) == (0, 0)
 
 
 async def test_repeated_sync_changes_nothing(service, db_session, club, sheets_client, members) -> None:
@@ -122,7 +124,7 @@ async def test_repeated_sync_changes_nothing(service, db_session, club, sheets_c
     sync = await service.sync_club(club.id)
 
     assert await members(block) == {501, 502}
-    assert (sync.added, sync.removed) == (0, 0)
+    assert (sync.added, sync.removal_requested) == (0, 0)
 
 
 async def test_unknown_club(service) -> None:

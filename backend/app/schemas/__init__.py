@@ -14,6 +14,7 @@ from app.schemas.club_schemas import (
 )
 from app.schemas.club_stats_schemas import ClubStats, CurrentBlockStats
 from app.schemas.health_schemas import ReadinessReport
+from app.schemas.membership_removal_schemas import RemovalCandidate, RemovalRequestAlert
 from app.schemas.pagination_schemas import MAX_PER_PAGE, PageParams, Paginated
 from app.schemas.patch_schemas import Maybe, PatchSchema
 from app.schemas.role_schemas import PermissionInfo, RoleCreate, RoleDTO, RoleUpdate
@@ -63,6 +64,8 @@ __all__ = [
     "PatchSchema",
     "PermissionInfo",
     "ReadinessReport",
+    "RemovalCandidate",
+    "RemovalRequestAlert",
     "RoleCreate",
     "RoleDTO",
     "RoleUpdate",

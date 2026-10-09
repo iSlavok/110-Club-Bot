@@ -9,6 +9,7 @@ from app.exceptions import ClubNotFoundError, ClubNotSyncableError, SheetSyncDis
 from app.models import Club, SheetSync
 from app.repositories import BlockRepository, ClubRepository, MembershipRepository, SheetSyncRepository
 from app.schemas import PageParams, Paginated, SheetIssue, SheetSyncDTO
+from app.services.membership_removal_service import MembershipRemovalService
 from app.services.sheet_parser import parse_sheet
 from app.utils import Clock
 
@@ -24,6 +25,7 @@ class SheetSyncService:
         club_repository: ClubRepository,
         block_repository: BlockRepository,
         membership_repository: MembershipRepository,
+        membership_removal_service: MembershipRemovalService,
         sheets_client: SheetsClient,
         clock: Clock,
     ) -> None:
@@ -31,6 +33,7 @@ class SheetSyncService:
         self._club_repository = club_repository
         self._block_repository = block_repository
         self._membership_repository = membership_repository
+        self._membership_removal_service = membership_removal_service
         self._sheets_client = sheets_client
         self._clock = clock
 
@@ -50,7 +53,8 @@ class SheetSyncService:
         )
         return Paginated(items=[SheetSyncDTO.from_orm_obj(sync) for sync in syncs.items], total=syncs.total)
 
-    # Memberships mirror the ready columns exactly; chat access is reconciled against them, so no events are kept.
+    # Members join a block straight from a ready column but leave it only after the owner confirms the removal:
+    # a column cleared by mistake must not drop the whole block. Chat access is reconciled against memberships.
     async def sync_club(self, club_id: int) -> SheetSyncDTO:
         club = await self._get_club(club_id)
         spreadsheet_id, sheet_name = club.spreadsheet_id, club.sheet_name
@@ -73,24 +77,33 @@ class SheetSyncService:
             block_titles={block.sheet_column_title for block in blocks},
             open_block_titles=[block.sheet_column_title for block in blocks if block.ends_at > started_at],
         )
-        added = removed = 0
+        added = removal_requested = 0
         for block in blocks:
             wanted = parsed.members.get(block.sheet_column_title)
             if wanted is None:
                 continue
-            current = await self._membership_repository.list_vk_ids(block.id)
-            joined, left = wanted - current, current - wanted
+            members = await self._membership_repository.list_vk_ids(block.id)
+            joined = wanted - members
             await self._membership_repository.add_many(block_id=block.id, vk_ids=joined)
-            await self._membership_repository.delete_many(block_id=block.id, vk_ids=left)
             added += len(joined)
-            removed += len(left)
-        logger.info("Synced club {}: +{} -{}, {} issues", club_id, added, removed, len(parsed.issues))
+            removal_requested += await self._membership_removal_service.reconcile_block(
+                block.id,
+                members=members,
+                wanted=wanted,
+            )
+        logger.info(
+            "Synced club {}: +{}, {} sent for removal, {} issues",
+            club_id,
+            added,
+            removal_requested,
+            len(parsed.issues),
+        )
         return await self._record(
             club_id,
             started_at,
             status=SheetSyncStatus.OK,
             added=added,
-            removed=removed,
+            removal_requested=removal_requested,
             issues=parsed.issues,
         )
 
@@ -118,7 +131,7 @@ class SheetSyncService:
         *,
         status: SheetSyncStatus,
         added: int = 0,
-        removed: int = 0,
+        removal_requested: int = 0,
         issues: Sequence[SheetIssue] = (),
         error: str | None = None,
     ) -> SheetSyncDTO:
@@ -128,7 +141,7 @@ class SheetSyncService:
             finished_at=self._clock.now(),
             status=status,
             added=added,
-            removed=removed,
+            removal_requested=removal_requested,
             issues=[issue.model_dump(mode="json") for issue in issues],
             error=error,
         )

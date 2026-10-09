@@ -5,6 +5,8 @@ from app.models.block import Block
 from app.models.club import Club
 from app.models.login_code import LoginCode
 from app.models.membership import Membership
+from app.models.membership_removal_item import MembershipRemovalItem
+from app.models.membership_removal_request import MembershipRemovalRequest
 from app.models.role import Role
 from app.models.sheet_sync import SheetSync
 from app.models.user import User
@@ -18,6 +20,8 @@ __all__ = [
     "Club",
     "LoginCode",
     "Membership",
+    "MembershipRemovalItem",
+    "MembershipRemovalRequest",
     "Role",
     "SheetSync",
     "User",

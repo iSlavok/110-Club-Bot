@@ -4,6 +4,8 @@ from app.exceptions import (
     ExternalServiceError,
     InvalidVkLinkError,
     NotFoundError,
+    PermissionDeniedError,
+    RemovalRequestDecidedError,
     UserNotRegisteredError,
     VkAccountTakenError,
     VkAlreadyLinkedError,
@@ -23,6 +25,8 @@ _MESSAGES: dict[type[AppError], str] = {
     VkLinkModeChangedError: "Способ привязки VK изменился. Нажми /vk, чтобы начать заново.",
     VkLinkUnavailableError: "Привязка VK временно недоступна. Попробуй позже или напиши куратору.",
     VkUnavailableError: "VK сейчас не отвечает. Попробуй через пару минут.",
+    PermissionDeniedError: "У тебя нет прав на это действие.",
+    RemovalRequestDecidedError: "По этому запросу уже принято решение.",
     NotFoundError: "Не нашёл то, что ты ищешь.",
     ExternalServiceError: "Внешний сервис сейчас недоступен. Попробуй позже.",
 }

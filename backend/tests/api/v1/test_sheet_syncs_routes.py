@@ -34,7 +34,7 @@ async def test_manual_sync_returns_its_result(api_client, login_as, syncer, club
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ok"
-    assert (body["added"], body["removed"]) == (1, 0)
+    assert (body["added"], body["removal_requested"]) == (1, 0)
     assert body["issues"] == [{"kind": "invalid_value", "column": "Блок 5", "row": 4, "value": "x"}]
     assert body["error"] is None
 
