@@ -4,9 +4,9 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 from dishka.integrations.aiogram import FromDishka
 
+from app import texts
 from app.schemas import TelegramProfile
 from app.services import UserService
-from bot import texts
 
 router = Router(name="start")
 router.message.filter(F.chat.type == ChatType.PRIVATE)
