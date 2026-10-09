@@ -1,4 +1,7 @@
 import pytest
+from aiogram.exceptions import TelegramBadRequest
+from aiogram.methods import SetMyCommands
+from aiogram.types import BotCommandScopeChat
 from sqlalchemy import select
 
 from app.enums import Permission
@@ -9,9 +12,10 @@ from app.exceptions import (
     PermissionEscalationError,
     RoleNotFoundError,
 )
-from app.models import AdminSession
+from app.models import AdminSession, AdminUser
 from app.schemas import AdminPrincipal, AdminUserCreate, AdminUserUpdate, PageParams
 from app.services import AdminAccessResolver, AdminSessionService, AdminUserService
+from app.telegram import ADMIN_COMMANDS
 from tests.factories import make_admin_user, make_role
 from tests.providers import OWNER_TG_ID
 
@@ -114,3 +118,54 @@ async def test_list_marks_owners(service, db_session) -> None:
 
     assert page.total == 2
     assert {admin.name: admin.is_owner for admin in page.items} == {"Владелец": True, "Куратор": False}
+
+
+async def test_create_shows_the_admin_menu(service, bot, db_session) -> None:
+    role = await make_role(db_session, P.CLUBS_VIEW)
+
+    await service.create(EDITOR, AdminUserCreate(tg_id=58, name="Новый", role_id=role.id))
+
+    bot.set_my_commands.assert_awaited_once_with(list(ADMIN_COMMANDS), scope=BotCommandScopeChat(chat_id=58))
+
+
+async def test_create_survives_a_telegram_error(service, bot, db_session) -> None:
+    role = await make_role(db_session, P.CLUBS_VIEW)
+    bot.set_my_commands.side_effect = TelegramBadRequest(SetMyCommands(commands=[]), "chat not found")
+
+    admin = await service.create(EDITOR, AdminUserCreate(tg_id=59, name="Новый", role_id=role.id))
+
+    assert await db_session.get(AdminUser, admin.id) is not None
+
+
+async def test_deactivation_hides_and_activation_shows_the_admin_menu(service, bot, db_session) -> None:
+    target = await make_admin_user(db_session, await make_role(db_session, P.CLUBS_VIEW))
+
+    await service.update(EDITOR, target.id, AdminUserUpdate.model_validate({"is_active": False}))
+    bot.delete_my_commands.assert_awaited_once_with(scope=BotCommandScopeChat(chat_id=target.tg_id))
+    bot.set_my_commands.assert_not_awaited()
+
+    await service.update(EDITOR, target.id, AdminUserUpdate.model_validate({"is_active": True}))
+    bot.set_my_commands.assert_awaited_once_with(list(ADMIN_COMMANDS), scope=BotCommandScopeChat(chat_id=target.tg_id))
+
+
+async def test_role_assignment_shows_the_admin_menu(service, bot, db_session) -> None:
+    roleless = await make_admin_user(db_session)
+    role = await make_role(db_session, P.CLUBS_VIEW)
+
+    await service.update(EDITOR, roleless.id, AdminUserUpdate.model_validate({"role_id": role.id}))
+
+    bot.set_my_commands.assert_awaited_once_with(
+        list(ADMIN_COMMANDS), scope=BotCommandScopeChat(chat_id=roleless.tg_id)
+    )
+
+
+async def test_update_without_access_change_leaves_the_menu(service, bot, db_session) -> None:
+    target = await make_admin_user(db_session, await make_role(db_session, P.CLUBS_VIEW))
+    new_role = await make_role(db_session, P.USERS_VIEW)
+
+    await service.update(
+        EDITOR, target.id, AdminUserUpdate.model_validate({"name": "Другое имя", "role_id": new_role.id})
+    )
+
+    bot.set_my_commands.assert_not_awaited()
+    bot.delete_my_commands.assert_not_awaited()

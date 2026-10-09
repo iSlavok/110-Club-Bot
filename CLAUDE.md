@@ -171,6 +171,8 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 - Callback data — только классы `CallbackData`, без сырых строк.
 - Порядок outer middlewares важен: ошибки → контейнер → пользователь. Ошибки снаружи контейнера: перехваченная доменная ошибка должна выйти из request scope исключением, иначе частичные изменения закоммитятся (проверяет `tests/bot/test_dispatcher.py`).
 - `TelegramForbiddenError` (бот заблокирован) — ожидаемо, не ошибка.
+- Меню команд — `app/telegram/command_menu.py`: `DEFAULT_COMMANDS` (всем) и `ADMIN_COMMANDS` (= default + админские), описания — `app/texts/commands.py`. Команда для всех (например `/vk`) — строка в `DEFAULT_COMMANDS` + хендлер, админам она попадёт сама. Админская — строка в `ADMIN_COMMANDS` + хендлер. Что у каждой команды меню есть хендлер, проверяет `tests/bot/test_router.py`.
+- Админское меню видно только админам (scope на их чат). Синхронизирует `BotAdminService`: на старте бота — всем (default, владельцы и админы с доступом, а у потерявших доступ в `admin_users` scope снимается: кому выдано, не храним), на `/start` — самому админу (пока человек не писал боту, Telegram scope не принимает), `AdminUserService` — при создании и при смене доступа (включение / отключение / роль). Вызовы — после flush, ошибки Telegram логирует `CommandMenu`, действие не откатывают.
 - Админские команды — в `bot/handlers/admin_commands.py`: роутер с фильтром `is_admin` (владелец или активный админ с ролью, `BotAdminService`). Не админ — апдейт не обработан, как неизвестная команда. Новая админская команда — хендлер в этот роутер, проверку не повторяй.
 - `/status` собирает `StatusService.build()` → `StatusReport`, текст — `app/texts/status.py`. Новый раздел: поле в `ClubStatus` (по клубу) или `StatusReport` (общее), метод `_x_section` в `StatusService` (как `_current_block_section`) и его вызов в `_club_status` / `build`, строки в `texts/status.py`. Агрегации для раздела — в `app/queries`.
 
@@ -214,7 +216,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 
 ### Тесты
 
-- Общие фикстуры: `db_session`, `container` / `request_container` (тестовый dishka), `clock` (`FrozenClock`) — в `tests/conftest.py`; `api_client` (httpx) и `login_as(admin)` (сессия в cookie клиента) — в `tests/api/conftest.py`. Владелец в тестах — `OWNER_TG_ID` из `tests/providers.py`. Тестовые провайдеры — `tests/providers.py`, фейки — `tests/fakes.py`.
+- Общие фикстуры: `db_session`, `container` / `request_container` (тестовый dishka), `clock` (`FrozenClock`), `bot` (`AsyncMock` бота из контейнера) — в `tests/conftest.py`; `api_client` (httpx) и `login_as(admin)` (сессия в cookie клиента) — в `tests/api/conftest.py`. Владелец в тестах — `OWNER_TG_ID` из `tests/providers.py`. Тестовые провайдеры — `tests/providers.py`, фейки — `tests/fakes.py`.
 - Структура: `tests/unit/` (без БД и IO), `tests/integration/` (Postgres), `tests/api/` (httpx `ASGITransport`), `tests/bot/`, `tests/worker/`. Файл теста повторяет путь модуля.
 - Настоящий Postgres, схема через `alembic upgrade head`. Изоляция: транзакция на тест с откатом. Тестовая сессия не коммитит: сервисы и проверки работают в одной сессии, поэтому забытый коммит тесты бы не поймали — его делает только `DatabaseProvider` (у него свой тест).
 - Зависимости — из **тестового dishka-контейнера**: прод-провайдеры + тестовая сессия, фейковые клиенты (Google Sheets, VK, хранилище), `AsyncMock(spec=Bot)`, фиксированный `Clock`. Время лимитов Telegram — `FakeTimer`: `sleep` двигает часы, реальных пауз в тестах нет. Граф руками не собирается.

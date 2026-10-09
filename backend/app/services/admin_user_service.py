@@ -19,6 +19,7 @@ from app.schemas import (
 )
 from app.services.admin_access_resolver import AdminAccessResolver
 from app.services.permission_guard import ensure_within_own_permissions
+from app.telegram import CommandMenu
 
 
 class AdminUserService:
@@ -28,11 +29,13 @@ class AdminUserService:
         role_repository: RoleRepository,
         admin_session_repository: AdminSessionRepository,
         access_resolver: AdminAccessResolver,
+        command_menu: CommandMenu,
     ) -> None:
         self._admin_user_repository = admin_user_repository
         self._role_repository = role_repository
         self._admin_session_repository = admin_session_repository
         self._access_resolver = access_resolver
+        self._command_menu = command_menu
 
     async def list_page(self, page: PageParams) -> Paginated[AdminUserWithRoleDTO]:
         admins = await self._admin_user_repository.list_page(limit=page.per_page, offset=page.offset)
@@ -47,6 +50,7 @@ class AdminUserService:
         admin = AdminUser(tg_id=data.tg_id, name=data.name, role=role)
         self._admin_user_repository.add(admin)
         await self._admin_user_repository.flush()
+        await self._command_menu.show_admin(admin.tg_id)
         return self._to_dto(admin)
 
     async def update(self, actor: AdminPrincipal, admin_user_id: int, patch: AdminUserUpdate) -> AdminUserWithRoleDTO:
@@ -61,6 +65,7 @@ class AdminUserService:
             raise OwnAccessChangeError
         if admin.role is not None:
             ensure_within_own_permissions(actor, known_permissions(admin.role.permissions))
+        had_access = self._has_access(admin)
 
         admin.name = patch.name.apply(admin.name)
         new_role_id = patch.role_id.apply(admin.role_id)
@@ -70,6 +75,11 @@ class AdminUserService:
         if not admin.is_active:
             await self._admin_session_repository.delete_for_admin(admin.id)
         await self._admin_user_repository.flush()
+        has_access = self._has_access(admin)
+        if has_access and not had_access:
+            await self._command_menu.show_admin(admin.tg_id)
+        elif had_access and not has_access:
+            await self._command_menu.hide_admin(admin.tg_id)
         return self._to_dto(admin)
 
     async def _get_assignable_role(self, actor: AdminPrincipal, role_id: int) -> Role:
@@ -78,6 +88,9 @@ class AdminUserService:
             raise RoleNotFoundError(role_id)
         ensure_within_own_permissions(actor, known_permissions(role.permissions))
         return role
+
+    def _has_access(self, admin: AdminUser) -> bool:
+        return self._access_resolver.resolve(admin) is not None
 
     def _to_dto(self, admin: AdminUser) -> AdminUserWithRoleDTO:
         is_owner = self._access_resolver.is_owner(admin.tg_id)
