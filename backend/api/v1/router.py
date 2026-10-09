@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from api.core.errors import ERROR_RESPONSES
-from api.v1 import admins_routes, auth_routes, clubs_routes, dashboard_routes, roles_routes, users_routes
+from api.v1 import admins_routes, auth_routes, clubs_routes, roles_routes, users_routes
 
 
 def create_v1_router() -> APIRouter:
@@ -11,5 +11,4 @@ def create_v1_router() -> APIRouter:
     router.include_router(roles_routes.router)
     router.include_router(clubs_routes.router)
     router.include_router(users_routes.router)
-    router.include_router(dashboard_routes.router)
     return router

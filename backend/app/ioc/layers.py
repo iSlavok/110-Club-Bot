@@ -1,6 +1,6 @@
 from dishka import Provider, Scope, provide_all
 
-from app.queries import ClubStatsQueries, DashboardQueries, SystemQueries
+from app.queries import ClubStatsQueries, SystemQueries
 from app.repositories import (
     AdminSessionRepository,
     AdminUserRepository,
@@ -19,7 +19,6 @@ from app.services import (
     BlockService,
     ClubService,
     ClubStatsService,
-    DashboardService,
     HealthService,
     LoginService,
     RoleService,
@@ -45,7 +44,7 @@ class RepositoriesProvider(Provider):
 class QueriesProvider(Provider):
     scope = Scope.REQUEST
 
-    queries = provide_all(ClubStatsQueries, DashboardQueries, SystemQueries)
+    queries = provide_all(ClubStatsQueries, SystemQueries)
 
 
 class ServicesProvider(Provider):
@@ -59,7 +58,6 @@ class ServicesProvider(Provider):
         BlockService,
         ClubService,
         ClubStatsService,
-        DashboardService,
         HealthService,
         LoginService,
         RoleService,
