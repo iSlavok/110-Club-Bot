@@ -13,6 +13,7 @@ export default defineConfig({
       override: {
         mutator: { path: './src/shared/api/http.ts', name: 'apiFetch' },
         fetch: { includeHttpResponseReturnType: false },
+        query: { useInfinite: true, useInfiniteQueryParam: 'page' },
       },
     },
   },

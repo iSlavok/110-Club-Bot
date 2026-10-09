@@ -3,6 +3,7 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 
+import { FakeIntersectionObserver } from './intersection';
 import { server } from './server';
 
 // Mantine relies on browser APIs that jsdom does not implement.
@@ -31,6 +32,10 @@ window.ResizeObserver = class {
   }
 };
 window.HTMLElement.prototype.scrollIntoView = () => undefined;
+Object.defineProperty(window, 'IntersectionObserver', {
+  writable: true,
+  value: FakeIntersectionObserver,
+});
 
 beforeAll(() => {
   server.listen({ onUnhandledRequest: 'error' });

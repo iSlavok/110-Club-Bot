@@ -5,8 +5,9 @@ import { useState } from 'react';
 import { Can, canGrant, useCurrentAdmin, usePermission } from '@/entities/session';
 import { RoleFormModal, useDeleteRoleConfirm } from '@/features/role';
 import { useListPermissions, useListRoles, type RoleResponse } from '@/shared/api';
+import { wholeList } from '@/shared/lib/infinite-page';
+import { InfiniteList } from '@/shared/ui/InfiniteList';
 import { PageHeader } from '@/shared/ui/PageHeader';
-import { QueryState } from '@/shared/ui/QueryState';
 
 export function RolesPage() {
   const roles = useListRoles();
@@ -35,10 +36,10 @@ export function RolesPage() {
           </Can>
         }
       />
-      <QueryState data={roles.data} error={roles.error} isPending={roles.isPending}>
-        {(data) => (
+      <InfiniteList list={wholeList(roles)} emptyText="Ролей пока нет">
+        {(items) => (
           <Stack>
-            {data.map((role) => (
+            {items.map((role) => (
               <Paper key={role.id} withBorder radius="md" p="md">
                 <Group justify="space-between" align="flex-start" wrap="nowrap">
                   <Stack gap="xs">
@@ -82,14 +83,9 @@ export function RolesPage() {
                 </Group>
               </Paper>
             ))}
-            {data.length === 0 && (
-              <Text c="dimmed" ta="center" py="xl">
-                Ролей пока нет
-              </Text>
-            )}
           </Stack>
         )}
-      </QueryState>
+      </InfiniteList>
       {editing && catalog.data && (
         <RoleFormModal
           opened
