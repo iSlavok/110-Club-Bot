@@ -18,6 +18,7 @@ from app.schemas.vk_link_schemas import (
     VkLinkOffer,
     VkLinkResult,
     VkLinkUnavailable,
+    VkOAuthCompletion,
 )
 
 __all__ = [
@@ -63,4 +64,5 @@ __all__ = [
     "VkLinkOffer",
     "VkLinkResult",
     "VkLinkUnavailable",
+    "VkOAuthCompletion",
 ]

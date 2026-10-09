@@ -8,6 +8,7 @@ from app.config import VkSettings
 
 VK_API_URL = "https://api.vk.ru/method"
 VK_API_VERSION = "5.199"
+VK_ID_AUTHORIZE_URL = "https://id.vk.ru/authorize"
 VK_ID_CODE_EXCHANGE_URL = "https://id.vk.ru/oauth2/auth"
 # users.get answers "Invalid user id" for an id nobody has.
 VK_INVALID_USER_ID_ERROR = 113

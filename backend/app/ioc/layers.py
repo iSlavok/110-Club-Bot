@@ -11,6 +11,7 @@ from app.repositories import (
     MembershipRepository,
     RoleRepository,
     UserRepository,
+    VkAuthRequestRepository,
 )
 from app.services import (
     AdminAccessResolver,
@@ -45,6 +46,7 @@ class RepositoriesProvider(Provider):
         MembershipRepository,
         RoleRepository,
         UserRepository,
+        VkAuthRequestRepository,
     )
 
 
