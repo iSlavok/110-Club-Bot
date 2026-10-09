@@ -4,17 +4,19 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.enums import Permission, RemovalRequestStatus, SheetSyncStatus
+from app.enums import LessonKind, Permission, ReminderKind, RemovalRequestStatus, SheetSyncStatus
 from app.models import (
     AdminSession,
     AdminUser,
     AppSettings,
     Block,
     Club,
+    Lesson,
     LoginCode,
     Membership,
     MembershipRemovalItem,
     MembershipRemovalRequest,
+    Reminder,
     Role,
     SheetSync,
     User,
@@ -170,3 +172,36 @@ async def make_removal_request(
     session.add_all(MembershipRemovalItem(request_id=request.id, vk_id=vk_id) for vk_id in vk_ids)
     await session.flush()
     return request
+
+
+async def make_lesson(session: AsyncSession, club: Club, **overrides: Any) -> Lesson:
+    n = next(_ids)
+    lesson = Lesson(
+        **{
+            "club_id": club.id,
+            "kind": LessonKind.LESSON,
+            "title": f"Lesson {n}",
+            "starts_at": datetime(2026, 10, 2, 16, 0, tzinfo=UTC),
+            "reminder_offsets": [],
+            "homework_reminder_offsets": [],
+            **overrides,
+        },
+    )
+    session.add(lesson)
+    await session.flush()
+    return lesson
+
+
+async def make_reminder(session: AsyncSession, lesson: Lesson, **overrides: Any) -> Reminder:
+    reminder = Reminder(
+        **{
+            "club_id": lesson.club_id,
+            "lesson_id": lesson.id,
+            "kind": ReminderKind.LESSON_UPCOMING,
+            "send_at": lesson.starts_at - timedelta(hours=1),
+            **overrides,
+        },
+    )
+    session.add(reminder)
+    await session.flush()
+    return reminder
