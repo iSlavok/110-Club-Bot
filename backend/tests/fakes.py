@@ -59,8 +59,16 @@ class FakeVkClient:
         self.exchanges: list[dict[str, str]] = []
         self.available = True
 
-    def add_user(self, user_id: int, first_name: str, last_name: str, *, screen_name: str | None = None) -> VkUser:
-        user = VkUser(id=user_id, first_name=first_name, last_name=last_name, is_deactivated=False)
+    def add_user(
+        self,
+        user_id: int,
+        first_name: str,
+        last_name: str,
+        *,
+        screen_name: str | None = None,
+        deactivated: bool = False,
+    ) -> VkUser:
+        user = VkUser(id=user_id, first_name=first_name, last_name=last_name, is_deactivated=deactivated)
         self.users[user_id] = user
         if screen_name is not None:
             self.screen_names[screen_name] = user_id

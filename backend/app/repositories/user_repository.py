@@ -22,6 +22,13 @@ class UserRepository(BaseRepository[User]):
         )
         return await self._session.scalar(statement)
 
+    async def get_by_vk_id(self, vk_id: int) -> User | None:
+        statement = (
+            select(User)
+            .where(User.vk_id == vk_id)
+        )
+        return await self._session.scalar(statement)
+
     async def upsert_by_tg_id(self, *, tg_id: int, tg_username: str | None, full_name: str) -> User:
         values = {"tg_id": tg_id, "tg_username": tg_username, "full_name": full_name}
         # populate_existing refreshes a User already in the identity map; otherwise RETURNING yields the stale object.

@@ -13,6 +13,7 @@ from app.services.role_service import RoleService
 from app.services.status_service import StatusService
 from app.services.user_service import UserService
 from app.services.vk_link_availability import VkLinkAvailability
+from app.services.vk_link_service import VkLinkService
 
 __all__ = [
     "AdminAccessResolver",
@@ -30,4 +31,5 @@ __all__ = [
     "StatusService",
     "UserService",
     "VkLinkAvailability",
+    "VkLinkService",
 ]
