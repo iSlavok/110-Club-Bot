@@ -5,7 +5,6 @@ from app.services.auth_cleanup_service import AuthCleanupService
 from app.services.block_service import BlockService
 from app.services.club_service import ClubService
 from app.services.club_stats_service import ClubStatsService
-from app.services.dashboard_service import DashboardService
 from app.services.health_service import HealthService
 from app.services.login_service import LoginService
 from app.services.role_service import RoleService
@@ -19,7 +18,6 @@ __all__ = [
     "BlockService",
     "ClubService",
     "ClubStatsService",
-    "DashboardService",
     "HealthService",
     "LoginService",
     "RoleService",

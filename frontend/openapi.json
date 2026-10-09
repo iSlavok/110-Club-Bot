@@ -1387,52 +1387,6 @@
           }
         }
       }
-    },
-    "/api/v1/dashboard/stats": {
-      "get": {
-        "tags": [
-          "dashboard"
-        ],
-        "summary": "Get Dashboard Stats",
-        "operationId": "get_dashboard_stats",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DashboardStatsResponse"
-                }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Domain or auth error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ValidationErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ]
-      }
     }
   },
   "components": {
@@ -1965,38 +1919,6 @@
           "members_with_tg"
         ],
         "title": "CurrentBlockStatsResponse"
-      },
-      "DashboardStatsResponse": {
-        "properties": {
-          "active_clubs": {
-            "type": "integer",
-            "title": "Active Clubs",
-            "description": "Active clubs"
-          },
-          "current_blocks": {
-            "type": "integer",
-            "title": "Current Blocks",
-            "description": "Blocks of active clubs running now"
-          },
-          "users": {
-            "type": "integer",
-            "title": "Users",
-            "description": "Users who started the bot"
-          },
-          "users_with_vk": {
-            "type": "integer",
-            "title": "Users With Vk",
-            "description": "Users with a linked VK profile"
-          }
-        },
-        "type": "object",
-        "required": [
-          "active_clubs",
-          "current_blocks",
-          "users",
-          "users_with_vk"
-        ],
-        "title": "DashboardStatsResponse"
       },
       "ErrorResponse": {
         "properties": {

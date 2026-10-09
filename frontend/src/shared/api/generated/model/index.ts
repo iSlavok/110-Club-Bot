@@ -21,7 +21,6 @@ export * from './clubText';
 export * from './clubUpdate';
 export * from './currentAdminResponse';
 export * from './currentBlockStatsResponse';
-export * from './dashboardStatsResponse';
 export * from './errorResponse';
 export * from './fieldError';
 export * from './listAdminsParams';
