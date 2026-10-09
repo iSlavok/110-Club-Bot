@@ -17,11 +17,13 @@ from app.services import (
     AdminUserService,
     AuthCleanupService,
     BlockService,
+    BotAdminService,
     ClubService,
     ClubStatsService,
     HealthService,
     LoginService,
     RoleService,
+    StatusService,
     UserService,
 )
 
@@ -56,10 +58,12 @@ class ServicesProvider(Provider):
         AdminUserService,
         AuthCleanupService,
         BlockService,
+        BotAdminService,
         ClubService,
         ClubStatsService,
         HealthService,
         LoginService,
         RoleService,
+        StatusService,
         UserService,
     )

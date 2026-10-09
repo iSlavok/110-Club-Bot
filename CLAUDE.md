@@ -91,7 +91,7 @@ backend/
     enums/  types/  utils/
     ioc/          dishka-провайдеры
   api/            FastAPI: роуты, схемы ответов (`schemas/`), auth-зависимости, exception handlers
-  bot/            aiogram: роутеры, хендлеры, клавиатуры, callback data, middlewares
+  bot/            aiogram: роутеры, хендлеры, фильтры, клавиатуры, callback data, middlewares
   worker/         APScheduler: регистрация и функции периодических задач
   main.py         composition root: запуск api + bot + worker
 ```
@@ -171,6 +171,8 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 - Callback data — только классы `CallbackData`, без сырых строк.
 - Порядок outer middlewares важен: ошибки → контейнер → пользователь. Ошибки снаружи контейнера: перехваченная доменная ошибка должна выйти из request scope исключением, иначе частичные изменения закоммитятся (проверяет `tests/bot/test_dispatcher.py`).
 - `TelegramForbiddenError` (бот заблокирован) — ожидаемо, не ошибка.
+- Админские команды — в `bot/handlers/admin_commands.py`: роутер с фильтром `is_admin` (владелец или активный админ с ролью, `BotAdminService`). Не админ — апдейт не обработан, как неизвестная команда. Новая админская команда — хендлер в этот роутер, проверку не повторяй.
+- `/status` собирает `StatusService.build()` → `StatusReport`, текст — `app/texts/status.py`. Новый раздел: поле в `ClubStatus` (по клубу) или `StatusReport` (общее), метод `_x_section` в `StatusService` (как `_current_block_section`) и его вызов в `_club_status` / `build`, строки в `texts/status.py`. Агрегации для раздела — в `app/queries`.
 
 ### Telegram из ядра (`app/telegram/`)
 

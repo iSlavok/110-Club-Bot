@@ -16,6 +16,15 @@ class ClubRepository(BaseRepository[Club]):
         )
         return await self._session.scalar(statement)
 
+    async def list_active(self) -> list[Club]:
+        statement = (
+            select(Club)
+            .where(Club.is_active)
+            .order_by(Club.title)
+        )
+        clubs = await self._session.scalars(statement)
+        return list(clubs)
+
     async def list_page(self, *, limit: int, offset: int) -> PageResult[Club]:
         count_statement = (
             select(func.count())
