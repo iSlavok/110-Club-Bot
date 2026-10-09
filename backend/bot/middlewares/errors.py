@@ -7,8 +7,8 @@ from aiogram.exceptions import TelegramAPIError
 from aiogram.types import CallbackQuery, Message, TelegramObject
 from loguru import logger
 
+from app import texts
 from app.exceptions import AppError
-from bot import texts
 
 
 class ErrorsMiddleware(BaseMiddleware):

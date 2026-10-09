@@ -2,9 +2,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from app import texts
 from app.exceptions import AdminAccessDeniedError
 from app.services import LoginService
-from bot import texts
 from bot.handlers.admin_login import login
 from tests.factories import make_admin_user, make_role
 

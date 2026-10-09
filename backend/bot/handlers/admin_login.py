@@ -4,9 +4,9 @@ from aiogram.filters import Command
 from aiogram.types import Message
 from dishka.integrations.aiogram import FromDishka
 
+from app import texts
 from app.schemas import TelegramProfile
 from app.services import LoginService
-from bot import texts
 
 router = Router(name="admin_login")
 router.message.filter(F.chat.type == ChatType.PRIVATE)

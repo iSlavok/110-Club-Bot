@@ -86,10 +86,11 @@ backend/
     schemas/      pydantic: DTO моделей, команды (XCreate / XUpdate) и прочее, что сервисы принимают и отдают
     clients/      внешние API: Google Sheets, VK, хранилище файлов
     exceptions/   доменные исключения
+    texts/        все тексты для пользователей: ответы бота, напоминания, алерты
     enums/  types/  utils/
     ioc/          dishka-провайдеры
   api/            FastAPI: роуты, схемы ответов (`schemas/`), auth-зависимости, exception handlers
-  bot/            aiogram: роутеры, хендлеры, клавиатуры, callback data, middlewares, тексты
+  bot/            aiogram: роутеры, хендлеры, клавиатуры, callback data, middlewares
   worker/         APScheduler: регистрация и функции периодических задач
   main.py         composition root: запуск api + bot + worker
 ```
@@ -165,7 +166,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 ### Bot (aiogram)
 
 - Хендлеры тонкие: разобрать апдейт, вызвать сервис, ответить. Бизнес-логики нет.
-- Тексты для пользователя — в `bot/texts/`, не строками в хендлерах и клавиатурах.
+- Тексты для пользователя — в `app/texts/`, не строками в хендлерах и клавиатурах: их собирают и хендлеры, и сервисы / worker, а ядро `bot/` не импортирует.
 - Callback data — только классы `CallbackData`, без сырых строк.
 - Порядок outer middlewares важен: ошибки → контейнер → пользователь. Ошибки снаружи контейнера: перехваченная доменная ошибка должна выйти из request scope исключением, иначе частичные изменения закоммитятся (проверяет `tests/bot/test_dispatcher.py`).
 - Отправка в Telegram — через общий rate limiter. `TelegramForbiddenError` (бот заблокирован) — ожидаемо, не ошибка.
@@ -181,7 +182,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 - Базовые теги в `app/exceptions/base.py`: `NotFoundError`, `InvalidInputError`, `ConflictError`, `AuthenticationError`, `AuthorizationError`, `ExternalServiceError` и т. д. Каждое доменное исключение наследует **ровно один** тег.
 - `code` выводится из имени класса (`LessonNotFoundError` → `LESSON_NOT_FOUND`). HTTP-статус на исключении не хранится: тег → статус только в API exception handler, разрешается по MRO.
 - Один формат ошибки на всё API: `{"code": "LESSON_NOT_FOUND", "message": "..."}`. Ошибки валидации запроса — `VALIDATION_FAILED`, необработанные — `INTERNAL_ERROR` без деталей.
-- Бот ловит доменные исключения в error middleware, отвечает текстом из `bot/texts/`.
+- Бот ловит доменные исключения в error middleware, отвечает текстом из `app/texts/`.
 
 ### Настройки
 
@@ -214,7 +215,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 
 - PEP 695 generics (`class BaseRepository[ModelType: Base]`), аннотации типов везде.
 - `await` не прячем внутри выражения (`X.from_dto(await ...)`, `bool(await ...)`, `[... for x in await ...]`, `total=await ...` в аргументах): результат — в переменную, отдельной строкой преобразование. `return await repo.get(...)` без обёртки — можно.
-- Имя файла компонента слоя — с суффиксом слоя, сущность в единственном числе: `club_repository.py`, `club_service.py`, `dashboard_queries.py`, `dashboard_rows.py`, `club_schemas.py` (и в `app/schemas/`, и в `api/schemas/`), роуты — во множественном: `clubs_routes.py`. Класс-помощник без суффикса слоя — файл по имени класса (`admin_access_resolver.py`). Без суффикса: `models/` (`club.py`), `enums/`, `exceptions/`, бот (`handlers/start.py`, `texts/auth.py`) и технические модули (`database/`, `config/`, `ioc/`, `utils/`, `api/core/`). Тест — `test_<имя модуля>.py`.
+- Имя файла компонента слоя — с суффиксом слоя, сущность в единственном числе: `club_repository.py`, `club_service.py`, `dashboard_queries.py`, `dashboard_rows.py`, `club_schemas.py` (и в `app/schemas/`, и в `api/schemas/`), роуты — во множественном: `clubs_routes.py`. Класс-помощник без суффикса слоя — файл по имени класса (`admin_access_resolver.py`). Без суффикса: `models/` (`club.py`), `enums/`, `exceptions/`, `texts/` (`auth.py`), бот (`handlers/start.py`) и технические модули (`database/`, `config/`, `ioc/`, `utils/`, `api/core/`). Тест — `test_<имя модуля>.py`.
 - `__init__.py` — только импорты и `__all__`. Фабрики, роутеры, прочая логика — в отдельных модулях (`router.py`, `container.py`).
 - ruff (line length 120, двойные кавычки, trailing commas), `ruff format`. pyright без ошибок. Версии ruff и pyright в pre-commit, CI и `uv.lock` совпадают.
 - Без `print`: только loguru, плейсхолдеры `{}` вместо f-строк.
