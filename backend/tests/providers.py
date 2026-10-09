@@ -9,7 +9,7 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, async_sessionmaker
 
 from app.clients import LoginThrottle
-from app.config import AlertsSettings, AuthSettings, BotSettings, DatabaseSettings
+from app.config import AlertsSettings, AuthSettings, BotSettings, DatabaseSettings, PublicSettings
 from app.telegram import AdminAlerts, RateLimitMiddleware
 from app.utils import Clock
 from tests.fakes import FakeLoginThrottle, FakeTimer, FrozenClock
@@ -19,6 +19,7 @@ OWNER_TG_ID = 777
 BOT_TOKEN = "123456:test-token"
 BOT_USERNAME = "club_test_bot"
 ALERTS_CHAT_ID = -1001
+PUBLIC_URL = "https://club.example.com"
 
 
 class TestDatabaseProvider(Provider):
@@ -67,6 +68,10 @@ class TestInfraProvider(Provider):
     @provide
     def bot_settings(self) -> BotSettings:
         return BotSettings(token=SecretStr(BOT_TOKEN))
+
+    @provide
+    def public_settings(self) -> PublicSettings:
+        return PublicSettings(url=PUBLIC_URL)
 
     @provide
     def alerts_settings(self) -> AlertsSettings:
