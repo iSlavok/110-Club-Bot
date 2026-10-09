@@ -38,12 +38,14 @@ from app.exceptions.clubs import (
     InvalidBlockPeriodError,
 )
 from app.exceptions.common import EmptyUpdateError
+from app.exceptions.settings import AppSettingsMissingError, VkLinkModeNotConfiguredError
 
 __all__ = [
     "AdminAccessDeniedError",
     "AdminAlreadyExistsError",
     "AdminUserNotFoundError",
     "AppError",
+    "AppSettingsMissingError",
     "AuthenticationError",
     "AuthorizationError",
     "BlockColumnTakenError",
@@ -71,5 +73,6 @@ __all__ = [
     "TelegramUnavailableError",
     "TooManyLoginAttemptsError",
     "TooManyRequestsError",
+    "VkLinkModeNotConfiguredError",
     "WidgetLoginDisabledError",
 ]

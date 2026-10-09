@@ -13,6 +13,7 @@ PERMISSION_CATALOG = (
     PermissionInfo(code=Permission.ADMINS_VIEW, title="Просмотр админов и ролей", group=PermissionGroup.ADMINS),
     PermissionInfo(code=Permission.ADMINS_EDIT, title="Добавление и изменение админов", group=PermissionGroup.ADMINS),
     PermissionInfo(code=Permission.ROLES_EDIT, title="Управление ролями", group=PermissionGroup.ADMINS),
+    PermissionInfo(code=Permission.SETTINGS_EDIT, title="Изменение настроек бота", group=PermissionGroup.SETTINGS),
 )
 
 

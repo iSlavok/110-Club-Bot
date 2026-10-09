@@ -1387,6 +1387,106 @@
           }
         }
       }
+    },
+    "/api/v1/settings": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Get Settings",
+        "operationId": "get_settings",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppSettingsResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Update Settings",
+        "operationId": "update_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppSettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppSettingsResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -1494,6 +1594,51 @@
         "additionalProperties": false,
         "type": "object",
         "title": "AdminUserUpdate"
+      },
+      "AppSettingsResponse": {
+        "properties": {
+          "vk_link_mode": {
+            "$ref": "#/components/schemas/VkLinkMode",
+            "description": "How students link their VK profile in the bot"
+          },
+          "configured_vk_link_modes": {
+            "items": {
+              "$ref": "#/components/schemas/VkLinkMode"
+            },
+            "type": "array",
+            "title": "Configured Vk Link Modes",
+            "description": "Modes with credentials in the server environment; only these can be switched on"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last change, UTC"
+          }
+        },
+        "type": "object",
+        "required": [
+          "vk_link_mode",
+          "configured_vk_link_modes",
+          "updated_at"
+        ],
+        "title": "AppSettingsResponse"
+      },
+      "AppSettingsUpdate": {
+        "properties": {
+          "vk_link_mode": {
+            "type": "string",
+            "enum": [
+              "link",
+              "oauth"
+            ],
+            "title": "VkLinkMode",
+            "description": "How students link their VK profile in the bot"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "AppSettingsUpdate"
       },
       "AuthConfigResponse": {
         "properties": {
@@ -2166,7 +2311,8 @@
           "users.view",
           "admins.view",
           "admins.edit",
-          "roles.edit"
+          "roles.edit",
+          "settings.edit"
         ],
         "title": "Permission"
       },
@@ -2175,7 +2321,8 @@
         "enum": [
           "clubs",
           "users",
-          "admins"
+          "admins",
+          "settings"
         ],
         "title": "PermissionGroup"
       },
@@ -2468,6 +2615,14 @@
           "fields"
         ],
         "title": "ValidationErrorResponse"
+      },
+      "VkLinkMode": {
+        "type": "string",
+        "enum": [
+          "link",
+          "oauth"
+        ],
+        "title": "VkLinkMode"
       }
     },
     "securitySchemes": {

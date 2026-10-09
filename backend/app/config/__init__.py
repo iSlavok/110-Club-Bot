@@ -9,6 +9,7 @@ from app.config.settings import (
     PublicSettings,
     RedisSettings,
     Settings,
+    VkSettings,
 )
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     "PublicSettings",
     "RedisSettings",
     "Settings",
+    "VkSettings",
     "setup_logging",
 ]

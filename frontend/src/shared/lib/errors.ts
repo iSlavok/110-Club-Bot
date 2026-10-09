@@ -21,6 +21,7 @@ const MESSAGES: Record<string, string> = {
   BLOCK_COLUMN_TAKEN: 'В этом клубе уже есть блок с таким столбцом таблицы.',
   INVALID_BLOCK_PERIOD: 'Блок должен заканчиваться позже, чем начинается.',
   BLOCK_HAS_MEMBERS: 'В блоке есть участники из таблицы — удалить нельзя.',
+  VK_LINK_MODE_NOT_CONFIGURED: 'Этот способ привязки VK не настроен на сервере.',
   VALIDATION_FAILED: 'Проверьте заполнение полей.',
 };
 

@@ -74,6 +74,16 @@ class AlertsSettings(BaseModel):
         return None if value == "" else value
 
 
+class VkSettings(BaseModel):
+    client_id: int | None = None
+    service_token: SecretStr | None = None
+
+    @field_validator("client_id", "service_token", mode="before")
+    @classmethod
+    def _empty_is_none(cls, value: object) -> object:
+        return None if value == "" else value
+
+
 class LogSettings(BaseModel):
     level: str = "INFO"
 
@@ -89,4 +99,5 @@ class Settings(BaseSettings):
     public: PublicSettings = PublicSettings()
     auth: AuthSettings = AuthSettings()
     alerts: AlertsSettings = AlertsSettings()
+    vk: VkSettings = VkSettings()
     log: LogSettings = LogSettings()

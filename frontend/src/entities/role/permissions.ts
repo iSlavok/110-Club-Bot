@@ -4,6 +4,7 @@ export const PERMISSION_GROUP_TITLES: Record<PermissionGroup, string> = {
   clubs: 'Клубы',
   users: 'Пользователи',
   admins: 'Админы и роли',
+  settings: 'Настройки',
 };
 
 export function groupPermissions(

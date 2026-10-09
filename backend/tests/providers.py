@@ -9,7 +9,7 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, async_sessionmaker
 
 from app.clients import LoginThrottle
-from app.config import AlertsSettings, AuthSettings, BotSettings, DatabaseSettings, PublicSettings
+from app.config import AlertsSettings, AuthSettings, BotSettings, DatabaseSettings, PublicSettings, VkSettings
 from app.telegram import AdminAlerts, CommandMenu, RateLimitMiddleware
 from app.utils import Clock
 from tests.fakes import FakeLoginThrottle, FakeTimer, FrozenClock
@@ -20,6 +20,8 @@ BOT_TOKEN = "123456:test-token"
 BOT_USERNAME = "club_test_bot"
 ALERTS_CHAT_ID = -1001
 PUBLIC_URL = "https://club.example.com"
+VK_CLIENT_ID = 5100001
+VK_SERVICE_TOKEN = "vk-service-token"
 
 
 class TestDatabaseProvider(Provider):
@@ -77,6 +79,10 @@ class TestInfraProvider(Provider):
     @provide
     def alerts_settings(self) -> AlertsSettings:
         return AlertsSettings(chat_id=ALERTS_CHAT_ID)
+
+    @provide
+    def vk_settings(self) -> VkSettings:
+        return VkSettings(client_id=VK_CLIENT_ID, service_token=SecretStr(VK_SERVICE_TOKEN))
 
     @provide
     def login_throttle(self) -> LoginThrottle:

@@ -4,6 +4,7 @@ from app.queries import ClubStatsQueries, SystemQueries
 from app.repositories import (
     AdminSessionRepository,
     AdminUserRepository,
+    AppSettingsRepository,
     BlockRepository,
     ClubRepository,
     LoginCodeRepository,
@@ -15,6 +16,7 @@ from app.services import (
     AdminAccessResolver,
     AdminSessionService,
     AdminUserService,
+    AppSettingsService,
     AuthCleanupService,
     BlockService,
     BotAdminService,
@@ -25,6 +27,7 @@ from app.services import (
     RoleService,
     StatusService,
     UserService,
+    VkLinkAvailability,
 )
 
 
@@ -34,6 +37,7 @@ class RepositoriesProvider(Provider):
     repositories = provide_all(
         AdminSessionRepository,
         AdminUserRepository,
+        AppSettingsRepository,
         BlockRepository,
         ClubRepository,
         LoginCodeRepository,
@@ -56,6 +60,7 @@ class ServicesProvider(Provider):
         AdminAccessResolver,
         AdminSessionService,
         AdminUserService,
+        AppSettingsService,
         AuthCleanupService,
         BlockService,
         BotAdminService,
@@ -66,4 +71,5 @@ class ServicesProvider(Provider):
         RoleService,
         StatusService,
         UserService,
+        VkLinkAvailability,
     )

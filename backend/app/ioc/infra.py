@@ -16,6 +16,7 @@ from app.config import (
     PublicSettings,
     RedisSettings,
     Settings,
+    VkSettings,
 )
 from app.telegram import AdminAlerts, CommandMenu, RateLimitMiddleware, SystemTimer
 from app.utils import Clock, SystemClock
@@ -53,6 +54,10 @@ class SettingsProvider(Provider):
     @provide
     def alerts(self, settings: Settings) -> AlertsSettings:
         return settings.alerts
+
+    @provide
+    def vk(self, settings: Settings) -> VkSettings:
+        return settings.vk
 
 
 class InfraProvider(Provider):
