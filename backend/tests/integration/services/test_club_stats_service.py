@@ -4,7 +4,7 @@ import pytest
 
 from app.exceptions import ClubNotFoundError
 from app.services import ClubStatsService
-from tests.factories import make_block, make_club, make_membership, make_user
+from tests.factories import make_block, make_club, make_membership, make_sheet_sync, make_user
 
 
 @pytest.fixture
@@ -35,6 +35,26 @@ async def test_no_current_block(service, db_session, clock) -> None:
     stats = await service.get(club.id)
 
     assert stats.current_block is None
+
+
+async def test_latest_sync(service, db_session) -> None:
+    club = await make_club(db_session)
+    await make_sheet_sync(db_session, club, started_at=datetime(2026, 10, 1, 8, 0, tzinfo=UTC))
+    latest = await make_sheet_sync(db_session, club, started_at=datetime(2026, 10, 1, 8, 10, tzinfo=UTC))
+    await make_sheet_sync(db_session, await make_club(db_session), started_at=datetime(2026, 10, 1, 8, 20, tzinfo=UTC))
+
+    stats = await service.get(club.id)
+
+    assert stats.last_sync is not None
+    assert stats.last_sync.id == latest.id
+
+
+async def test_never_synced(service, db_session) -> None:
+    club = await make_club(db_session)
+
+    stats = await service.get(club.id)
+
+    assert stats.last_sync is None
 
 
 async def test_unknown_club(service) -> None:

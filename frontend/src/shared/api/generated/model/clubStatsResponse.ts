@@ -5,8 +5,11 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CurrentBlockStatsResponse } from './currentBlockStatsResponse';
+import type { SheetSyncResponse } from './sheetSyncResponse';
 
 export interface ClubStatsResponse {
   /** Block running now, null between blocks */
   current_block: CurrentBlockStatsResponse | null;
+  /** Latest sheet sync of the club, null if it never ran */
+  last_sync: SheetSyncResponse | null;
 }
