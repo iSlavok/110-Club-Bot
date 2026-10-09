@@ -23,7 +23,7 @@ src/
   pages/      страница = файл; собирает features/entities, своей логики почти нет
   features/   действия пользователя: формы, модалки, подтверждения (вход, клуб, блок, админ, роль)
   entities/   доменные кирпичи без действий: сессия и права, статус блока, группировка прав
-  shared/     api (сгенерированный клиент + http-мутатор), lib (даты, ошибки, уведомления, пагинация), ui, config
+  shared/     api (сгенерированный клиент + http-мутатор), lib (даты, ошибки, уведомления, лента), ui, config
   test/       setup, MSW-сервер, фикстуры, render-хелперы
 ```
 
@@ -34,12 +34,20 @@ src/
 
 ## API
 
-- Клиент генерирует orval из `openapi.json` в `src/shared/api/generated/`. Руками не правим. Изменилась схема бэка → `make gen`, коммить `openapi.json` и `generated/` вместе с бэком. CI сверяет.
+- Клиент генерирует orval из `openapi.json` в `src/shared/api/generated/`. Руками не правим. GET с параметром `page` получают и infinite-хук (`useInfiniteQueryParam: 'page'`). Изменилась схема бэка → `make gen`, коммить `openapi.json` и `generated/` вместе с бэком. CI сверяет.
 - Импорт — только из `@/shared/api` (хуки, типы, `ApiError`).
 - Запросы идут на тот же origin (`/api/v1/...`), сессия — httpOnly cookie. Токенов в JS нет.
 - Ошибка API → `ApiError { status, code, message, fields }`. Текст пользователю — `errorMessage(error)` по `code` (`shared/lib/errors.ts`). Новый код ошибки на бэке → строка там же. Ошибки полей 422 → `form.setErrors(fieldErrors(error))`.
 - После любой успешной мутации `QueryClient` инвалидирует все запросы, кроме `/auth/me`. Руками `invalidateQueries` в фичах не зови.
 - 401 на любом запросе → перезапрос `/auth/me` → guard уводит на `/login`.
+
+## Списки
+
+- Любой список — лента: `InfiniteList` (`shared/ui`) + orval-хук `use…Infinite` с опциями `infinitePage` → `useInfinitePage` (`shared/lib/infinite-page.ts`). API отдаёт `Page[T]`, следующая страница грузится, когда конец ленты виден (`IntersectionObserver`), и так до последней. Номеров страниц нет.
+- Хук orval вызывай отдельной строкой и передавай результат в `useInfinitePage`: вложенный вызов теряет тип элементов.
+- Фильтры и сортировка — слот `filters` над лентой, это параметры запроса, а не фильтр на клиенте. Смена фильтра начинает ленту заново; старые строки видны, пока не придут новые.
+- Короткий список, который API отдаёт целиком (роли), — `wholeList(query)` в тот же `InfiniteList`.
+- Тесты: MSW-хендлер отвечает `pageOf(items, request)`, `revealListEnds()` — «доскроллить» до конца ленты.
 
 ## Права
 

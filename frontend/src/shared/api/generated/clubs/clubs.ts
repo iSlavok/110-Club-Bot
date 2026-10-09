@@ -4,16 +4,20 @@
  * 110 Club Admin API
  * OpenAPI spec version: 0.1.0
  */
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
+  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
+  InfiniteData,
   MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseInfiniteQueryOptions,
+  UseInfiniteQueryResult,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -83,9 +87,162 @@ export const listClubs = async (
   });
 };
 
+export const getListClubsInfiniteQueryKey = (params?: ListClubsParams) => {
+  return ['infinite', `/api/v1/clubs`, ...(params ? [params] : [])] as const;
+};
+
 export const getListClubsQueryKey = (params?: ListClubsParams) => {
   return [`/api/v1/clubs`, ...(params ? [params] : [])] as const;
 };
+
+export const getListClubsInfiniteQueryOptions = <
+  TData = InfiniteData<Awaited<ReturnType<typeof listClubs>>, ListClubsParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params?: ListClubsParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listClubs>>,
+        TError,
+        TData,
+        QueryKey,
+        ListClubsParams['page']
+      >
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListClubsInfiniteQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listClubs>>,
+    QueryKey,
+    ListClubsParams['page']
+  > = ({ signal, pageParam }) =>
+    listClubs({ ...params, page: pageParam ?? params?.['page'] }, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof listClubs>>,
+    TError,
+    TData,
+    QueryKey,
+    ListClubsParams['page']
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type ListClubsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof listClubs>>>;
+export type ListClubsInfiniteQueryError = ErrorType<ValidationErrorResponse | ErrorResponse>;
+
+export function useListClubsInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listClubs>>, ListClubsParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params: undefined | ListClubsParams,
+  options: {
+    query: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listClubs>>,
+        TError,
+        TData,
+        QueryKey,
+        ListClubsParams['page']
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listClubs>>,
+          TError,
+          Awaited<ReturnType<typeof listClubs>>,
+          QueryKey
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useListClubsInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listClubs>>, ListClubsParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params?: ListClubsParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listClubs>>,
+        TError,
+        TData,
+        QueryKey,
+        ListClubsParams['page']
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listClubs>>,
+          TError,
+          Awaited<ReturnType<typeof listClubs>>,
+          QueryKey
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useListClubsInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listClubs>>, ListClubsParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params?: ListClubsParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listClubs>>,
+        TError,
+        TData,
+        QueryKey,
+        ListClubsParams['page']
+      >
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary List Clubs
+ */
+
+export function useListClubsInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listClubs>>, ListClubsParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params?: ListClubsParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listClubs>>,
+        TError,
+        TData,
+        QueryKey,
+        ListClubsParams['page']
+      >
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListClubsInfiniteQueryOptions(params, options);
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as UseInfiniteQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
 
 export const getListClubsQueryOptions = <
   TData = Awaited<ReturnType<typeof listClubs>>,
@@ -678,9 +835,176 @@ export const listBlocks = async (
   });
 };
 
+export const getListBlocksInfiniteQueryKey = (clubId: number, params?: ListBlocksParams) => {
+  return ['infinite', `/api/v1/clubs/${clubId}/blocks`, ...(params ? [params] : [])] as const;
+};
+
 export const getListBlocksQueryKey = (clubId: number, params?: ListBlocksParams) => {
   return [`/api/v1/clubs/${clubId}/blocks`, ...(params ? [params] : [])] as const;
 };
+
+export const getListBlocksInfiniteQueryOptions = <
+  TData = InfiniteData<Awaited<ReturnType<typeof listBlocks>>, ListBlocksParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  clubId: number,
+  params?: ListBlocksParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listBlocks>>,
+        TError,
+        TData,
+        QueryKey,
+        ListBlocksParams['page']
+      >
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListBlocksInfiniteQueryKey(clubId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBlocks>>,
+    QueryKey,
+    ListBlocksParams['page']
+  > = ({ signal, pageParam }) =>
+    listBlocks(
+      clubId,
+      { ...params, page: pageParam ?? params?.['page'] },
+      { signal, ...requestOptions },
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: clubId !== null && clubId !== undefined,
+    ...queryOptions,
+  } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof listBlocks>>,
+    TError,
+    TData,
+    QueryKey,
+    ListBlocksParams['page']
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type ListBlocksInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof listBlocks>>>;
+export type ListBlocksInfiniteQueryError = ErrorType<ValidationErrorResponse | ErrorResponse>;
+
+export function useListBlocksInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listBlocks>>, ListBlocksParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  clubId: number,
+  params: undefined | ListBlocksParams,
+  options: {
+    query: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listBlocks>>,
+        TError,
+        TData,
+        QueryKey,
+        ListBlocksParams['page']
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listBlocks>>,
+          TError,
+          Awaited<ReturnType<typeof listBlocks>>,
+          QueryKey
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useListBlocksInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listBlocks>>, ListBlocksParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  clubId: number,
+  params?: ListBlocksParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listBlocks>>,
+        TError,
+        TData,
+        QueryKey,
+        ListBlocksParams['page']
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listBlocks>>,
+          TError,
+          Awaited<ReturnType<typeof listBlocks>>,
+          QueryKey
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useListBlocksInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listBlocks>>, ListBlocksParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  clubId: number,
+  params?: ListBlocksParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listBlocks>>,
+        TError,
+        TData,
+        QueryKey,
+        ListBlocksParams['page']
+      >
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary List Blocks
+ */
+
+export function useListBlocksInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listBlocks>>, ListBlocksParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  clubId: number,
+  params?: ListBlocksParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listBlocks>>,
+        TError,
+        TData,
+        QueryKey,
+        ListBlocksParams['page']
+      >
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListBlocksInfiniteQueryOptions(clubId, params, options);
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as UseInfiniteQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
 
 export const getListBlocksQueryOptions = <
   TData = Awaited<ReturnType<typeof listBlocks>>,

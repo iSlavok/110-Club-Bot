@@ -5,17 +5,16 @@ import { useNavigate } from 'react-router';
 
 import { Can } from '@/entities/session';
 import { ClubFormModal } from '@/features/club';
-import { useListClubs } from '@/shared/api';
+import { useListClubsInfinite } from '@/shared/api';
 import { routes } from '@/shared/config/routes';
-import { usePage } from '@/shared/lib/use-page';
+import { infinitePage, PER_PAGE, useInfinitePage } from '@/shared/lib/infinite-page';
+import { InfiniteList } from '@/shared/ui/InfiniteList';
 import { PageHeader } from '@/shared/ui/PageHeader';
-import { QueryState } from '@/shared/ui/QueryState';
-import { TablePagination } from '@/shared/ui/TablePagination';
 
 export function ClubsPage() {
   const navigate = useNavigate();
-  const page = usePage();
-  const clubs = useListClubs(page.params);
+  const query = useListClubsInfinite({ per_page: PER_PAGE }, infinitePage);
+  const clubs = useInfinitePage(query);
   const [creating, setCreating] = useState(false);
 
   return (
@@ -35,50 +34,42 @@ export function ClubsPage() {
           </Can>
         }
       />
-      <QueryState data={clubs.data} error={clubs.error} isPending={clubs.isPending}>
-        {(data) => (
-          <>
-            <Table.ScrollContainer minWidth={600}>
-              <Table highlightOnHover verticalSpacing="sm">
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th>Название</Table.Th>
-                    <Table.Th>Чат</Table.Th>
-                    <Table.Th>Лист таблицы</Table.Th>
-                    <Table.Th>Статус</Table.Th>
+      <InfiniteList list={clubs} emptyText="Клубов пока нет">
+        {(items) => (
+          <Table.ScrollContainer minWidth={600}>
+            <Table highlightOnHover verticalSpacing="sm">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Название</Table.Th>
+                  <Table.Th>Чат</Table.Th>
+                  <Table.Th>Лист таблицы</Table.Th>
+                  <Table.Th>Статус</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {items.map((club) => (
+                  <Table.Tr
+                    key={club.id}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
+                      void navigate(routes.club(club.id));
+                    }}
+                  >
+                    <Table.Td fw={500}>{club.title}</Table.Td>
+                    <Table.Td>{club.chat_id ?? <Text c="dimmed">—</Text>}</Table.Td>
+                    <Table.Td>{club.sheet_name ?? <Text c="dimmed">—</Text>}</Table.Td>
+                    <Table.Td>
+                      <Badge color={club.is_active ? 'teal' : 'gray'} variant="light">
+                        {club.is_active ? 'Активен' : 'Выключен'}
+                      </Badge>
+                    </Table.Td>
                   </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {data.items.map((club) => (
-                    <Table.Tr
-                      key={club.id}
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => {
-                        void navigate(routes.club(club.id));
-                      }}
-                    >
-                      <Table.Td fw={500}>{club.title}</Table.Td>
-                      <Table.Td>{club.chat_id ?? <Text c="dimmed">—</Text>}</Table.Td>
-                      <Table.Td>{club.sheet_name ?? <Text c="dimmed">—</Text>}</Table.Td>
-                      <Table.Td>
-                        <Badge color={club.is_active ? 'teal' : 'gray'} variant="light">
-                          {club.is_active ? 'Активен' : 'Выключен'}
-                        </Badge>
-                      </Table.Td>
-                    </Table.Tr>
-                  ))}
-                </Table.Tbody>
-              </Table>
-            </Table.ScrollContainer>
-            {data.items.length === 0 && (
-              <Text c="dimmed" ta="center" py="xl">
-                Клубов пока нет
-              </Text>
-            )}
-            <TablePagination state={page} result={data} />
-          </>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
         )}
-      </QueryState>
+      </InfiniteList>
       {creating && (
         <ClubFormModal
           opened

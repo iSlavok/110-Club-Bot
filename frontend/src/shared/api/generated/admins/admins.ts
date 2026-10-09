@@ -4,16 +4,20 @@
  * 110 Club Admin API
  * OpenAPI spec version: 0.1.0
  */
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
+  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
+  InfiniteData,
   MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseInfiniteQueryOptions,
+  UseInfiniteQueryResult,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -77,9 +81,162 @@ export const listAdmins = async (
   });
 };
 
+export const getListAdminsInfiniteQueryKey = (params?: ListAdminsParams) => {
+  return ['infinite', `/api/v1/admins`, ...(params ? [params] : [])] as const;
+};
+
 export const getListAdminsQueryKey = (params?: ListAdminsParams) => {
   return [`/api/v1/admins`, ...(params ? [params] : [])] as const;
 };
+
+export const getListAdminsInfiniteQueryOptions = <
+  TData = InfiniteData<Awaited<ReturnType<typeof listAdmins>>, ListAdminsParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params?: ListAdminsParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listAdmins>>,
+        TError,
+        TData,
+        QueryKey,
+        ListAdminsParams['page']
+      >
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListAdminsInfiniteQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listAdmins>>,
+    QueryKey,
+    ListAdminsParams['page']
+  > = ({ signal, pageParam }) =>
+    listAdmins({ ...params, page: pageParam ?? params?.['page'] }, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof listAdmins>>,
+    TError,
+    TData,
+    QueryKey,
+    ListAdminsParams['page']
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type ListAdminsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof listAdmins>>>;
+export type ListAdminsInfiniteQueryError = ErrorType<ValidationErrorResponse | ErrorResponse>;
+
+export function useListAdminsInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listAdmins>>, ListAdminsParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params: undefined | ListAdminsParams,
+  options: {
+    query: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listAdmins>>,
+        TError,
+        TData,
+        QueryKey,
+        ListAdminsParams['page']
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAdmins>>,
+          TError,
+          Awaited<ReturnType<typeof listAdmins>>,
+          QueryKey
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useListAdminsInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listAdmins>>, ListAdminsParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params?: ListAdminsParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listAdmins>>,
+        TError,
+        TData,
+        QueryKey,
+        ListAdminsParams['page']
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAdmins>>,
+          TError,
+          Awaited<ReturnType<typeof listAdmins>>,
+          QueryKey
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useListAdminsInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listAdmins>>, ListAdminsParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params?: ListAdminsParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listAdmins>>,
+        TError,
+        TData,
+        QueryKey,
+        ListAdminsParams['page']
+      >
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary List Admins
+ */
+
+export function useListAdminsInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listAdmins>>, ListAdminsParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params?: ListAdminsParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listAdmins>>,
+        TError,
+        TData,
+        QueryKey,
+        ListAdminsParams['page']
+      >
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListAdminsInfiniteQueryOptions(params, options);
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as UseInfiniteQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
 
 export const getListAdminsQueryOptions = <
   TData = Awaited<ReturnType<typeof listAdmins>>,

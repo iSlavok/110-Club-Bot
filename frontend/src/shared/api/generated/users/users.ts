@@ -4,15 +4,19 @@
  * 110 Club Admin API
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
+  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
+  InfiniteData,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseInfiniteQueryOptions,
+  UseInfiniteQueryResult,
   UseQueryOptions,
   UseQueryResult,
 } from '@tanstack/react-query';
@@ -71,9 +75,162 @@ export const listUsers = async (
   });
 };
 
+export const getListUsersInfiniteQueryKey = (params?: ListUsersParams) => {
+  return ['infinite', `/api/v1/users`, ...(params ? [params] : [])] as const;
+};
+
 export const getListUsersQueryKey = (params?: ListUsersParams) => {
   return [`/api/v1/users`, ...(params ? [params] : [])] as const;
 };
+
+export const getListUsersInfiniteQueryOptions = <
+  TData = InfiniteData<Awaited<ReturnType<typeof listUsers>>, ListUsersParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params?: ListUsersParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listUsers>>,
+        TError,
+        TData,
+        QueryKey,
+        ListUsersParams['page']
+      >
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListUsersInfiniteQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listUsers>>,
+    QueryKey,
+    ListUsersParams['page']
+  > = ({ signal, pageParam }) =>
+    listUsers({ ...params, page: pageParam ?? params?.['page'] }, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof listUsers>>,
+    TError,
+    TData,
+    QueryKey,
+    ListUsersParams['page']
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type ListUsersInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof listUsers>>>;
+export type ListUsersInfiniteQueryError = ErrorType<ValidationErrorResponse | ErrorResponse>;
+
+export function useListUsersInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listUsers>>, ListUsersParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params: undefined | ListUsersParams,
+  options: {
+    query: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listUsers>>,
+        TError,
+        TData,
+        QueryKey,
+        ListUsersParams['page']
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listUsers>>,
+          TError,
+          Awaited<ReturnType<typeof listUsers>>,
+          QueryKey
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useListUsersInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listUsers>>, ListUsersParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params?: ListUsersParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listUsers>>,
+        TError,
+        TData,
+        QueryKey,
+        ListUsersParams['page']
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listUsers>>,
+          TError,
+          Awaited<ReturnType<typeof listUsers>>,
+          QueryKey
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useListUsersInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listUsers>>, ListUsersParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params?: ListUsersParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listUsers>>,
+        TError,
+        TData,
+        QueryKey,
+        ListUsersParams['page']
+      >
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary List Users
+ */
+
+export function useListUsersInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listUsers>>, ListUsersParams['page']>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params?: ListUsersParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof listUsers>>,
+        TError,
+        TData,
+        QueryKey,
+        ListUsersParams['page']
+      >
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListUsersInfiniteQueryOptions(params, options);
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as UseInfiniteQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
 
 export const getListUsersQueryOptions = <
   TData = Awaited<ReturnType<typeof listUsers>>,
