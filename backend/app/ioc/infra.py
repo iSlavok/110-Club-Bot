@@ -8,6 +8,7 @@ from redis.asyncio import Redis
 
 from app.clients import LoginThrottle, RedisLoginThrottle
 from app.config import ApiSettings, AuthSettings, BotSettings, DatabaseSettings, RedisSettings, Settings
+from app.telegram import RateLimitMiddleware, SystemTimer
 from app.utils import Clock, SystemClock
 
 
@@ -44,8 +45,13 @@ class InfraProvider(Provider):
     login_throttle = provide(RedisLoginThrottle, provides=LoginThrottle)
 
     @provide
-    async def bot(self, settings: BotSettings) -> AsyncIterator[Bot]:
+    def rate_limit(self) -> RateLimitMiddleware:
+        return RateLimitMiddleware(SystemTimer())
+
+    @provide
+    async def bot(self, settings: BotSettings, rate_limit: RateLimitMiddleware) -> AsyncIterator[Bot]:
         bot = Bot(settings.token.get_secret_value(), default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+        bot.session.middleware(rate_limit)
         yield bot
         await bot.session.close()
 

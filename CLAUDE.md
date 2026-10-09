@@ -85,6 +85,7 @@ backend/
     services/     use-cases, бизнес-логика; не коммитят — транзакция на весь запрос
     schemas/      pydantic: DTO моделей, команды (XCreate / XUpdate) и прочее, что сервисы принимают и отдают
     clients/      внешние API: Google Sheets, VK, хранилище файлов
+    telegram/     Telegram вне хендлеров: лимиты запросов (`rate_limit/`)
     exceptions/   доменные исключения
     texts/        все тексты для пользователей: ответы бота, напоминания, алерты
     enums/  types/  utils/
@@ -169,7 +170,8 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 - Тексты для пользователя — в `app/texts/`, не строками в хендлерах и клавиатурах: их собирают и хендлеры, и сервисы / worker, а ядро `bot/` не импортирует.
 - Callback data — только классы `CallbackData`, без сырых строк.
 - Порядок outer middlewares важен: ошибки → контейнер → пользователь. Ошибки снаружи контейнера: перехваченная доменная ошибка должна выйти из request scope исключением, иначе частичные изменения закоммитятся (проверяет `tests/bot/test_dispatcher.py`).
-- Отправка в Telegram — через общий rate limiter. `TelegramForbiddenError` (бот заблокирован) — ожидаемо, не ошибка.
+- Лимиты Telegram держит `RateLimitMiddleware` в сессии `Bot` (`app/telegram/rate_limit/`, вешается в `InfraProvider`): любой вызов `Bot` — из хендлера, сервиса, worker'а — уже под лимитом, своих пауз и обёрток-отправителей нет. Token bucket: глобально 25/с, на чат ЛС 1/с, группа 20/мин, правки и удаления ×5. `TelegramRetryAfter` → общая пауза бота и до 3 попыток, потом исключение уходит вызывающему. Простаивающие лимитеры чатов чистит задача worker'а.
+- `TelegramForbiddenError` (бот заблокирован) — ожидаемо, не ошибка.
 
 ### Worker
 
@@ -205,7 +207,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 - Общие фикстуры: `db_session`, `container` / `request_container` (тестовый dishka), `clock` (`FrozenClock`) — в `tests/conftest.py`; `api_client` (httpx) и `login_as(admin)` (сессия в cookie клиента) — в `tests/api/conftest.py`. Владелец в тестах — `OWNER_TG_ID` из `tests/providers.py`. Тестовые провайдеры — `tests/providers.py`, фейки — `tests/fakes.py`.
 - Структура: `tests/unit/` (без БД и IO), `tests/integration/` (Postgres), `tests/api/` (httpx `ASGITransport`), `tests/bot/`, `tests/worker/`. Файл теста повторяет путь модуля.
 - Настоящий Postgres, схема через `alembic upgrade head`. Изоляция: транзакция на тест с откатом. Тестовая сессия не коммитит: сервисы и проверки работают в одной сессии, поэтому забытый коммит тесты бы не поймали — его делает только `DatabaseProvider` (у него свой тест).
-- Зависимости — из **тестового dishka-контейнера**: прод-провайдеры + тестовая сессия, фейковые клиенты (Google Sheets, VK, хранилище), `AsyncMock(spec=Bot)`, фиксированный `Clock`. Граф руками не собирается.
+- Зависимости — из **тестового dishka-контейнера**: прод-провайдеры + тестовая сессия, фейковые клиенты (Google Sheets, VK, хранилище), `AsyncMock(spec=Bot)`, фиксированный `Clock`. Время лимитов Telegram — `FakeTimer`: `sleep` двигает часы, реальных пауз в тестах нет. Граф руками не собирается.
 - Данные — только фабрики из `tests/factories.py`, голые конструкторы моделей в тестах запрещены. Новая модель → новая фабрика.
 - API-тесты проверяют статус и тело, включая `code`.
 - Bot-тесты проверяют эффект в БД и ответ пользователю.
