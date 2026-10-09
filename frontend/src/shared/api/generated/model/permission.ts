@@ -15,4 +15,5 @@ export const Permission = {
   adminsview: 'admins.view',
   adminsedit: 'admins.edit',
   rolesedit: 'roles.edit',
+  settingsedit: 'settings.edit',
 } as const;

@@ -11,4 +11,5 @@ export const PermissionGroup = {
   clubs: 'clubs',
   users: 'users',
   admins: 'admins',
+  settings: 'settings',
 } as const;

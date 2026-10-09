@@ -40,3 +40,23 @@ def test_public_url_must_be_http(monkeypatch, raw: str) -> None:
 
     with pytest.raises(ValidationError):
         _settings()
+
+
+def test_vk_credentials_from_env(monkeypatch) -> None:
+    monkeypatch.setenv("VK_CLIENT_ID", "5100001")
+    monkeypatch.setenv("VK_SERVICE_TOKEN", "token")
+
+    vk = _settings().vk
+
+    assert vk.client_id == 5100001
+    assert vk.service_token == SecretStr("token")
+
+
+def test_empty_vk_credentials_mean_not_set(monkeypatch) -> None:
+    monkeypatch.setenv("VK_CLIENT_ID", "")
+    monkeypatch.setenv("VK_SERVICE_TOKEN", "")
+
+    vk = _settings().vk
+
+    assert vk.client_id is None
+    assert vk.service_token is None

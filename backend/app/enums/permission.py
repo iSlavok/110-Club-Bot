@@ -9,12 +9,14 @@ class Permission(StrEnum):
     ADMINS_VIEW = "admins.view"
     ADMINS_EDIT = "admins.edit"
     ROLES_EDIT = "roles.edit"
+    SETTINGS_EDIT = "settings.edit"
 
 
 class PermissionGroup(StrEnum):
     CLUBS = "clubs"
     USERS = "users"
     ADMINS = "admins"
+    SETTINGS = "settings"
 
 
 def known_permissions(values: list[str]) -> frozenset[Permission]:
