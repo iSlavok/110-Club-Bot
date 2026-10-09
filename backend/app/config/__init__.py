@@ -1,5 +1,6 @@
 from app.config.logging import setup_logging
 from app.config.settings import (
+    AlertsSettings,
     ApiSettings,
     AuthSettings,
     BotSettings,
@@ -10,6 +11,7 @@ from app.config.settings import (
 )
 
 __all__ = [
+    "AlertsSettings",
     "ApiSettings",
     "AuthSettings",
     "BotSettings",

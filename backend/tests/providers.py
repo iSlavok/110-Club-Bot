@@ -9,8 +9,8 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, async_sessionmaker
 
 from app.clients import LoginThrottle
-from app.config import AuthSettings, BotSettings, DatabaseSettings
-from app.telegram import RateLimitMiddleware
+from app.config import AlertsSettings, AuthSettings, BotSettings, DatabaseSettings
+from app.telegram import AdminAlerts, RateLimitMiddleware
 from app.utils import Clock
 from tests.fakes import FakeLoginThrottle, FakeTimer, FrozenClock
 
@@ -18,6 +18,7 @@ DEFAULT_NOW = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
 OWNER_TG_ID = 777
 BOT_TOKEN = "123456:test-token"
 BOT_USERNAME = "club_test_bot"
+ALERTS_CHAT_ID = -1001
 
 
 class TestDatabaseProvider(Provider):
@@ -53,6 +54,8 @@ class ConnectionSessionmakerProvider(Provider):
 class TestInfraProvider(Provider):
     scope = Scope.APP
 
+    admin_alerts = provide(AdminAlerts)
+
     @provide
     def clock(self) -> Clock:
         return FrozenClock(DEFAULT_NOW)
@@ -64,6 +67,10 @@ class TestInfraProvider(Provider):
     @provide
     def bot_settings(self) -> BotSettings:
         return BotSettings(token=SecretStr(BOT_TOKEN))
+
+    @provide
+    def alerts_settings(self) -> AlertsSettings:
+        return AlertsSettings(chat_id=ALERTS_CHAT_ID)
 
     @provide
     def login_throttle(self) -> LoginThrottle:
