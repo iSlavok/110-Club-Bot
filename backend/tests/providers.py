@@ -10,8 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, async_sessionm
 
 from app.clients import LoginThrottle
 from app.config import AuthSettings, BotSettings, DatabaseSettings
+from app.telegram import RateLimitMiddleware
 from app.utils import Clock
-from tests.fakes import FakeLoginThrottle, FrozenClock
+from tests.fakes import FakeLoginThrottle, FakeTimer, FrozenClock
 
 DEFAULT_NOW = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
 OWNER_TG_ID = 777
@@ -67,6 +68,10 @@ class TestInfraProvider(Provider):
     @provide
     def login_throttle(self) -> LoginThrottle:
         return FakeLoginThrottle()
+
+    @provide
+    def rate_limit(self) -> RateLimitMiddleware:
+        return RateLimitMiddleware(FakeTimer())
 
     @provide
     def bot(self) -> Bot:

@@ -1,6 +1,8 @@
 import asyncio
+from datetime import timedelta
 
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 from dishka import FromDishka
 
 from app.services import UserService
@@ -15,6 +17,16 @@ async def test_auth_cleanup_runs_nightly(container) -> None:
     assert job is not None
     assert isinstance(job.trigger, CronTrigger)
     assert str(job.trigger.fields[job.trigger.FIELD_NAMES.index("hour")]) == "4"
+
+
+async def test_rate_limiter_cleanup_runs_every_five_minutes(container) -> None:
+    scheduler = create_scheduler(container)
+
+    job = scheduler.get_job("cleanup_rate_limiters")
+
+    assert job is not None
+    assert isinstance(job.trigger, IntervalTrigger)
+    assert job.trigger.interval == timedelta(minutes=5)
 
 
 async def test_each_job_run_gets_its_own_request_scope(container) -> None:
