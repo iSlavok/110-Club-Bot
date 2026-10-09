@@ -15,6 +15,7 @@ const ANNA: UserResponse = {
   tg_username: 'anna',
   full_name: 'Анна Белова',
   vk_id: 42,
+  vk_linked_at: '2026-09-02T09:00:00Z',
   created_at: '2026-09-01T09:00:00Z',
 };
 
@@ -43,5 +44,6 @@ describe('UsersPage', () => {
       'href',
       'https://vk.com/id42',
     );
+    expect(screen.getByText('02.09.2026 12:00')).toBeInTheDocument();
   });
 });
