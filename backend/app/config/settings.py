@@ -1,4 +1,4 @@
-from pydantic import BaseModel, SecretStr
+from pydantic import BaseModel, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
@@ -47,6 +47,16 @@ class AuthSettings(BaseModel):
     session_ttl_days: int = 30
 
 
+class AlertsSettings(BaseModel):
+    chat_id: int | None = None
+
+    # An empty ALERTS_CHAT_ID= in .env means "not set", not a parse error.
+    @field_validator("chat_id", mode="before")
+    @classmethod
+    def _empty_is_none(cls, value: object) -> object:
+        return None if value == "" else value
+
+
 class LogSettings(BaseModel):
     level: str = "INFO"
 
@@ -60,4 +70,5 @@ class Settings(BaseSettings):
     bot: BotSettings
     api: ApiSettings = ApiSettings()
     auth: AuthSettings = AuthSettings()
+    alerts: AlertsSettings = AlertsSettings()
     log: LogSettings = LogSettings()

@@ -7,8 +7,16 @@ from dishka import Provider, Scope, from_context, provide
 from redis.asyncio import Redis
 
 from app.clients import LoginThrottle, RedisLoginThrottle
-from app.config import ApiSettings, AuthSettings, BotSettings, DatabaseSettings, RedisSettings, Settings
-from app.telegram import RateLimitMiddleware, SystemTimer
+from app.config import (
+    AlertsSettings,
+    ApiSettings,
+    AuthSettings,
+    BotSettings,
+    DatabaseSettings,
+    RedisSettings,
+    Settings,
+)
+from app.telegram import AdminAlerts, RateLimitMiddleware, SystemTimer
 from app.utils import Clock, SystemClock
 
 
@@ -37,12 +45,17 @@ class SettingsProvider(Provider):
     def auth(self, settings: Settings) -> AuthSettings:
         return settings.auth
 
+    @provide
+    def alerts(self, settings: Settings) -> AlertsSettings:
+        return settings.alerts
+
 
 class InfraProvider(Provider):
     scope = Scope.APP
 
     clock = provide(SystemClock, provides=Clock)
     login_throttle = provide(RedisLoginThrottle, provides=LoginThrottle)
+    admin_alerts = provide(AdminAlerts)
 
     @provide
     def rate_limit(self) -> RateLimitMiddleware:
