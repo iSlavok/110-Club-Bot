@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 from aiogram import Bot
 from aiogram.types import User
@@ -22,6 +22,7 @@ ALERTS_CHAT_ID = -1001
 PUBLIC_URL = "https://club.example.com"
 VK_CLIENT_ID = 5100001
 VK_SERVICE_TOKEN = "vk-service-token"
+ALERT_MESSAGE_ID = 4242
 
 
 class TestDatabaseProvider(Provider):
@@ -104,6 +105,7 @@ class TestInfraProvider(Provider):
     def bot(self) -> Bot:
         bot = AsyncMock(spec=Bot)
         bot.me.return_value = User(id=1, is_bot=True, first_name="Club", username=BOT_USERNAME)
+        bot.send_message.return_value = MagicMock(message_id=ALERT_MESSAGE_ID)
         return bot
 
     @provide

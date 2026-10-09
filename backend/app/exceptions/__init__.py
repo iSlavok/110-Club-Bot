@@ -38,6 +38,7 @@ from app.exceptions.clubs import (
     InvalidBlockPeriodError,
 )
 from app.exceptions.common import EmptyUpdateError
+from app.exceptions.membership_removals import RemovalRequestDecidedError, RemovalRequestNotFoundError
 from app.exceptions.settings import AppSettingsMissingError, VkLinkModeNotConfiguredError
 from app.exceptions.sheet_syncs import ClubNotSyncableError, SheetSyncDisabledError
 from app.exceptions.vk import (
@@ -80,6 +81,8 @@ __all__ = [
     "OwnerNotEditableError",
     "PermissionDeniedError",
     "PermissionEscalationError",
+    "RemovalRequestDecidedError",
+    "RemovalRequestNotFoundError",
     "RoleInUseError",
     "RoleNotFoundError",
     "RoleTitleTakenError",

@@ -22,7 +22,7 @@ class SheetSyncDTO(BaseModel):
     finished_at: datetime
     status: SheetSyncStatus
     added: int
-    removed: int
+    removal_requested: int
     issues: list[SheetIssue]
     error: str | None
     created_at: datetime
@@ -37,7 +37,7 @@ class SheetSyncDTO(BaseModel):
             finished_at=sync.finished_at,
             status=sync.status,
             added=sync.added,
-            removed=sync.removed,
+            removal_requested=sync.removal_requested,
             issues=[SheetIssue.model_validate(issue) for issue in sync.issues],
             error=sync.error,
             created_at=sync.created_at,

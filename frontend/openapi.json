@@ -2976,10 +2976,10 @@
             "title": "Added",
             "description": "Memberships added"
           },
-          "removed": {
+          "removal_requested": {
             "type": "integer",
-            "title": "Removed",
-            "description": "Memberships removed"
+            "title": "Removal Requested",
+            "description": "Members gone from the sheet, sent to the owner to confirm the removal"
           },
           "issues": {
             "items": {
@@ -3010,7 +3010,7 @@
           "finished_at",
           "status",
           "added",
-          "removed",
+          "removal_requested",
           "issues",
           "error"
         ],

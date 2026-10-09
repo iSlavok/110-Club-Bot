@@ -4,7 +4,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.enums import Permission, SheetSyncStatus
+from app.enums import Permission, RemovalRequestStatus, SheetSyncStatus
 from app.models import (
     AdminSession,
     AdminUser,
@@ -13,6 +13,8 @@ from app.models import (
     Club,
     LoginCode,
     Membership,
+    MembershipRemovalItem,
+    MembershipRemovalRequest,
     Role,
     SheetSync,
     User,
@@ -146,7 +148,7 @@ async def make_sheet_sync(session: AsyncSession, club: Club, **overrides: Any) -
             "finished_at": started_at + timedelta(seconds=2),
             "status": SheetSyncStatus.OK,
             "added": 0,
-            "removed": 0,
+            "removal_requested": 0,
             "issues": [],
             **overrides,
         },
@@ -154,3 +156,17 @@ async def make_sheet_sync(session: AsyncSession, club: Club, **overrides: Any) -
     session.add(sync)
     await session.flush()
     return sync
+
+
+async def make_removal_request(
+    session: AsyncSession,
+    block: Block,
+    *vk_ids: int,
+    **overrides: Any,
+) -> MembershipRemovalRequest:
+    request = MembershipRemovalRequest(**{"block_id": block.id, "status": RemovalRequestStatus.PENDING, **overrides})
+    session.add(request)
+    await session.flush()
+    session.add_all(MembershipRemovalItem(request_id=request.id, vk_id=vk_id) for vk_id in vk_ids)
+    await session.flush()
+    return request

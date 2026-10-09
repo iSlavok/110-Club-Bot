@@ -15,7 +15,7 @@ class SheetSync(Base):
     finished_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     status: Mapped[SheetSyncStatus] = mapped_column(str_enum(SheetSyncStatus))
     added: Mapped[int]
-    removed: Mapped[int]
+    removal_requested: Mapped[int]
     # SheetIssue dicts; the shape is owned by app.schemas, the column only stores it.
     issues: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, server_default=text("'[]'::jsonb"))
     error: Mapped[str | None] = mapped_column(Text)

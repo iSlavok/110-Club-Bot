@@ -180,7 +180,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 
 - Лимиты Telegram держит `RateLimitMiddleware` в сессии `Bot` (`app/telegram/rate_limit/`, вешается в `InfraProvider`): любой вызов `Bot` — из хендлера, сервиса, worker'а — уже под лимитом, своих пауз и обёрток-отправителей нет. Token bucket: глобально 25/с, на чат ЛС 1/с, группа 20/мин, правки и удаления ×5. `TelegramRetryAfter` → общая пауза бота и до 3 попыток, потом исключение уходит вызывающему. Простаивающие лимитеры чатов чистит задача worker'а.
 - Сервис, которому нужно написать в Telegram (напоминание, ЛС после VK ID), зовёт `Bot` из DI напрямую.
-- Алерты владельцу — `AdminAlerts` (APP scope): `send(text, reply_markup=None) -> message_id | None`, `edit(message_id, text)` в чат `ALERTS_CHAT_ID`. Не задан → только лог. Ошибки Telegram логируются и наверх не идут: алерт не ломает действие, которое его вызвало. Пишем при смене состояния (сломалось / починилось, появилась проблема), не на каждом запуске. Тексты — `app/texts/alerts.py`, HTML с экранированием.
+- Алерты владельцу — `AdminAlerts` (APP scope): `send(text, reply_markup=None) -> message_id | None`, `edit(message_id, text, reply_markup=None)` (без `reply_markup` кнопки пропадают) в чат `ALERTS_CHAT_ID`. Не задан → только лог. Ошибки Telegram логируются и наверх не идут: алерт не ломает действие, которое его вызвало. Пишем при смене состояния (сломалось / починилось, появилась проблема), не на каждом запуске. Тексты — `app/texts/alerts.py`, HTML с экранированием.
 - Callback data кнопок в сообщениях, которые шлёт ядро (алерт с подтверждением), — `app/telegram/callbacks.py`; бот импортирует их оттуда в фильтры хендлеров.
 
 ### Worker

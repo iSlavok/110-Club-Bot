@@ -31,7 +31,7 @@ class SheetSyncResponse(BaseModel):
     finished_at: datetime = Field(description="Sync end, UTC")
     status: SheetSyncStatus = Field(description="failed: the sheet could not be read, memberships were not changed")
     added: int = Field(description="Memberships added")
-    removed: int = Field(description="Memberships removed")
+    removal_requested: int = Field(description="Members gone from the sheet, sent to the owner to confirm the removal")
     issues: list[SheetIssueResponse] = Field(description="Problems found in the sheet")
     error: str | None = Field(description="Why the sync failed")
 
@@ -44,7 +44,7 @@ class SheetSyncResponse(BaseModel):
             finished_at=sync.finished_at,
             status=sync.status,
             added=sync.added,
-            removed=sync.removed,
+            removal_requested=sync.removal_requested,
             issues=[SheetIssueResponse.from_dto(issue) for issue in sync.issues],
             error=sync.error,
         )

@@ -23,11 +23,17 @@ class AdminAlerts:
             return None
         return message.message_id
 
-    async def edit(self, message_id: int, text: str) -> None:
+    # Without reply_markup Telegram drops the buttons of the message.
+    async def edit(self, message_id: int, text: str, reply_markup: InlineKeyboardMarkup | None = None) -> None:
         logger.info("Admin alert {} edited: {}", message_id, text)
         if self._chat_id is None:
             return
         try:
-            await self._bot.edit_message_text(text=text, chat_id=self._chat_id, message_id=message_id)
+            await self._bot.edit_message_text(
+                text=text,
+                chat_id=self._chat_id,
+                message_id=message_id,
+                reply_markup=reply_markup,
+            )
         except TelegramAPIError:
             logger.exception("Failed to edit admin alert {}", message_id)

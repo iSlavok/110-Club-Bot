@@ -61,7 +61,20 @@ async def test_send_swallows_telegram_errors(bot) -> None:
 async def test_edit_replaces_the_alert_text(bot) -> None:
     await AdminAlerts(bot, AlertsSettings(chat_id=ALERTS_CHAT)).edit(55, "Подтверждено")
 
-    bot.edit_message_text.assert_awaited_once_with(text="Подтверждено", chat_id=ALERTS_CHAT, message_id=55)
+    bot.edit_message_text.assert_awaited_once_with(
+        text="Подтверждено",
+        chat_id=ALERTS_CHAT,
+        message_id=55,
+        reply_markup=None,
+    )
+
+
+async def test_edit_can_keep_buttons(bot) -> None:
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="OK", callback_data="ok")]])
+
+    await AdminAlerts(bot, AlertsSettings(chat_id=ALERTS_CHAT)).edit(55, "Осталось двое", keyboard)
+
+    assert bot.edit_message_text.await_args.kwargs["reply_markup"] == keyboard
 
 
 async def test_edit_without_chat_does_nothing(bot) -> None:

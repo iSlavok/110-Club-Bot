@@ -1,4 +1,5 @@
 from app.enums.health import CheckStatus, HealthStatus
+from app.enums.membership_removal import RemovalDecision, RemovalRequestStatus
 from app.enums.permission import Permission, PermissionGroup, known_permissions
 from app.enums.sheet_sync import SheetIssueKind, SheetSyncStatus
 from app.enums.vk_link_mode import VkLinkMode
@@ -8,6 +9,8 @@ __all__ = [
     "HealthStatus",
     "Permission",
     "PermissionGroup",
+    "RemovalDecision",
+    "RemovalRequestStatus",
     "SheetIssueKind",
     "SheetSyncStatus",
     "VkLinkMode",

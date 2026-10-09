@@ -9,6 +9,7 @@ from app.services.club_service import ClubService
 from app.services.club_stats_service import ClubStatsService
 from app.services.health_service import HealthService
 from app.services.login_service import LoginService
+from app.services.membership_removal_service import MembershipRemovalService
 from app.services.role_service import RoleService
 from app.services.sheet_sync_service import SheetSyncService
 from app.services.status_service import StatusService
@@ -28,6 +29,7 @@ __all__ = [
     "ClubStatsService",
     "HealthService",
     "LoginService",
+    "MembershipRemovalService",
     "RoleService",
     "SheetSyncService",
     "StatusService",
