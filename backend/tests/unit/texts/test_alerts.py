@@ -2,8 +2,8 @@ from datetime import UTC, datetime
 
 import pytest
 
-from app.enums import RemovalRequestStatus
-from app.schemas import RemovalCandidate, RemovalRequestAlert
+from app.enums import RemovalRequestStatus, SheetIssueKind
+from app.schemas import RemovalCandidate, RemovalRequestAlert, SheetIssue
 from app.texts import alerts
 
 DETECTED_AT = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
@@ -74,3 +74,49 @@ def test_people_count_is_declined(count: int, expected: str) -> None:
     text = alerts.removal_request(_alert(*range(1, count + 1)))
 
     assert f": {expected}." in text
+
+
+@pytest.mark.parametrize(
+    ("issue", "expected"),
+    [
+        (
+            SheetIssue(kind=SheetIssueKind.UNKNOWN_COLUMN, column="Блок 9"),
+            "«Блок 9»: столбец отмечен, но блока с таким заголовком нет",
+        ),
+        (
+            SheetIssue(kind=SheetIssueKind.MISSING_COLUMN, column="Блок 6"),
+            "«Блок 6»: в таблице нет столбца этого блока",
+        ),
+        (
+            SheetIssue(kind=SheetIssueKind.DUPLICATE_COLUMN, column="Блок 5"),
+            "«Блок 5»: второй отмеченный столбец с тем же заголовком, пропущен",
+        ),
+        (
+            SheetIssue(kind=SheetIssueKind.INVALID_VALUE, column="Блок 5", row=4, value="<b>"),
+            "«Блок 5», строка 4: «&lt;b&gt;» — не VK id, пропущено",
+        ),
+        (
+            SheetIssue(kind=SheetIssueKind.DUPLICATE, column="Блок 5", row=7, value="501"),
+            "«Блок 5», строка 7: VK id 501 повторяется",
+        ),
+    ],
+)
+def test_sheet_issues_are_described(issue: SheetIssue, expected: str) -> None:
+    text = alerts.sheet_issues_appeared("Клуб 110", [issue])
+
+    assert text == f"⚠️ <b>Клуб 110</b>: новые проблемы в таблице.\n• {expected}"
+
+
+def test_many_sheet_issues_are_cut() -> None:
+    issues = [SheetIssue(kind=SheetIssueKind.MISSING_COLUMN, column=f"Блок {n}") for n in range(20)]
+
+    text = alerts.sheet_issues_appeared("Клуб 110", issues)
+
+    assert text.endswith("и ещё 5")
+
+
+def test_sync_failure_shows_the_escaped_error() -> None:
+    text = alerts.sync_failed("Клуб <110>", "error <403>")
+
+    assert text.startswith("⚠️ <b>Клуб &lt;110&gt;</b>: синк таблицы не работает")
+    assert "Ошибка: error &lt;403&gt;" in text

@@ -4,6 +4,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import BaseRepository, PageResult
+from app.enums import SheetSyncStatus
 from app.models import SheetSync
 
 # First key of the two-key advisory lock: keeps sync locks apart from other advisory locks on the same club id.
@@ -20,6 +21,18 @@ class SheetSyncRepository(BaseRepository[SheetSync]):
             select(func.pg_advisory_xact_lock(SHEET_SYNC_LOCK_NAMESPACE, club_id))
         )
         await self._session.execute(statement)
+
+    async def get_latest_for_club(self, club_id: int, *, status: SheetSyncStatus | None = None) -> SheetSync | None:
+        conditions = [SheetSync.club_id == club_id]
+        if status is not None:
+            conditions.append(SheetSync.status == status)
+        statement = (
+            select(SheetSync)
+            .where(*conditions)
+            .order_by(SheetSync.started_at.desc(), SheetSync.id.desc())
+            .limit(1)
+        )
+        return await self._session.scalar(statement)
 
     async def list_page_for_club(self, *, club_id: int, limit: int, offset: int) -> PageResult[SheetSync]:
         conditions = [SheetSync.club_id == club_id]
