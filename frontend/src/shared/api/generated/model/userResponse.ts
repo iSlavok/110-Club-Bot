@@ -16,6 +16,8 @@ export interface UserResponse {
   full_name: string;
   /** Linked VK id */
   vk_id: number | null;
+  /** When the user linked VK, UTC */
+  vk_linked_at: string | null;
   /** First /start, UTC */
   created_at: string;
 }

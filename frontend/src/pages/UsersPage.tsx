@@ -39,13 +39,14 @@ export function UsersPage() {
         }
       >
         {(items) => (
-          <Table.ScrollContainer minWidth={700}>
+          <Table.ScrollContainer minWidth={820}>
             <Table verticalSpacing="sm">
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Имя</Table.Th>
                   <Table.Th>Telegram</Table.Th>
                   <Table.Th>VK</Table.Th>
+                  <Table.Th>VK привязан</Table.Th>
                   <Table.Th>Первый /start</Table.Th>
                 </Table.Tr>
               </Table.Thead>
@@ -77,6 +78,13 @@ export function UsersPage() {
                         </Anchor>
                       ) : (
                         <Text c="dimmed">не привязан</Text>
+                      )}
+                    </Table.Td>
+                    <Table.Td>
+                      {user.vk_linked_at ? (
+                        formatDateTime(user.vk_linked_at)
+                      ) : (
+                        <Text c="dimmed">—</Text>
                       )}
                     </Table.Td>
                     <Table.Td>{formatDateTime(user.created_at)}</Table.Td>

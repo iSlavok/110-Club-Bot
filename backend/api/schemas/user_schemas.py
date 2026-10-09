@@ -16,6 +16,7 @@ class UserResponse(BaseModel):
     tg_username: str | None = Field(description="Telegram username without @")
     full_name: str = Field(description="Telegram display name")
     vk_id: int | None = Field(description="Linked VK id")
+    vk_linked_at: datetime | None = Field(description="When the user linked VK, UTC")
     created_at: datetime = Field(description="First /start, UTC")
 
     @classmethod
@@ -26,5 +27,6 @@ class UserResponse(BaseModel):
             tg_username=user.tg_username,
             full_name=user.full_name,
             vk_id=user.vk_id,
+            vk_linked_at=user.vk_linked_at,
             created_at=user.created_at,
         )

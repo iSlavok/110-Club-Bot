@@ -2569,6 +2569,19 @@
             "title": "Vk Id",
             "description": "Linked VK id"
           },
+          "vk_linked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vk Linked At",
+            "description": "When the user linked VK, UTC"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -2583,6 +2596,7 @@
           "tg_username",
           "full_name",
           "vk_id",
+          "vk_linked_at",
           "created_at"
         ],
         "title": "UserResponse"
