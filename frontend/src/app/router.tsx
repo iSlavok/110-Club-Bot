@@ -1,9 +1,10 @@
 import type { RouteObject } from 'react-router';
 
 import { AdminsPage } from '@/pages/AdminsPage';
-import { ClubPage } from '@/pages/ClubPage';
+import { ClubBlocksPage } from '@/pages/ClubBlocksPage';
+import { ClubOverviewPage } from '@/pages/ClubOverviewPage';
+import { ClubSettingsPage } from '@/pages/ClubSettingsPage';
 import { ClubsPage } from '@/pages/ClubsPage';
-import { DashboardPage } from '@/pages/DashboardPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { RolesPage } from '@/pages/RolesPage';
@@ -11,7 +12,9 @@ import { UsersPage } from '@/pages/UsersPage';
 import { routes } from '@/shared/config/routes';
 
 import { AppLayout } from './AppLayout';
+import { ClubLayout } from './ClubLayout';
 import { RequirePermission, RequireSession } from './guards';
+import { Home } from './Home';
 
 export const appRoutes: RouteObject[] = [
   { path: routes.login, element: <LoginPage /> },
@@ -21,7 +24,7 @@ export const appRoutes: RouteObject[] = [
       {
         element: <AppLayout />,
         children: [
-          { index: true, element: <DashboardPage /> },
+          { index: true, element: <Home /> },
           {
             path: routes.clubs,
             element: (
@@ -34,9 +37,14 @@ export const appRoutes: RouteObject[] = [
             path: routes.club(':clubId'),
             element: (
               <RequirePermission permission="clubs.view">
-                <ClubPage />
+                <ClubLayout />
               </RequirePermission>
             ),
+            children: [
+              { index: true, element: <ClubOverviewPage /> },
+              { path: 'blocks', element: <ClubBlocksPage /> },
+              { path: 'settings', element: <ClubSettingsPage /> },
+            ],
           },
           {
             path: routes.users,

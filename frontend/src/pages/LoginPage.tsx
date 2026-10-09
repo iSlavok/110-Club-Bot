@@ -12,7 +12,7 @@ export function LoginPage() {
   const location = useLocation();
   const me = useCurrentAdmin();
   const config = useGetAuthConfig();
-  const from = (location.state as { from?: string } | null)?.from ?? routes.dashboard;
+  const from = (location.state as { from?: string } | null)?.from ?? routes.home;
 
   if (me.data) {
     return <Navigate to={from} replace />;

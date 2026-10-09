@@ -16,6 +16,7 @@ const MESSAGES: Record<string, string> = {
   ROLE_TITLE_TAKEN: 'Роль с таким названием уже есть.',
   ROLE_IN_USE: 'Роль назначена админам — сначала смените им роль.',
   ADMIN_ALREADY_EXISTS: 'Админ с таким Telegram id уже есть.',
+  CLUB_NOT_FOUND: 'Клуб не найден.',
   CLUB_TITLE_TAKEN: 'Клуб с таким названием уже есть.',
   BLOCK_COLUMN_TAKEN: 'В этом клубе уже есть блок с таким столбцом таблицы.',
   INVALID_BLOCK_PERIOD: 'Блок должен заканчиваться позже, чем начинается.',
