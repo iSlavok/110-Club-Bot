@@ -1,4 +1,6 @@
-from pydantic import BaseModel, SecretStr, field_validator
+from typing import Annotated
+
+from pydantic import BaseModel, SecretStr, StringConstraints, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
@@ -47,6 +49,21 @@ class AuthSettings(BaseModel):
     session_ttl_days: int = 30
 
 
+class PublicSettings(BaseModel):
+    url: Annotated[str, StringConstraints(pattern=r"^https?://[^\s/]+(/\S*)?$")] | None = None
+
+    @field_validator("url", mode="before")
+    @classmethod
+    def _empty_is_none(cls, value: object) -> object:
+        return None if value == "" else value
+
+    # Without the trailing slash, so callers join paths as f"{url}/api/v1/...".
+    @field_validator("url")
+    @classmethod
+    def _strip_trailing_slash(cls, value: str | None) -> str | None:
+        return value.rstrip("/") if value is not None else None
+
+
 class AlertsSettings(BaseModel):
     chat_id: int | None = None
 
@@ -69,6 +86,7 @@ class Settings(BaseSettings):
     redis: RedisSettings
     bot: BotSettings
     api: ApiSettings = ApiSettings()
+    public: PublicSettings = PublicSettings()
     auth: AuthSettings = AuthSettings()
     alerts: AlertsSettings = AlertsSettings()
     log: LogSettings = LogSettings()

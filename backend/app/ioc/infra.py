@@ -13,6 +13,7 @@ from app.config import (
     AuthSettings,
     BotSettings,
     DatabaseSettings,
+    PublicSettings,
     RedisSettings,
     Settings,
 )
@@ -44,6 +45,10 @@ class SettingsProvider(Provider):
     @provide
     def auth(self, settings: Settings) -> AuthSettings:
         return settings.auth
+
+    @provide
+    def public(self, settings: Settings) -> PublicSettings:
+        return settings.public
 
     @provide
     def alerts(self, settings: Settings) -> AlertsSettings:
