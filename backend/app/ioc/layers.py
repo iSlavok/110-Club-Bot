@@ -1,6 +1,6 @@
 from dishka import Provider, Scope, provide_all
 
-from app.queries import ClubStatsQueries, SystemQueries
+from app.queries import AccessQueries, ClubStatsQueries, SystemQueries
 from app.repositories import (
     AdminSessionRepository,
     AdminUserRepository,
@@ -28,6 +28,7 @@ from app.services import (
     StatusService,
     UserService,
     VkLinkAvailability,
+    VkLinkService,
 )
 
 
@@ -50,7 +51,7 @@ class RepositoriesProvider(Provider):
 class QueriesProvider(Provider):
     scope = Scope.REQUEST
 
-    queries = provide_all(ClubStatsQueries, SystemQueries)
+    queries = provide_all(AccessQueries, ClubStatsQueries, SystemQueries)
 
 
 class ServicesProvider(Provider):
@@ -72,4 +73,5 @@ class ServicesProvider(Provider):
         StatusService,
         UserService,
         VkLinkAvailability,
+        VkLinkService,
     )

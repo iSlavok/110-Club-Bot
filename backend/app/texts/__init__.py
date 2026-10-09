@@ -1,3 +1,3 @@
-from app.texts import auth, commands, common, errors, status
+from app.texts import auth, commands, common, errors, status, vk_link
 
-__all__ = ["auth", "commands", "common", "errors", "status"]
+__all__ = ["auth", "commands", "common", "errors", "status", "vk_link"]

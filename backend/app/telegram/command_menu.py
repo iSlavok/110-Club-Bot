@@ -5,7 +5,10 @@ from loguru import logger
 
 from app import texts
 
-DEFAULT_COMMANDS = (BotCommand(command="start", description=texts.commands.START),)
+DEFAULT_COMMANDS = (
+    BotCommand(command="start", description=texts.commands.START),
+    BotCommand(command="vk", description=texts.commands.VK),
+)
 ADMIN_COMMANDS = (
     *DEFAULT_COMMANDS,
     BotCommand(command="login", description=texts.commands.LOGIN),

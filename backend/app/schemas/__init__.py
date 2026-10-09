@@ -9,6 +9,16 @@ from app.schemas.patch_schemas import Maybe, PatchSchema
 from app.schemas.role_schemas import PermissionInfo, RoleCreate, RoleDTO, RoleUpdate
 from app.schemas.status_schemas import ClubStatus, StatusReport
 from app.schemas.user_schemas import TelegramProfile, UserDTO
+from app.schemas.vk_link_schemas import (
+    ClubAccess,
+    VkAlreadyLinked,
+    VkCandidate,
+    VkLinkByOAuth,
+    VkLinkByProfile,
+    VkLinkOffer,
+    VkLinkResult,
+    VkLinkUnavailable,
+)
 
 __all__ = [
     "MAX_PER_PAGE",
@@ -24,6 +34,7 @@ __all__ = [
     "BlockCreate",
     "BlockDTO",
     "BlockUpdate",
+    "ClubAccess",
     "ClubCreate",
     "ClubDTO",
     "ClubStats",
@@ -45,4 +56,11 @@ __all__ = [
     "TelegramProfile",
     "TelegramWidgetPayload",
     "UserDTO",
+    "VkAlreadyLinked",
+    "VkCandidate",
+    "VkLinkByOAuth",
+    "VkLinkByProfile",
+    "VkLinkOffer",
+    "VkLinkResult",
+    "VkLinkUnavailable",
 ]

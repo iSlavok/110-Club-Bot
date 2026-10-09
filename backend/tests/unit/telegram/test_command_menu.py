@@ -15,7 +15,7 @@ def _menu() -> tuple[CommandMenu, AsyncMock]:
 
 def test_admin_menu_extends_the_default_one() -> None:
     assert ADMIN_COMMANDS[: len(DEFAULT_COMMANDS)] == DEFAULT_COMMANDS
-    assert [command.command for command in ADMIN_COMMANDS] == ["start", "login", "adminka", "status"]
+    assert [command.command for command in ADMIN_COMMANDS] == ["start", "vk", "login", "adminka", "status"]
 
 
 async def test_set_default() -> None:
