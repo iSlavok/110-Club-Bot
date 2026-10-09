@@ -9,7 +9,7 @@ export function NotFoundPage() {
       <Stack align="center">
         <Title order={2}>Страница не найдена</Title>
         <Text c="dimmed">Возможно, ссылка устарела.</Text>
-        <Button component={Link} to={routes.dashboard} variant="default">
+        <Button component={Link} to={routes.home} variant="default">
           На главную
         </Button>
       </Stack>

@@ -3,26 +3,14 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
-import { useListClubsInfinite, type ClubResponse } from '@/shared/api';
+import { useListClubsInfinite } from '@/shared/api';
 import { infinitePage, useInfinitePage } from '@/shared/lib/infinite-page';
-import { pageOf } from '@/test/fixtures';
+import { makeClub, pageOf } from '@/test/fixtures';
 import { revealListEnds } from '@/test/intersection';
 import { renderWithProviders } from '@/test/render';
 import { server } from '@/test/server';
 
 import { InfiniteList } from './InfiniteList';
-
-function club(id: number): ClubResponse {
-  return {
-    id,
-    title: `Клуб ${id}`,
-    chat_id: null,
-    reminders_topic_id: null,
-    spreadsheet_id: null,
-    sheet_name: null,
-    is_active: true,
-  };
-}
 
 function Clubs() {
   const query = useListClubsInfinite({ per_page: 2 }, infinitePage);
@@ -46,7 +34,10 @@ describe('InfiniteList', () => {
     server.use(
       http.get('/api/v1/clubs', ({ request }) => {
         requested.push(new URL(request.url).searchParams.get('page') ?? '');
-        return pageOf([1, 2, 3, 4, 5].map(club), request);
+        return pageOf(
+          [1, 2, 3, 4, 5].map((id) => makeClub(id)),
+          request,
+        );
       }),
     );
     renderWithProviders(<Clubs />);
@@ -94,7 +85,10 @@ describe('InfiniteList', () => {
           failNextPage = false;
           return HttpResponse.json({ code: 'INTERNAL_ERROR', message: 'boom' }, { status: 500 });
         }
-        return pageOf([1, 2, 3].map(club), request);
+        return pageOf(
+          [1, 2, 3].map((id) => makeClub(id)),
+          request,
+        );
       }),
     );
     renderWithProviders(<Clubs />);

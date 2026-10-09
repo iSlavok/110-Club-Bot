@@ -1,39 +1,47 @@
-import { AppShell, Burger, Group, NavLink, Text } from '@mantine/core';
+import { AppShell, Burger, Divider, Group, NavLink, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import {
-  IconBuildingCommunity,
-  IconLayoutDashboard,
-  IconShieldLock,
-  IconUserCog,
-  IconUsers,
-  type Icon,
-} from '@tabler/icons-react';
 import { NavLink as RouterNavLink, Outlet } from 'react-router';
 
+import { useClubChoice } from '@/entities/club';
 import { hasPermission, useCurrentAdmin } from '@/entities/session';
 import { LogoutButton } from '@/features/auth';
-import type { Permission } from '@/shared/api';
+import { ClubSwitcher } from '@/features/club';
+import { useGetClub } from '@/shared/api';
 import { routes } from '@/shared/config/routes';
+import { useRouteClubId } from '@/shared/lib/club-id';
 
-interface NavItem {
-  to: string;
-  label: string;
-  icon: Icon;
-  permission?: Permission;
+import { clubNav, GLOBAL_NAV, type NavItem } from './navigation';
+
+function NavItems({ items, onNavigate }: { items: NavItem[]; onNavigate: () => void }) {
+  return items.map((item) => (
+    <NavLink
+      key={item.to}
+      component={RouterNavLink}
+      to={item.to}
+      end={item.end}
+      label={item.label}
+      leftSection={<item.icon size={18} />}
+      onClick={onNavigate}
+    />
+  ));
 }
-
-export const NAV_ITEMS: NavItem[] = [
-  { to: routes.dashboard, label: 'Обзор', icon: IconLayoutDashboard },
-  { to: routes.clubs, label: 'Клубы', icon: IconBuildingCommunity, permission: 'clubs.view' },
-  { to: routes.users, label: 'Пользователи', icon: IconUsers, permission: 'users.view' },
-  { to: routes.admins, label: 'Админы', icon: IconUserCog, permission: 'admins.view' },
-  { to: routes.roles, label: 'Роли', icon: IconShieldLock, permission: 'admins.view' },
-];
 
 export function AppLayout() {
   const [opened, { toggle, close }] = useDisclosure();
   const me = useCurrentAdmin().data;
-  const items = NAV_ITEMS.filter((item) => !item.permission || hasPermission(me, item.permission));
+  const canViewClubs = hasPermission(me, 'clubs.view');
+  const choice = useClubChoice(canViewClubs);
+  // With a single club the whole panel lives inside it, wherever the URL points.
+  const routeClubId = useRouteClubId();
+  const clubId = canViewClubs ? (routeClubId ?? choice.onlyClub?.id ?? null) : null;
+  const club = useGetClub(clubId ?? 0, { query: { enabled: clubId !== null } }).data;
+
+  const globalItems = GLOBAL_NAV.filter(
+    (item) =>
+      (!item.permission || hasPermission(me, item.permission)) &&
+      !(item.to === routes.clubs && choice.onlyClub),
+  );
+  const canSwitch = choice.clubs.length > 1 || hasPermission(me, 'clubs.edit');
 
   return (
     <AppShell
@@ -42,12 +50,18 @@ export function AppLayout() {
       padding="md"
     >
       <AppShell.Header>
-        <Group h="100%" px="md" justify="space-between">
-          <Group gap="sm">
+        <Group h="100%" px="md" justify="space-between" wrap="nowrap">
+          <Group gap="sm" wrap="nowrap">
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" aria-label="Меню" />
-            <Text fw={700}>Клуб 110</Text>
+            {club && canSwitch ? (
+              <ClubSwitcher title={club.title} currentId={club.id} clubs={choice.clubs} />
+            ) : (
+              <Text fw={700} truncate>
+                {club?.title ?? 'Клуб 110'}
+              </Text>
+            )}
           </Group>
-          <Group gap="xs">
+          <Group gap="xs" wrap="nowrap">
             <Text size="sm" c="dimmed" visibleFrom="xs">
               {me?.name}
             </Text>
@@ -56,17 +70,13 @@ export function AppLayout() {
         </Group>
       </AppShell.Header>
       <AppShell.Navbar p="xs">
-        {items.map((item) => (
-          <NavLink
-            key={item.to}
-            component={RouterNavLink}
-            to={item.to}
-            end={item.to === routes.dashboard}
-            label={item.label}
-            leftSection={<item.icon size={18} />}
-            onClick={close}
-          />
-        ))}
+        {clubId !== null && (
+          <>
+            <NavItems items={clubNav(clubId)} onNavigate={close} />
+            {globalItems.length > 0 && <Divider my="xs" label="Общее" labelPosition="left" />}
+          </>
+        )}
+        <NavItems items={globalItems} onNavigate={close} />
       </AppShell.Navbar>
       <AppShell.Main>
         <Outlet />

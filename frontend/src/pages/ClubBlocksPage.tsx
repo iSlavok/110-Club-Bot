@@ -1,92 +1,19 @@
-import {
-  ActionIcon,
-  Badge,
-  Button,
-  Group,
-  Paper,
-  SimpleGrid,
-  Table,
-  Text,
-  Title,
-} from '@mantine/core';
+import { ActionIcon, Button, Group, Table } from '@mantine/core';
 import { IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useState } from 'react';
-import { useParams } from 'react-router';
 
 import { BlockStatusBadge } from '@/entities/block';
 import { Can } from '@/entities/session';
 import { BlockFormModal, useDeleteBlockConfirm } from '@/features/block';
-import { ClubFormModal } from '@/features/club';
-import {
-  useGetClub,
-  useListBlocksInfinite,
-  type BlockResponse,
-  type ClubResponse,
-} from '@/shared/api';
+import { useListBlocksInfinite, type BlockResponse } from '@/shared/api';
+import { useClubId } from '@/shared/lib/club-id';
 import { formatDateTime } from '@/shared/lib/dates';
 import { infinitePage, PER_PAGE, useInfinitePage } from '@/shared/lib/infinite-page';
 import { InfiniteList } from '@/shared/ui/InfiniteList';
 import { PageHeader } from '@/shared/ui/PageHeader';
-import { QueryState } from '@/shared/ui/QueryState';
 
-function Field({ label, value }: { label: string; value: string | number | null }) {
-  return (
-    <div>
-      <Text size="xs" c="dimmed">
-        {label}
-      </Text>
-      <Text>{value ?? '—'}</Text>
-    </div>
-  );
-}
-
-function ClubDetails({ club }: { club: ClubResponse }) {
-  const [editing, setEditing] = useState(false);
-  return (
-    <>
-      <PageHeader
-        title={
-          <Group gap="sm">
-            {club.title}
-            {!club.is_active && <Badge color="gray">Выключен</Badge>}
-          </Group>
-        }
-        actions={
-          <Can permission="clubs.edit">
-            <Button
-              variant="default"
-              leftSection={<IconPencil size={16} />}
-              onClick={() => {
-                setEditing(true);
-              }}
-            >
-              Изменить
-            </Button>
-          </Can>
-        }
-      />
-      <Paper withBorder radius="md" p="md" mb="xl">
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }}>
-          <Field label="ID чата" value={club.chat_id} />
-          <Field label="Топик напоминаний" value={club.reminders_topic_id} />
-          <Field label="Google-таблица" value={club.spreadsheet_id} />
-          <Field label="Лист" value={club.sheet_name} />
-        </SimpleGrid>
-      </Paper>
-      {editing && (
-        <ClubFormModal
-          opened
-          club={club}
-          onClose={() => {
-            setEditing(false);
-          }}
-        />
-      )}
-    </>
-  );
-}
-
-function Blocks({ clubId }: { clubId: number }) {
+export function ClubBlocksPage() {
+  const clubId = useClubId();
   const query = useListBlocksInfinite(clubId, { per_page: PER_PAGE }, infinitePage);
   const blocks = useInfinitePage(query);
   const [editing, setEditing] = useState<BlockResponse | 'new' | null>(null);
@@ -94,19 +21,21 @@ function Blocks({ clubId }: { clubId: number }) {
 
   return (
     <>
-      <Group justify="space-between" mb="sm">
-        <Title order={3}>Блоки</Title>
-        <Can permission="blocks.edit">
-          <Button
-            leftSection={<IconPlus size={16} />}
-            onClick={() => {
-              setEditing('new');
-            }}
-          >
-            Новый блок
-          </Button>
-        </Can>
-      </Group>
+      <PageHeader
+        title="Блоки"
+        actions={
+          <Can permission="blocks.edit">
+            <Button
+              leftSection={<IconPlus size={16} />}
+              onClick={() => {
+                setEditing('new');
+              }}
+            >
+              Новый блок
+            </Button>
+          </Can>
+        }
+      />
       <InfiniteList list={blocks} emptyText="Блоков пока нет">
         {(items) => (
           <Table.ScrollContainer minWidth={700}>
@@ -175,20 +104,5 @@ function Blocks({ clubId }: { clubId: number }) {
         />
       )}
     </>
-  );
-}
-
-export function ClubPage() {
-  const clubId = Number(useParams().clubId);
-  const club = useGetClub(clubId);
-  return (
-    <QueryState data={club.data} error={club.error} isPending={club.isPending}>
-      {(data) => (
-        <>
-          <ClubDetails club={data} />
-          <Blocks clubId={data.id} />
-        </>
-      )}
-    </QueryState>
   );
 }

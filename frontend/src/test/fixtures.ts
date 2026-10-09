@@ -1,9 +1,35 @@
 import { http, HttpResponse } from 'msw';
 
-import type { CurrentAdminResponse, Permission } from '@/shared/api';
+import type { ClubResponse, CurrentAdminResponse, Permission } from '@/shared/api';
 
 export function makeAdmin(...permissions: Permission[]): CurrentAdminResponse {
   return { id: 1, tg_id: 1001, name: 'Тестовый админ', is_owner: false, permissions };
+}
+
+export function makeClub(id: number, overrides: Partial<ClubResponse> = {}): ClubResponse {
+  return {
+    id,
+    title: `Клуб ${id}`,
+    chat_id: null,
+    reminders_topic_id: null,
+    spreadsheet_id: null,
+    sheet_name: null,
+    is_active: true,
+    ...overrides,
+  };
+}
+
+/** The club list and each club by id, as the API serves them. */
+export function clubsHandlers(clubs: ClubResponse[]) {
+  return [
+    http.get('/api/v1/clubs', ({ request }) => pageOf(clubs, request)),
+    http.get('/api/v1/clubs/:clubId', ({ params }) => {
+      const club = clubs.find((item) => String(item.id) === params.clubId);
+      return club
+        ? HttpResponse.json(club)
+        : HttpResponse.json({ code: 'CLUB_NOT_FOUND', message: 'not found' }, { status: 404 });
+    }),
+  ];
 }
 
 /** Serves `all` as `Page[T]` the way the API does, honouring `page` and `per_page` from the request. */
