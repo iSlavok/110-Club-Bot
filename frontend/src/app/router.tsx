@@ -2,6 +2,8 @@ import type { RouteObject } from 'react-router';
 
 import { AdminsPage } from '@/pages/AdminsPage';
 import { ClubBlocksPage } from '@/pages/ClubBlocksPage';
+import { ClubLessonPage } from '@/pages/ClubLessonPage';
+import { ClubLessonsPage } from '@/pages/ClubLessonsPage';
 import { ClubOverviewPage } from '@/pages/ClubOverviewPage';
 import { ClubRemindersPage } from '@/pages/ClubRemindersPage';
 import { ClubSettingsPage } from '@/pages/ClubSettingsPage';
@@ -47,6 +49,22 @@ export const appRoutes: RouteObject[] = [
               { index: true, element: <ClubOverviewPage /> },
               { path: 'blocks', element: <ClubBlocksPage /> },
               { path: 'sync', element: <ClubSyncPage /> },
+              {
+                path: 'lessons',
+                element: (
+                  <RequirePermission permission="lessons.view">
+                    <ClubLessonsPage />
+                  </RequirePermission>
+                ),
+              },
+              {
+                path: 'lessons/:lessonId',
+                element: (
+                  <RequirePermission permission="lessons.view">
+                    <ClubLessonPage />
+                  </RequirePermission>
+                ),
+              },
               {
                 path: 'reminders',
                 element: (

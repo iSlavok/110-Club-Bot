@@ -1,6 +1,7 @@
 import {
   IconAdjustments,
   IconBell,
+  IconBook,
   IconBuildingCommunity,
   IconCalendarEvent,
   IconLayoutDashboard,
@@ -38,6 +39,12 @@ export function clubNav(clubId: number): NavItem[] {
     { to: routes.club(clubId), label: 'Обзор', icon: IconLayoutDashboard, end: true },
     { to: routes.clubBlocks(clubId), label: 'Блоки', icon: IconCalendarEvent },
     { to: routes.clubSync(clubId), label: 'Синк таблицы', icon: IconRefresh },
+    {
+      to: routes.clubLessons(clubId),
+      label: 'Уроки',
+      icon: IconBook,
+      permission: 'lessons.view',
+    },
     {
       to: routes.clubReminders(clubId),
       label: 'Напоминания',

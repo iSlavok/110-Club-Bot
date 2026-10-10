@@ -32,6 +32,9 @@ window.ResizeObserver = class {
   }
 };
 window.HTMLElement.prototype.scrollIntoView = () => undefined;
+Object.defineProperty(document, 'fonts', {
+  value: { addEventListener: () => undefined, removeEventListener: () => undefined },
+});
 Object.defineProperty(window, 'IntersectionObserver', {
   writable: true,
   value: FakeIntersectionObserver,
