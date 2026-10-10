@@ -21,6 +21,15 @@ _MONTHS = (
     "декабря",
 )
 _WEEKDAYS = ("пн", "вт", "ср", "чт", "пт", "сб", "вс")
+KIND_LABELS = {
+    ReminderKind.LESSON_UPCOMING: "напоминание об уроке",
+    ReminderKind.LESSON_STARTING: "урок начинается",
+    ReminderKind.HOMEWORK_DEADLINE: "дедлайн ДЗ",
+    ReminderKind.LESSON_RESCHEDULED: "перенос урока",
+    ReminderKind.LESSON_CANCELLED: "отмена урока",
+    ReminderKind.HOMEWORK_DEADLINE_CHANGED: "новый дедлайн ДЗ",
+    ReminderKind.HOMEWORK_REMOVED: "отмена ДЗ",
+}
 _SUBJECTS = {LessonKind.LESSON: "Урок", LessonKind.CURATOR_CALL: "Созвон с куратором"}
 _HOMEWORK_TO = {LessonKind.LESSON: "к уроку", LessonKind.CURATOR_CALL: "к созвону"}
 # Closer than this, "через 45 минут" reads better than a clock time.
@@ -91,6 +100,10 @@ def _name(lesson: LessonDTO) -> str:
 
 def _homework(lesson: LessonDTO) -> str:
     return f"ДЗ {_HOMEWORK_TO[lesson.kind]} «{escape(lesson.title)}»"
+
+
+def short_time(moment: datetime) -> str:
+    return f"{moment.astimezone(BUSINESS_TZ):%d.%m %H:%M}"
 
 
 def _call_link(lesson: LessonDTO) -> str | None:
