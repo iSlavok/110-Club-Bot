@@ -4,6 +4,7 @@
  * 110 Club Admin API
  * OpenAPI spec version: 0.1.0
  */
+import type { ChatAccessStatus } from './chatAccessStatus';
 
 export interface BlockMemberUserResponse {
   /** User id */
@@ -12,4 +13,6 @@ export interface BlockMemberUserResponse {
   full_name: string;
   /** Telegram username without @ */
   tg_username: string | null;
+  /** State in the club chat for students the bot invited; null if the bot never invited them */
+  chat_status: ChatAccessStatus | null;
 }

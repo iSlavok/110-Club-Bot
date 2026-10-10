@@ -22,7 +22,7 @@ const BLOCK: BlockListItemResponse = {
 };
 
 const MEMBERS: BlockMemberResponse[] = [
-  { vk_id: 501, user: { id: 1, full_name: 'Анна Белова', tg_username: 'anna' } },
+  { vk_id: 501, user: { id: 1, full_name: 'Анна Белова', tg_username: 'anna', chat_status: null } },
   { vk_id: 502, user: null },
 ];
 

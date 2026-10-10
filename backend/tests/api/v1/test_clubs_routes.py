@@ -161,6 +161,7 @@ async def test_block_members_need_users_view(api_client, login_as, db_session, m
     assert item["vk_id"] == 501
     assert item["user"]["full_name"] == "Ученик Тестов"
     assert item["user"]["tg_username"] is None
+    assert item["user"]["chat_status"] is None
 
 
 async def test_members_of_unknown_block_is_404(api_client, login_as, db_session) -> None:

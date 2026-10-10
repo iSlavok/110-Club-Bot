@@ -50,9 +50,10 @@ class BlockService:
         return Paginated(items=summaries, total=blocks.total)
 
     async def list_members(self, block_id: int, page: PageParams) -> Paginated[BlockMember]:
-        await self._get(block_id)
+        block = await self._get(block_id)
         members = await self._membership_queries.list_block_members_page(
             block_id=block_id,
+            club_id=block.club_id,
             limit=page.per_page,
             offset=page.offset,
         )
@@ -101,7 +102,12 @@ class BlockService:
     def _member_user(row: BlockMemberRow) -> BlockMemberUser | None:
         if row.user_id is None or row.full_name is None:
             return None
-        return BlockMemberUser(id=row.user_id, full_name=row.full_name, tg_username=row.tg_username)
+        return BlockMemberUser(
+            id=row.user_id,
+            full_name=row.full_name,
+            tg_username=row.tg_username,
+            chat_status=row.chat_status,
+        )
 
     async def _get(self, block_id: int) -> Block:
         block = await self._block_repository.get_by_id(block_id)

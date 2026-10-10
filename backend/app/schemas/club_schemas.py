@@ -3,6 +3,7 @@ from typing import Annotated, Self
 
 from pydantic import AfterValidator, AwareDatetime, BaseModel, Field, StringConstraints, model_validator
 
+from app.enums import ChatAccessStatus
 from app.models import Block, Club
 from app.models.club import CLUB_TEXT_MAX_LEN
 from app.schemas.patch_schemas import Maybe, PatchSchema
@@ -93,6 +94,7 @@ class BlockMemberUser(BaseModel):
     id: int
     full_name: str
     tg_username: str | None
+    chat_status: ChatAccessStatus | None
 
 
 class BlockMember(BaseModel):
