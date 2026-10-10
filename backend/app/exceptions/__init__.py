@@ -38,6 +38,7 @@ from app.exceptions.clubs import (
     InvalidBlockPeriodError,
 )
 from app.exceptions.common import EmptyUpdateError
+from app.exceptions.lessons import LessonCancelledError, LessonNotFoundError
 from app.exceptions.membership_removals import RemovalRequestDecidedError, RemovalRequestNotFoundError
 from app.exceptions.settings import AppSettingsMissingError, VkLinkModeNotConfiguredError
 from app.exceptions.sheet_syncs import ClubNotSyncableError, SheetSyncDisabledError
@@ -74,6 +75,8 @@ __all__ = [
     "InvalidLoginCodeError",
     "InvalidVkLinkError",
     "InvalidWidgetDataError",
+    "LessonCancelledError",
+    "LessonNotFoundError",
     "LoginUnavailableError",
     "NotAuthenticatedError",
     "NotFoundError",

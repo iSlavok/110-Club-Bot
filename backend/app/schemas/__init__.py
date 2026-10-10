@@ -14,6 +14,7 @@ from app.schemas.club_schemas import (
 )
 from app.schemas.club_stats_schemas import ClubStats, CurrentBlockStats
 from app.schemas.health_schemas import ReadinessReport
+from app.schemas.lesson_schemas import LessonCreate, LessonDTO, LessonUpdate
 from app.schemas.membership_removal_schemas import RemovalCandidate, RemovalRequestAlert
 from app.schemas.pagination_schemas import MAX_PER_PAGE, PageParams, Paginated
 from app.schemas.patch_schemas import Maybe, PatchSchema
@@ -59,6 +60,9 @@ __all__ = [
     "ClubUpdate",
     "CurrentBlockStats",
     "IssuedLoginCode",
+    "LessonCreate",
+    "LessonDTO",
+    "LessonUpdate",
     "Maybe",
     "PageParams",
     "Paginated",
