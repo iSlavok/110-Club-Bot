@@ -59,7 +59,7 @@ def reminder_failed(club_title: str, reminder: ReminderWithLessonDTO) -> str:
     return (
         f"⚠️ <b>{escape(club_title)}</b>: напоминание не ушло в чат.\n"
         f"«{escape(reminder.lesson.title)}» — {KIND_LABELS[reminder.kind]}, "
-        f"должно было уйти {_moscow(reminder.send_at)} МСК.\n"
+        f"должно было уйти {_moscow(reminder.send_at)}.\n"
         f"Ошибка: {escape(reminder.error or '—')}"
     )
 
@@ -101,7 +101,7 @@ def chat_recovered(club_title: str) -> str:
 
 def _removal_status(alert: RemovalRequestAlert) -> str:
     count = _people(len(alert.candidates))
-    detected = f"Пропали из таблицы {_moscow(alert.created_at)} МСК"
+    detected = f"Пропали из таблицы {_moscow(alert.created_at)}"
     decided = f"{escape(alert.decided_by or '')}, {_moscow(alert.decided_at)}" if alert.decided_at else ""
     match alert.status:
         case RemovalRequestStatus.PENDING:

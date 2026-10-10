@@ -87,13 +87,13 @@ export function BlockFormModal({ opened, onClose, clubId, block }: BlockFormModa
           />
           <Group grow align="flex-start">
             <DateTimePicker
-              label="Начало (МСК)"
+              label="Начало"
               valueFormat="DD.MM.YYYY HH:mm"
               withAsterisk
               {...form.getInputProps('starts_at')}
             />
             <DateTimePicker
-              label="Конец (МСК)"
+              label="Конец"
               valueFormat="DD.MM.YYYY HH:mm"
               withAsterisk
               {...form.getInputProps('ends_at')}

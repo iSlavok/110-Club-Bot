@@ -63,7 +63,7 @@ function SyncHistory({ clubId }: { clubId: number }) {
           <Table verticalSpacing="xs">
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>Время (МСК)</Table.Th>
+                <Table.Th>Время</Table.Th>
                 <Table.Th>Статус</Table.Th>
                 <Table.Th>Изменения</Table.Th>
                 <Table.Th>Проблем</Table.Th>

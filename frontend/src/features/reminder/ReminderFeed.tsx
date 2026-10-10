@@ -95,7 +95,7 @@ export function ReminderFeed({ clubId, lessonId }: ReminderFeedProps) {
             <Table verticalSpacing="sm">
               <Table.Thead>
                 <Table.Tr>
-                  <Table.Th>Когда (МСК)</Table.Th>
+                  <Table.Th>Когда</Table.Th>
                   {lessonId === undefined && <Table.Th>Урок</Table.Th>}
                   <Table.Th>Что</Table.Th>
                   <Table.Th>Статус</Table.Th>

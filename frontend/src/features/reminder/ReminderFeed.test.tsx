@@ -76,7 +76,7 @@ describe('ReminderFeed', () => {
     serve([makeReminder(7)]);
     server.use(
       http.get('/api/v1/reminders/7/preview', () =>
-        HttpResponse.json({ html: '<b>Урок «Кислоты»</b>\nЗавтра в 19:00 (МСК)' }),
+        HttpResponse.json({ html: '<b>Урок «Кислоты»</b>\nЗавтра в 19:00' }),
       ),
     );
     renderWithProviders(<ReminderFeed clubId={1} />);
@@ -85,7 +85,7 @@ describe('ReminderFeed', () => {
 
     const preview = await screen.findByTestId('reminder-preview');
     expect(within(preview).getByText('Урок «Кислоты»').tagName).toBe('B');
-    expect(preview).toHaveTextContent('Завтра в 19:00 (МСК)');
+    expect(preview).toHaveTextContent('Завтра в 19:00');
   });
 
   it('cancels a pending reminder after confirmation', async () => {

@@ -108,7 +108,7 @@ async def test_preview_renders_the_message_as_it_will_go_out(api_client, login_a
     response = await api_client.get(f"/api/v1/reminders/{reminder.id}/preview")
 
     assert response.status_code == 200
-    assert response.json() == {"html": "<b>Урок «Кислоты»</b>\nЧерез час, в 13:00 (МСК)"}
+    assert response.json() == {"html": "<b>Урок «Кислоты»</b>\nЧерез час, в 13:00"}
 
 
 async def test_preview_of_a_sent_reminder_uses_its_send_time(api_client, login_as, db_session, editor) -> None:

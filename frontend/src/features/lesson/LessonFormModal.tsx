@@ -201,7 +201,7 @@ function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
         />
         <TextInput label="Тема" withAsterisk {...form.getInputProps('title')} />
         <DateTimePicker
-          label="Начало (МСК)"
+          label="Начало"
           valueFormat="DD.MM.YYYY HH:mm"
           withAsterisk
           {...form.getInputProps('starts_at')}
@@ -236,7 +236,7 @@ function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
         {values.has_homework && (
           <>
             <DateTimePicker
-              label="Дедлайн ДЗ (МСК)"
+              label="Дедлайн ДЗ"
               valueFormat="DD.MM.YYYY HH:mm"
               withAsterisk
               {...form.getInputProps('homework_deadline_at')}
