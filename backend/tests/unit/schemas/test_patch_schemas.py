@@ -1,7 +1,9 @@
 from enum import StrEnum
+from typing import Annotated
 
 import pytest
-from pydantic import BaseModel, ValidationError
+from fastapi import FastAPI
+from pydantic import BaseModel, Field, ValidationError
 from pydantic.json_schema import models_json_schema
 
 from app.schemas import Maybe, PatchSchema
@@ -23,6 +25,18 @@ class ColorPatch(PatchSchema):
 
 class ColorResponse(BaseModel):
     color: Color
+
+
+type Offsets = Annotated[list[int], Field(max_length=3)]
+
+
+class ScheduleUpdate(PatchSchema):
+    lesson_offsets: Maybe[Offsets]
+    homework_offsets: Maybe[Offsets]
+
+
+class ScheduleResponse(BaseModel):
+    lesson_offsets: Offsets
 
 
 def test_omitted_fields_are_unset() -> None:
@@ -70,3 +84,14 @@ def test_enum_in_patch_keeps_one_shared_definition() -> None:
 
     assert "Color" in schema["$defs"]
     assert "Color-Input" not in schema["$defs"]
+
+
+def test_two_fields_on_one_type_alias_build_openapi() -> None:
+    app = FastAPI()
+
+    @app.patch("/schedule")
+    def update_schedule(patch: ScheduleUpdate) -> ScheduleResponse: ...
+
+    properties = app.openapi()["components"]["schemas"]["ScheduleUpdate"]["properties"]
+
+    assert properties["lesson_offsets"]["$ref"] == properties["homework_offsets"]["$ref"]

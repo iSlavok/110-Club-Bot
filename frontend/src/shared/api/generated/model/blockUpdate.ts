@@ -4,22 +4,16 @@
  * 110 Club Admin API
  * OpenAPI spec version: 0.1.0
  */
+import type { ClubText } from './clubText';
+import type { Moment } from './moment';
 
 export interface BlockUpdate {
-  /**
-   * Block name shown to admins
-   * @minLength 1
-   * @maxLength 100
-   */
-  title?: string;
-  /**
-   * Header of the sheet column with this block's members
-   * @minLength 1
-   * @maxLength 100
-   */
-  sheet_column_title?: string;
+  /** Block name shown to admins */
+  title?: ClubText;
+  /** Header of the sheet column with this block's members */
+  sheet_column_title?: ClubText;
   /** Block start */
-  starts_at?: string;
+  starts_at?: Moment;
   /** Block end, after the start */
-  ends_at?: string;
+  ends_at?: Moment;
 }

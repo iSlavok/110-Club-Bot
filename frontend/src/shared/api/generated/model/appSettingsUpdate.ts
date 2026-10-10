@@ -4,9 +4,9 @@
  * 110 Club Admin API
  * OpenAPI spec version: 0.1.0
  */
-import type { AppSettingsUpdateVkLinkMode } from './appSettingsUpdateVkLinkMode';
+import type { VkLinkMode } from './vkLinkMode';
 
 export interface AppSettingsUpdate {
   /** How students link their VK profile in the bot */
-  vk_link_mode?: AppSettingsUpdateVkLinkMode;
+  vk_link_mode?: VkLinkMode;
 }

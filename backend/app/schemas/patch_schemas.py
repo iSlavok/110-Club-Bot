@@ -33,21 +33,13 @@ class Maybe[T]:
     def __get_pydantic_core_schema__(cls, source_type: Any, handler: Any) -> core_schema.CoreSchema:  # noqa: ANN401 - pydantic hook contract
         args = get_args(source_type)
         inner_schema = handler(args[0] if args else Any)
-        return core_schema.union_schema(
-            [
-                core_schema.is_instance_schema(cls),
-                core_schema.no_info_after_validator_function(cls, inner_schema),
-            ],
+        from_input = core_schema.no_info_after_validator_function(cls, inner_schema)
+        # JSON input (and its JSON schema) is only the inner value; Python input may also be a ready Maybe.
+        return core_schema.json_or_python_schema(
+            json_schema=from_input,
+            python_schema=core_schema.union_schema([core_schema.is_instance_schema(cls), from_input]),
             serialization=core_schema.plain_serializer_function_ser_schema(lambda v: v.value),
         )
-
-    @classmethod
-    def __get_pydantic_json_schema__(cls, schema: Any, handler: Any) -> dict[str, Any]:  # noqa: ANN401 - pydantic hook contract
-        # An inline copy, not the $ref: pydantic resolves a returned $ref to the shared definition and then writes
-        # field keywords into it, which splits an enum into "-Input" and "-Output" variants.
-        json_schema = dict(handler.resolve_ref_schema(handler(schema)))
-        json_schema.pop("default", None)
-        return json_schema
 
     def __repr__(self) -> str:
         return f"Maybe({self._value!r})" if self._is_set else "UNSET"
