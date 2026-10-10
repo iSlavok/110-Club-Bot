@@ -36,10 +36,9 @@ export function AppLayout() {
   const clubId = canViewClubs ? (routeClubId ?? choice.onlyClub?.id ?? null) : null;
   const club = useGetClub(clubId ?? 0, { query: { enabled: clubId !== null } }).data;
 
+  const allowed = (item: NavItem) => !item.permission || hasPermission(me, item.permission);
   const globalItems = GLOBAL_NAV.filter(
-    (item) =>
-      (!item.permission || hasPermission(me, item.permission)) &&
-      !(item.to === routes.clubs && choice.onlyClub),
+    (item) => allowed(item) && !(item.to === routes.clubs && choice.onlyClub),
   );
   const canSwitch = choice.clubs.length > 1 || hasPermission(me, 'clubs.edit');
 
@@ -72,7 +71,7 @@ export function AppLayout() {
       <AppShell.Navbar p="xs">
         {clubId !== null && (
           <>
-            <NavItems items={clubNav(clubId)} onNavigate={close} />
+            <NavItems items={clubNav(clubId).filter(allowed)} onNavigate={close} />
             {globalItems.length > 0 && <Divider my="xs" label="Общее" labelPosition="left" />}
           </>
         )}
