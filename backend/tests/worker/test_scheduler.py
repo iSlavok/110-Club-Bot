@@ -106,12 +106,13 @@ async def test_sheets_sync_job_runs_under_the_scheduler(container, db_session, s
     assert event.exception is None
 
 
-async def test_reminders_are_dispatched_every_minute_with_app_container(container) -> None:
+async def test_reminders_are_dispatched_at_the_top_of_every_minute_with_app_container(container) -> None:
     scheduler = create_scheduler(container, SyncSettings())
 
     job = scheduler.get_job("dispatch_reminders")
 
     assert job is not None
-    assert isinstance(job.trigger, IntervalTrigger)
-    assert job.trigger.interval == timedelta(minutes=1)
+    assert isinstance(job.trigger, CronTrigger)
+    fields = {field.name: str(field) for field in job.trigger.fields}
+    assert (fields["minute"], fields["second"]) == ("*", "0")
     assert job.kwargs == {"container": container}

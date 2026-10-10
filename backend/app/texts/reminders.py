@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timedelta
 from html import escape
 
 from app.enums import LessonKind, ReminderKind
@@ -39,13 +39,18 @@ _MINUTES_IN_HOUR = 60
 _ELEVEN = 11
 _FEW_ENDINGS = frozenset({2, 3, 4})
 _FEW_EXCEPTIONS = frozenset({12, 13, 14})
+# The dispatch run lags behind send_at by seconds: counted from the moment itself, "через час" would read
+# "через 59 минут". A longer delay (downtime) is counted from the real moment, so the text stays true.
+_ON_TIME_LAG = timedelta(minutes=5)
 
 
-def render(reminder: ReminderWithLessonDTO, now: datetime) -> str:
+def render(reminder: ReminderWithLessonDTO, sent_at: datetime) -> str:
+    send_at = reminder.send_at
+    now = send_at if send_at <= sent_at <= send_at + _ON_TIME_LAG else sent_at
     return _RENDERERS[reminder.kind](reminder.lesson, now)
 
 
-# now is the moment the message goes out: relative times ("через час") are counted from it.
+# now is the moment relative times ("через час") are counted from.
 def _lesson_upcoming(lesson: LessonDTO, now: datetime) -> str:
     return _join(
         f"<b>{_name(lesson)}</b>",

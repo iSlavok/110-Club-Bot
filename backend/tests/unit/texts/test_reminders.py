@@ -29,7 +29,7 @@ def _lesson(**overrides) -> LessonDTO:
     return LessonDTO.model_validate({**values, **overrides})
 
 
-def _render(reminder_kind: ReminderKind, /, **lesson) -> str:
+def _render(reminder_kind: ReminderKind, /, *, sent_at: datetime = NOW, **lesson) -> str:
     reminder = ReminderWithLessonDTO(
         id=1,
         club_id=1,
@@ -45,7 +45,7 @@ def _render(reminder_kind: ReminderKind, /, **lesson) -> str:
         updated_at=NOW,
         lesson=_lesson(**lesson),
     )
-    return texts.reminders.render(reminder, NOW)
+    return texts.reminders.render(reminder, sent_at)
 
 
 def test_upcoming_lesson_tomorrow_with_link_and_description() -> None:
@@ -77,6 +77,20 @@ def test_upcoming_lesson_tomorrow_with_link_and_description() -> None:
 )
 def test_upcoming_lesson_time_phrases(starts_in, expected) -> None:
     text = _render(ReminderKind.LESSON_UPCOMING, starts_at=NOW + starts_in)
+
+    assert text == f"<b>Урок «Кислоты»</b>\n{expected}"
+
+
+@pytest.mark.parametrize(
+    ("late_by", "expected"),
+    [
+        (timedelta(seconds=40), "Через час, в 13:00 (МСК)"),
+        (timedelta(minutes=5), "Через час, в 13:00 (МСК)"),
+        (timedelta(minutes=6), "Через 54 минуты, в 13:00 (МСК)"),
+    ],
+)
+def test_relative_time_is_counted_from_send_at_unless_sent_much_later(late_by, expected) -> None:
+    text = _render(ReminderKind.LESSON_UPCOMING, sent_at=NOW + late_by, starts_at=NOW + timedelta(hours=1))
 
     assert text == f"<b>Урок «Кислоты»</b>\n{expected}"
 
