@@ -82,7 +82,6 @@ export function BlockFormModal({ opened, onClose, clubId, block }: BlockFormModa
           <TextInput label="Название" withAsterisk {...form.getInputProps('title')} />
           <TextInput
             label="Заголовок столбца в таблице"
-            description="Должен совпадать со строкой 2 листа, например «Блок 5»"
             withAsterisk
             {...form.getInputProps('sheet_column_title')}
           />

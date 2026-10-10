@@ -63,7 +63,6 @@ export function ReminderDefaultsForm({ settings, canEdit }: ReminderDefaultsForm
         </div>
         <ReminderOffsetsInput
           label="Об уроке"
-          description="За сколько до начала напомнить в топике чата"
           disabled={!canEdit}
           value={form.values.default_lesson_offsets}
           onChange={(value) => {
@@ -73,7 +72,6 @@ export function ReminderDefaultsForm({ settings, canEdit }: ReminderDefaultsForm
         />
         <ReminderOffsetsInput
           label="О дедлайне ДЗ"
-          description="За сколько до дедлайна напомнить в топике чата"
           zeroLabel="в момент дедлайна"
           disabled={!canEdit}
           value={form.values.default_homework_offsets}

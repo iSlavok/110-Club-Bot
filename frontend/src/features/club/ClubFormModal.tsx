@@ -80,7 +80,6 @@ export function ClubFormModal({ opened, onClose, club }: ClubFormModalProps) {
           <Group grow align="flex-start">
             <NumberInput
               label="ID чата"
-              description="Отрицательное число, например -100…"
               allowDecimal={false}
               hideControls
               {...form.getInputProps('chat_id')}
@@ -93,11 +92,7 @@ export function ClubFormModal({ opened, onClose, club }: ClubFormModalProps) {
               {...form.getInputProps('reminders_topic_id')}
             />
           </Group>
-          <TextInput
-            label="ID Google-таблицы"
-            description="Часть ссылки между /d/ и /edit"
-            {...form.getInputProps('spreadsheet_id')}
-          />
+          <TextInput label="ID Google-таблицы" {...form.getInputProps('spreadsheet_id')} />
           <TextInput label="Лист с составом" {...form.getInputProps('sheet_name')} />
           <Switch
             label="Скрывать сообщения о входе и выходе"
