@@ -18,6 +18,8 @@ CALLBACK_EXPIRED_TEXT = "Вернись в Telegram и запроси новую
 CALLBACK_DONE_TITLE = "Готово"
 CALLBACK_DONE_TEXT = "Вернись в Telegram: бот клуба написал тебе результат."
 
+JOIN_HINT = "Кнопка ниже — заявка в чат клуба, бот одобрит её сам."
+
 OAUTH_CANCELLED = "Вход через VK отменён. Нажми /vk, чтобы попробовать ещё раз."
 OAUTH_ALREADY_LINKED = "VK уже привязан. Изменить привязку нельзя — по вопросам пиши куратору."
 OAUTH_VK_TAKEN = "Этот VK уже привязан к другому Telegram. Напиши куратору."
@@ -57,4 +59,15 @@ def already_linked(offer: VkAlreadyLinked) -> str:
 def access_status(access: list[ClubAccess]) -> str:
     if not access:
         return "В текущем блоке тебя нет в списках. Если это ошибка — напиши куратору."
-    return "\n".join(f"Ты в клубе {escape(item.club_title)}, блок {escape(item.block_title)}." for item in access)
+    lines = [_club_access(item) for item in access]
+    if any(item.invite_link for item in access):
+        lines.append(JOIN_HINT)
+    return "\n".join(lines)
+
+
+def _club_access(item: ClubAccess) -> str:
+    line = f"Ты в клубе {escape(item.club_title)}, блок {escape(item.block_title)}"
+    if item.is_upcoming:
+        starts = item.block_starts_at.astimezone(BUSINESS_TZ).strftime("%d.%m")
+        return f"{line} — начнётся {starts}."
+    return f"{line}."

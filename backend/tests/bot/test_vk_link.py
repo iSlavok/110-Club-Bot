@@ -16,6 +16,7 @@ from tests.factories import make_block, make_club, make_membership, make_user, s
 
 TG_ID = 42
 VK_ID = 4242
+CHAT_ID = -100500
 
 
 def _message(text: str = "/vk") -> AsyncMock:
@@ -82,6 +83,19 @@ async def test_vk_command_shows_status_when_already_linked(service, state, db_se
     assert "Изменить привязку нельзя" in text
     assert "Ты в клубе Химия, блок Блок 5." in text
     assert await state.get_state() is None
+
+
+async def test_vk_command_gives_the_join_link_of_the_club_chat(service, state, db_session) -> None:
+    await make_user(db_session, tg_id=TG_ID, vk_id=VK_ID)
+    club = await make_club(db_session, title="Химия", chat_id=CHAT_ID)
+    await make_membership(db_session, await make_block(db_session, club), vk_id=VK_ID)
+    message = _message()
+
+    await vk(message, state, service)
+
+    assert texts.vk_link.JOIN_HINT in message.answer.await_args.args[0]
+    keyboard: InlineKeyboardMarkup = message.answer.await_args.kwargs["reply_markup"]
+    assert keyboard.inline_keyboard[0][0].text == "Вступить в чат: Химия"
 
 
 @pytest.mark.usefixtures("link_mode")

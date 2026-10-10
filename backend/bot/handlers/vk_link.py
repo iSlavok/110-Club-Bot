@@ -8,6 +8,7 @@ from dishka.integrations.aiogram import FromDishka
 from app import texts
 from app.schemas import VkAlreadyLinked, VkLinkByOAuth, VkLinkByProfile, VkLinkUnavailable
 from app.services import VkLinkService
+from app.telegram import chat_invite_keyboard
 from bot import keyboards
 from bot.callbacks import VkLinkAction, VkLinkCallback
 from bot.states import VkLinkStates
@@ -23,7 +24,10 @@ async def offer_vk_link(message: Message, state: FSMContext, tg_id: int, vk_link
     await state.clear()
     match offer:
         case VkAlreadyLinked():
-            await message.answer(texts.vk_link.already_linked(offer))
+            await message.answer(
+                texts.vk_link.already_linked(offer),
+                reply_markup=chat_invite_keyboard(offer.access),
+            )
         case VkLinkByProfile():
             await state.set_state(VkLinkStates.waiting_for_profile)
             await message.answer(texts.vk_link.ASK_PROFILE_LINK)
@@ -73,7 +77,10 @@ async def confirm_profile(
     await state.clear()
     await callback.answer()
     if isinstance(callback.message, Message):
-        await callback.message.edit_text(texts.vk_link.linked(result))
+        await callback.message.edit_text(
+            texts.vk_link.linked(result),
+            reply_markup=chat_invite_keyboard(result.access),
+        )
 
 
 @router.callback_query(VkLinkCallback.filter(F.action == VkLinkAction.CANCEL))

@@ -20,19 +20,30 @@ from app.exceptions import (
     VkProfileNotFoundError,
     VkUnavailableError,
 )
-from app.models import VkAuthRequest
+from app.models import Block, VkAuthRequest
 from app.schemas import ClubAccess, VkAlreadyLinked, VkCandidate, VkLinkByOAuth, VkLinkByProfile, VkLinkUnavailable
 from app.services import VkLinkService
 from app.services.vk_link_service import VK_AUTH_REQUEST_TTL
 from app.utils import hash_secret, pkce_code_challenge
 from tests.factories import make_block, make_club, make_membership, make_user, set_app_settings
-from tests.providers import BOT_USERNAME, DEFAULT_NOW, PUBLIC_URL, VK_CLIENT_ID
+from tests.providers import BOT_USERNAME, DEFAULT_NOW, INVITE_LINK_PREFIX, PUBLIC_URL, VK_CLIENT_ID
 
 if TYPE_CHECKING:
     from unittest.mock import AsyncMock
 
 VK_ID = 4242
+CHAT_ID = -100500
 REDIRECT_URI = f"{PUBLIC_URL}/api/v1/vk/callback"
+
+
+def _access(block: Block) -> ClubAccess:
+    return ClubAccess(
+        club_title="Химия",
+        block_title="Блок 5",
+        block_starts_at=block.starts_at,
+        is_upcoming=False,
+        invite_link=None,
+    )
 
 
 @pytest.fixture
@@ -62,7 +73,7 @@ async def test_linked_user_gets_access_status(service, db_session) -> None:
 
     offer = await service.offer(user.tg_id)
 
-    assert offer == VkAlreadyLinked(vk_id=VK_ID, access=[ClubAccess(club_title="Химия", block_title="Блок 5")])
+    assert offer == VkAlreadyLinked(vk_id=VK_ID, access=[_access(block)])
 
 
 @pytest.mark.usefixtures("link_mode")
@@ -196,7 +207,7 @@ async def test_confirmation_links_vk_and_reports_access(service, db_session, kat
     result = await service.confirm_candidate(user.tg_id, kate.id)
 
     assert result.vk_id == kate.id
-    assert result.access == [ClubAccess(club_title="Химия", block_title="Блок 5")]
+    assert result.access == [_access(block)]
     assert user.vk_id == kate.id
     assert user.vk_linked_at == DEFAULT_NOW
 
@@ -292,6 +303,20 @@ async def test_callback_links_vk_and_writes_to_the_student(service, db_session, 
     text = _sent_text(bot)
     assert text.startswith(texts.vk_link.LINKED)
     assert "Ты в клубе Химия, блок Блок 5." in text
+
+
+async def test_callback_message_has_the_chat_join_button(service, db_session, vk, bot) -> None:
+    user = await make_user(db_session)
+    club = await make_club(db_session, title="Химия", chat_id=CHAT_ID)
+    await make_membership(db_session, await make_block(db_session, club), vk_id=VK_ID)
+    state = _query(await _offer(service, user.tg_id))["state"]
+    vk.codes["code-1"] = VK_ID
+
+    await service.complete_oauth(state=state, code="code-1", device_id="device-1", error=None)
+
+    keyboard = bot.send_message.await_args.kwargs["reply_markup"]
+    assert keyboard.inline_keyboard[0][0].text == "Вступить в чат: Химия"
+    assert keyboard.inline_keyboard[0][0].url.startswith(INVITE_LINK_PREFIX)
 
 
 async def test_state_works_once(service, db_session, vk) -> None:
