@@ -2,7 +2,13 @@ from datetime import UTC, datetime
 
 import pytest
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.methods import ApproveChatJoinRequest, BanChatMember, CreateChatInviteLink, UnbanChatMember
+from aiogram.methods import (
+    ApproveChatJoinRequest,
+    BanChatMember,
+    CreateChatInviteLink,
+    DeleteMessage,
+    UnbanChatMember,
+)
 from aiogram.types import ChatMemberAdministrator, ChatMemberLeft, ChatMemberMember, ChatMemberRestricted
 from aiogram.types import User as TelegramUser
 from sqlalchemy import select
@@ -383,3 +389,28 @@ async def test_failed_invite_link_is_alerted_and_others_still_invited(service, d
 
     assert await _statuses(db_session) == {second.id: ChatAccessStatus.INVITED}
     assert club.chat_error == "Telegram server says - not enough rights"
+
+
+async def test_service_message_is_deleted_when_the_club_hides_them(service, db_session, bot) -> None:
+    await make_club(db_session, chat_id=CHAT_ID, hide_service_messages=True)
+
+    await service.hide_service_message(chat_id=CHAT_ID, message_id=17)
+
+    bot.delete_message.assert_awaited_once_with(chat_id=CHAT_ID, message_id=17)
+
+
+async def test_service_message_stays_by_default_and_in_unknown_chats(service, club, bot) -> None:
+    await service.hide_service_message(chat_id=CHAT_ID, message_id=17)
+    await service.hide_service_message(chat_id=CHAT_ID - 1, message_id=17)
+
+    bot.delete_message.assert_not_awaited()
+
+
+async def test_failed_deletion_is_only_logged(service, db_session, bot) -> None:
+    await make_club(db_session, chat_id=CHAT_ID, hide_service_messages=True)
+    bot.delete_message.side_effect = TelegramBadRequest(
+        method=DeleteMessage(chat_id=CHAT_ID, message_id=17),
+        message="Bad Request: message can't be deleted",
+    )
+
+    await service.hide_service_message(chat_id=CHAT_ID, message_id=17)

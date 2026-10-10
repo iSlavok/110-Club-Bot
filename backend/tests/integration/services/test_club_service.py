@@ -19,6 +19,7 @@ async def test_create_and_get(service) -> None:
     assert fetched.title == "Клуб 110"
     assert fetched.chat_id == -100123
     assert fetched.is_active
+    assert not fetched.hide_service_messages
 
 
 async def test_titles_are_unique(service, db_session) -> None:
@@ -36,6 +37,14 @@ async def test_update_clears_nullable_and_keeps_omitted(service, db_session) -> 
     assert updated.chat_id is None
     assert updated.sheet_name == "Состав"
     assert not updated.is_active
+
+
+async def test_update_turns_on_hiding_service_messages(service, db_session) -> None:
+    club = await make_club(db_session)
+
+    updated = await service.update(club.id, ClubUpdate.model_validate({"hide_service_messages": True}))
+
+    assert updated.hide_service_messages
 
 
 async def test_unknown_club(service) -> None:

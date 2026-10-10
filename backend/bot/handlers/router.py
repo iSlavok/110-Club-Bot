@@ -1,6 +1,6 @@
 from aiogram import Router
 
-from bot.handlers import admin_commands, chat_join_requests, removal_requests, start, vk_link
+from bot.handlers import admin_commands, chat_join_requests, chat_service_messages, removal_requests, start, vk_link
 
 
 def create_router() -> Router:
@@ -11,5 +11,6 @@ def create_router() -> Router:
         vk_link.router,
         removal_requests.router,
         chat_join_requests.router,
+        chat_service_messages.router,
     )
     return router

@@ -20,4 +20,6 @@ export interface ClubResponse {
   sheet_name: string | null;
   /** Inactive clubs are skipped by the bot */
   is_active: boolean;
+  /** Bot deletes the join and leave messages in the club chat */
+  hide_service_messages: boolean;
 }

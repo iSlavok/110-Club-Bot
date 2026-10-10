@@ -21,6 +21,7 @@ export function makeClub(id: number, overrides: Partial<ClubResponse> = {}): Clu
     spreadsheet_id: null,
     sheet_name: null,
     is_active: true,
+    hide_service_messages: false,
     ...overrides,
   };
 }

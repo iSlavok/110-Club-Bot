@@ -11,6 +11,8 @@ from app.types import BigInt, PositiveInt32
 
 # Annotated form, not bare AwareDatetime: the bare class loses its tz check when wrapped in Maybe.
 type Moment = Annotated[datetime, AwareDatetime, AfterValidator(lambda value: value.astimezone(UTC))]
+HIDE_SERVICE_MESSAGES_DESCRIPTION = "Bot deletes the join and leave messages in the club chat"
+
 type ClubText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=CLUB_TEXT_MAX_LEN)]
 
 
@@ -22,6 +24,7 @@ class ClubDTO(BaseModel):
     spreadsheet_id: str | None
     sheet_name: str | None
     is_active: bool
+    hide_service_messages: bool
     chat_kicks_on_hold: bool
     chat_error: str | None
     created_at: datetime
@@ -37,6 +40,7 @@ class ClubDTO(BaseModel):
             spreadsheet_id=club.spreadsheet_id,
             sheet_name=club.sheet_name,
             is_active=club.is_active,
+            hide_service_messages=club.hide_service_messages,
             chat_kicks_on_hold=club.chat_kicks_on_hold,
             chat_error=club.chat_error,
             created_at=club.created_at,
@@ -50,6 +54,7 @@ class ClubCreate(BaseModel):
     reminders_topic_id: PositiveInt32 | None = Field(default=None, description="Forum topic id for reminders")
     spreadsheet_id: ClubText | None = Field(default=None, description="Google Sheets document id")
     sheet_name: ClubText | None = Field(default=None, description="Sheet with block columns")
+    hide_service_messages: bool = Field(default=False, description=HIDE_SERVICE_MESSAGES_DESCRIPTION)
 
 
 class ClubUpdate(PatchSchema):
@@ -59,6 +64,7 @@ class ClubUpdate(PatchSchema):
     spreadsheet_id: Maybe[ClubText | None] = Field(description="Google Sheets document id")
     sheet_name: Maybe[ClubText | None] = Field(description="Sheet with block columns")
     is_active: Maybe[bool] = Field(description="Inactive clubs are skipped by the bot")
+    hide_service_messages: Maybe[bool] = Field(description=HIDE_SERVICE_MESSAGES_DESCRIPTION)
 
 
 class BlockDTO(BaseModel):

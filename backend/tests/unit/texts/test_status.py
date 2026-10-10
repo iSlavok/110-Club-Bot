@@ -34,6 +34,7 @@ def _club(title: str) -> ClubDTO:
         spreadsheet_id=None,
         sheet_name=None,
         is_active=True,
+        hide_service_messages=False,
         chat_kicks_on_hold=False,
         chat_error=None,
         created_at=NOW,

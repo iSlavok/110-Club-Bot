@@ -24,6 +24,7 @@ class ClubService:
             reminders_topic_id=data.reminders_topic_id,
             spreadsheet_id=data.spreadsheet_id,
             sheet_name=data.sheet_name,
+            hide_service_messages=data.hide_service_messages,
         )
         self._club_repository.add(club)
         await self._club_repository.flush()
@@ -41,6 +42,7 @@ class ClubService:
         club.spreadsheet_id = patch.spreadsheet_id.apply(club.spreadsheet_id)
         club.sheet_name = patch.sheet_name.apply(club.sheet_name)
         club.is_active = patch.is_active.apply(club.is_active)
+        club.hide_service_messages = patch.hide_service_messages.apply(club.hide_service_messages)
         await self._club_repository.flush()
         return ClubDTO.from_orm_obj(club)
 

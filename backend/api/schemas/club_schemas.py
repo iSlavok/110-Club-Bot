@@ -15,6 +15,7 @@ class ClubResponse(BaseModel):
     spreadsheet_id: str | None = Field(description="Google Sheets document id")
     sheet_name: str | None = Field(description="Sheet with block columns")
     is_active: bool = Field(description="Inactive clubs are skipped by the bot")
+    hide_service_messages: bool = Field(description="Bot deletes the join and leave messages in the club chat")
 
     @classmethod
     def from_dto(cls, club: ClubDTO) -> Self:
@@ -26,6 +27,7 @@ class ClubResponse(BaseModel):
             spreadsheet_id=club.spreadsheet_id,
             sheet_name=club.sheet_name,
             is_active=club.is_active,
+            hide_service_messages=club.hide_service_messages,
         )
 
 
