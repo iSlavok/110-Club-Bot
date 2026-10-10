@@ -13,6 +13,8 @@ import { SettingsPage } from './SettingsPage';
 const SETTINGS: AppSettingsResponse = {
   vk_link_mode: 'oauth',
   configured_vk_link_modes: ['link', 'oauth'],
+  default_lesson_offsets: [1440, 60, 0],
+  default_homework_offsets: [2880, 1440, 180],
   updated_at: '2026-10-01T09:00:00Z',
 };
 

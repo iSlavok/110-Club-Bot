@@ -53,3 +53,13 @@ async def test_keeping_the_current_mode_is_allowed_even_without_credentials(serv
 async def test_empty_patch_is_rejected(service) -> None:
     with pytest.raises(EmptyUpdateError):
         await service.update(AppSettingsUpdate.model_validate({}))
+
+
+async def test_changes_default_reminder_offsets_latest_first(service) -> None:
+    patch = AppSettingsUpdate.model_validate({"default_lesson_offsets": [0, 30], "default_homework_offsets": [60]})
+
+    overview = await service.update(patch)
+
+    assert overview.settings.default_lesson_offsets == [30, 0]
+    assert overview.settings.default_homework_offsets == [60]
+    assert overview.settings.vk_link_mode is VkLinkMode.OAUTH

@@ -30,6 +30,8 @@ class AppSettingsService:
         if vk_link_mode != settings.vk_link_mode and not self._vk_link_availability.is_configured(vk_link_mode):
             raise VkLinkModeNotConfiguredError(vk_link_mode)
         settings.vk_link_mode = vk_link_mode
+        settings.default_lesson_offsets = patch.default_lesson_offsets.apply(settings.default_lesson_offsets)
+        settings.default_homework_offsets = patch.default_homework_offsets.apply(settings.default_homework_offsets)
         await self._app_settings_repository.flush()
         return self._overview(settings)
 

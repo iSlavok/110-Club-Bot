@@ -11,6 +11,10 @@ export interface AppSettingsResponse {
   vk_link_mode: VkLinkMode;
   /** Modes with credentials in the server environment; only these can be switched on */
   configured_vk_link_modes: VkLinkMode[];
+  /** Minutes before the start prefilled in a new lesson, latest first; 0 means at the start */
+  default_lesson_offsets: number[];
+  /** Minutes before the homework deadline prefilled in a new lesson, latest first */
+  default_homework_offsets: number[];
   /** Last change, UTC */
   updated_at: string;
 }
