@@ -9,12 +9,8 @@ import type { ClubText } from './clubText';
 import type { PositiveInt32 } from './positiveInt32';
 
 export interface ClubUpdate {
-  /**
-   * Unique club name
-   * @minLength 1
-   * @maxLength 100
-   */
-  title?: string;
+  /** Unique club name */
+  title?: ClubText;
   /** Telegram id of the club chat */
   chat_id?: BigInt | null;
   /** Forum topic id for reminders */

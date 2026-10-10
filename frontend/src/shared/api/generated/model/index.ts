@@ -11,7 +11,6 @@ export * from './adminUserResponse';
 export * from './adminUserUpdate';
 export * from './appSettingsResponse';
 export * from './appSettingsUpdate';
-export * from './appSettingsUpdateVkLinkMode';
 export * from './authConfigResponse';
 export * from './bigInt';
 export * from './blockCreate';

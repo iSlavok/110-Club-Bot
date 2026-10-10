@@ -4,20 +4,14 @@
  * 110 Club Admin API
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminName } from './adminName';
+import type { PositiveBigInt } from './positiveBigInt';
 
 export interface AdminUserUpdate {
-  /**
-   * Display name
-   * @minLength 1
-   * @maxLength 129
-   */
-  name?: string;
-  /**
-   * Role to assign
-   * @minimum 1
-   * @maximum 9223372036854776000
-   */
-  role_id?: number;
+  /** Display name */
+  name?: AdminName;
+  /** Role to assign */
+  role_id?: PositiveBigInt;
   /** Inactive admins cannot log in */
   is_active?: boolean;
 }

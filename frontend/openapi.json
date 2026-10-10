@@ -1805,16 +1805,12 @@
       "AdminUserUpdate": {
         "properties": {
           "name": {
-            "type": "string",
-            "maxLength": 129,
-            "minLength": 1,
+            "$ref": "#/components/schemas/AdminName",
             "title": "Name",
             "description": "Display name"
           },
           "role_id": {
-            "type": "integer",
-            "maximum": 9.223372036854776e+18,
-            "minimum": 1.0,
+            "$ref": "#/components/schemas/PositiveBigInt",
             "title": "Role Id",
             "description": "Role to assign"
           },
@@ -1860,12 +1856,8 @@
       "AppSettingsUpdate": {
         "properties": {
           "vk_link_mode": {
-            "type": "string",
-            "enum": [
-              "link",
-              "oauth"
-            ],
-            "title": "VkLinkMode",
+            "$ref": "#/components/schemas/VkLinkMode",
+            "title": "Vk Link Mode",
             "description": "How students link their VK profile in the bot"
           }
         },
@@ -2086,28 +2078,22 @@
       "BlockUpdate": {
         "properties": {
           "title": {
-            "type": "string",
-            "maxLength": 100,
-            "minLength": 1,
+            "$ref": "#/components/schemas/ClubText",
             "title": "Title",
             "description": "Block name shown to admins"
           },
           "sheet_column_title": {
-            "type": "string",
-            "maxLength": 100,
-            "minLength": 1,
+            "$ref": "#/components/schemas/ClubText",
             "title": "Sheet Column Title",
             "description": "Header of the sheet column with this block's members"
           },
           "starts_at": {
-            "type": "string",
-            "format": "date-time",
+            "$ref": "#/components/schemas/Moment",
             "title": "Starts At",
             "description": "Block start"
           },
           "ends_at": {
-            "type": "string",
-            "format": "date-time",
+            "$ref": "#/components/schemas/Moment",
             "title": "Ends At",
             "description": "Block end, after the start"
           }
@@ -2291,9 +2277,7 @@
       "ClubUpdate": {
         "properties": {
           "title": {
-            "type": "string",
-            "maxLength": 100,
-            "minLength": 1,
+            "$ref": "#/components/schemas/ClubText",
             "title": "Title",
             "description": "Unique club name"
           },
@@ -2880,9 +2864,7 @@
       "RoleUpdate": {
         "properties": {
           "title": {
-            "type": "string",
-            "maxLength": 64,
-            "minLength": 1,
+            "$ref": "#/components/schemas/RoleTitle",
             "title": "Title",
             "description": "Unique role name"
           },

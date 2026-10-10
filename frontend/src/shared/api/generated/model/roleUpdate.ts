@@ -5,14 +5,11 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Permission } from './permission';
+import type { RoleTitle } from './roleTitle';
 
 export interface RoleUpdate {
-  /**
-   * Unique role name
-   * @minLength 1
-   * @maxLength 64
-   */
-  title?: string;
+  /** Unique role name */
+  title?: RoleTitle;
   /** Permissions granted by the role */
   permissions?: Permission[];
 }
