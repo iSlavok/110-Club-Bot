@@ -24,10 +24,7 @@ async def offer_vk_link(message: Message, state: FSMContext, tg_id: int, vk_link
     await state.clear()
     match offer:
         case VkAlreadyLinked():
-            await message.answer(
-                texts.vk_link.already_linked(offer),
-                reply_markup=chat_invite_keyboard(offer.access),
-            )
+            await message.answer(texts.vk_link.already_linked(offer))
         case VkLinkByProfile():
             await state.set_state(VkLinkStates.waiting_for_profile)
             await message.answer(texts.vk_link.ASK_PROFILE_LINK)

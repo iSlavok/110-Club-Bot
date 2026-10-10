@@ -7,6 +7,7 @@ from aiogram.methods import (
     BanChatMember,
     CreateChatInviteLink,
     DeleteMessage,
+    GetChatMember,
     UnbanChatMember,
 )
 from aiogram.types import ChatMemberAdministrator, ChatMemberLeft, ChatMemberMember, ChatMemberRestricted
@@ -414,3 +415,86 @@ async def test_failed_deletion_is_only_logged(service, db_session, bot) -> None:
     )
 
     await service.hide_service_message(chat_id=CHAT_ID, message_id=17)
+
+
+async def test_student_in_the_chat_gets_no_join_link(service, db_session, club, bot) -> None:
+    user = await make_user(db_session, vk_id=VK_ID)
+    block = await make_block(db_session, club, title="Блок 5")
+    await make_membership(db_session, block, vk_id=VK_ID)
+    bot.get_chat_member.return_value = ChatMemberMember(user=_tg_user(user.tg_id))
+
+    [status] = await service.student_clubs(user.id)
+
+    assert status.in_chat is True
+    assert status.access.block_title == "Блок 5"
+    assert status.access.block_ends_at == block.ends_at
+    assert status.access.invite_link is None
+    bot.get_chat_member.assert_awaited_once_with(chat_id=CHAT_ID, user_id=user.tg_id)
+    bot.create_chat_invite_link.assert_not_awaited()
+
+
+@pytest.mark.parametrize("telegram_fails", [False, True])
+async def test_student_out_of_the_chat_gets_a_join_link(service, db_session, club, bot, telegram_fails) -> None:
+    user = await make_user(db_session, vk_id=VK_ID)
+    await make_membership(db_session, await make_block(db_session, club), vk_id=VK_ID)
+    if telegram_fails:
+        method = GetChatMember(chat_id=CHAT_ID, user_id=user.tg_id)
+        bot.get_chat_member.side_effect = TelegramBadRequest(method=method, message="Bad Request: chat not found")
+    else:
+        bot.get_chat_member.return_value = ChatMemberLeft(user=_tg_user(user.tg_id))
+
+    [status] = await service.student_clubs(user.id)
+
+    assert status.in_chat is False
+    assert status.access.invite_link is not None
+    assert status.access.invite_link.startswith(INVITE_LINK_PREFIX)
+
+
+async def test_club_without_chat_has_no_chat_state(service, db_session, bot) -> None:
+    user = await make_user(db_session, vk_id=VK_ID)
+    club = await make_club(db_session)
+    await make_membership(db_session, await make_block(db_session, club), vk_id=VK_ID)
+
+    [status] = await service.student_clubs(user.id)
+
+    assert status.in_chat is None
+    assert status.access.invite_link is None
+    bot.get_chat_member.assert_not_awaited()
+
+
+async def test_student_listed_for_the_next_block_is_told_so(service, db_session, club) -> None:
+    user = await make_user(db_session, vk_id=VK_ID)
+    running = await make_block(db_session, club, starts_at=datetime(2026, 9, 1, tzinfo=UTC))
+    following = await make_block(db_session, club, title="Блок 6", starts_at=datetime(2026, 10, 31, tzinfo=UTC))
+    await make_membership(db_session, running, vk_id=VK_ID)
+    await make_membership(db_session, following, vk_id=VK_ID)
+    other = await make_user(db_session, vk_id=VK_ID + 1)
+    await make_membership(db_session, running, vk_id=VK_ID + 1)
+
+    [status] = await service.student_clubs(user.id)
+    [other_status] = await service.student_clubs(other.id)
+
+    assert status.next_block_title == "Блок 6"
+    assert other_status.next_block_title is None
+
+
+async def test_upcoming_access_block_has_no_next_block(service, db_session, club) -> None:
+    user = await make_user(db_session, vk_id=VK_ID)
+    upcoming = await make_block(db_session, club, starts_at=datetime(2026, 10, 5, tzinfo=UTC))
+    following = await make_block(db_session, club, starts_at=datetime(2026, 12, 5, tzinfo=UTC))
+    await make_membership(db_session, upcoming, vk_id=VK_ID)
+    await make_membership(db_session, following, vk_id=VK_ID)
+
+    [status] = await service.student_clubs(user.id)
+
+    assert status.access.is_upcoming
+    assert status.next_block_title is None
+
+
+async def test_unlinked_student_or_one_without_access_has_no_clubs(service, db_session, club) -> None:
+    unlinked = await make_user(db_session)
+    outsider = await make_user(db_session, vk_id=VK_ID)
+    await make_block(db_session, club)
+
+    assert await service.student_clubs(unlinked.id) == []
+    assert await service.student_clubs(outsider.id) == []

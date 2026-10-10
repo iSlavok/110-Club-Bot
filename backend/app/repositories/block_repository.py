@@ -40,6 +40,9 @@ class BlockRepository(BaseRepository[Block]):
         current = await self.get_current_for_club(club_id=club_id, now=now)
         if current is not None:
             return current
+        return await self.get_upcoming(club_id=club_id, now=now)
+
+    async def get_upcoming(self, *, club_id: int, now: datetime) -> Block | None:
         statement = (
             select(Block)
             .where(

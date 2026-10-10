@@ -86,8 +86,7 @@ class VkLinkService:
     async def offer(self, tg_id: int) -> VkLinkOffer:
         user = await self._get_user(tg_id)
         if user.vk_id is not None:
-            access = await self._chat_access_service.access_for_user(user.id)
-            return VkAlreadyLinked(vk_id=user.vk_id, access=access)
+            return VkAlreadyLinked(vk_id=user.vk_id)
         mode = await self._current_mode()
         if not self._vk_link_availability.is_configured(mode):
             logger.warning("VK link mode {} is selected but its credentials are missing", mode)

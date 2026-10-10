@@ -8,6 +8,7 @@ from app import texts
 DEFAULT_COMMANDS = (
     BotCommand(command="start", description=texts.commands.START),
     BotCommand(command="vk", description=texts.commands.VK),
+    BotCommand(command="status", description=texts.commands.STATUS),
 )
 ADMIN_COMMANDS = (
     *DEFAULT_COMMANDS,

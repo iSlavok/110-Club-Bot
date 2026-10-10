@@ -12,7 +12,7 @@ from app.services import VkLinkService
 from bot.callbacks import VkLinkAction, VkLinkCallback
 from bot.handlers.vk_link import cancel_profile, confirm_profile, receive_profile_link, vk
 from bot.states import VkLinkStates
-from tests.factories import make_block, make_club, make_membership, make_user, set_app_settings
+from tests.factories import make_user, set_app_settings
 
 TG_ID = 42
 VK_ID = 4242
@@ -69,10 +69,8 @@ async def test_vk_command_does_not_register(service, state, db_session) -> None:
     assert await state.get_state() is None
 
 
-async def test_vk_command_shows_status_when_already_linked(service, state, db_session) -> None:
+async def test_vk_command_points_a_linked_user_to_status(service, state, db_session) -> None:
     await make_user(db_session, tg_id=TG_ID, vk_id=VK_ID)
-    block = await make_block(db_session, await make_club(db_session, title="Химия"), title="Блок 5")
-    await make_membership(db_session, block, vk_id=VK_ID)
     await state.set_state(VkLinkStates.waiting_for_profile)
     message = _message()
 
@@ -81,21 +79,8 @@ async def test_vk_command_shows_status_when_already_linked(service, state, db_se
     text = message.answer.await_args.args[0]
     assert f"vk.com/id{VK_ID}" in text
     assert "Изменить привязку нельзя" in text
-    assert "Ты в клубе Химия, блок Блок 5." in text
+    assert "/status" in text
     assert await state.get_state() is None
-
-
-async def test_vk_command_gives_the_join_link_of_the_club_chat(service, state, db_session) -> None:
-    await make_user(db_session, tg_id=TG_ID, vk_id=VK_ID)
-    club = await make_club(db_session, title="Химия", chat_id=CHAT_ID)
-    await make_membership(db_session, await make_block(db_session, club), vk_id=VK_ID)
-    message = _message()
-
-    await vk(message, state, service)
-
-    assert texts.vk_link.JOIN_HINT in message.answer.await_args.args[0]
-    keyboard: InlineKeyboardMarkup = message.answer.await_args.kwargs["reply_markup"]
-    assert keyboard.inline_keyboard[0][0].text == "Вступить в чат: Химия"
 
 
 @pytest.mark.usefixtures("link_mode")
