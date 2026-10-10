@@ -6,7 +6,7 @@ from app.enums import LessonKind, ReminderKind
 from app.schemas import LessonDTO, ReminderWithLessonDTO
 from app.utils import BUSINESS_TZ
 
-_MONTHS = (
+MONTHS = (
     "января",
     "февраля",
     "марта",
@@ -20,7 +20,7 @@ _MONTHS = (
     "ноября",
     "декабря",
 )
-_WEEKDAYS = ("пн", "вт", "ср", "чт", "пт", "сб", "вс")
+WEEKDAYS = ("пн", "вт", "ср", "чт", "пт", "сб", "вс")
 KIND_LABELS = {
     ReminderKind.LESSON_UPCOMING: "напоминание об уроке",
     ReminderKind.LESSON_STARTING: "урок начинается",
@@ -145,7 +145,7 @@ def _when(moment: datetime, now: datetime) -> str:
         case 2:
             day = "послезавтра"
         case _:
-            day = f"{local.day} {_MONTHS[local.month - 1]} ({_WEEKDAYS[local.weekday()]})"
+            day = f"{local.day} {MONTHS[local.month - 1]} ({WEEKDAYS[local.weekday()]})"
     return f"{day} в {clock}"
 
 
