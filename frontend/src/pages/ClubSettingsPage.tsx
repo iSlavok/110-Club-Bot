@@ -47,6 +47,10 @@ function ClubSettings({ club }: { club: ClubResponse }) {
           <Field label="Топик напоминаний" value={club.reminders_topic_id} />
           <Field label="Google-таблица" value={club.spreadsheet_id} />
           <Field label="Лист" value={club.sheet_name} />
+          <Field
+            label="Сообщения о входе и выходе"
+            value={club.hide_service_messages ? 'Скрываются' : 'Показываются'}
+          />
           <div>
             <Text size="xs" c="dimmed">
               Статус
