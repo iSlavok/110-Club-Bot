@@ -1,5 +1,6 @@
 import { Anchor, Modal, Table, Text } from '@mantine/core';
 
+import { ChatStatusBadge } from '@/entities/chat-access';
 import { useListBlockMembersInfinite, type BlockResponse } from '@/shared/api';
 import { infinitePage, PER_PAGE, useInfinitePage } from '@/shared/lib/infinite-page';
 import { InfiniteList } from '@/shared/ui/InfiniteList';
@@ -25,6 +26,7 @@ export function BlockMembersModal({ opened, onClose, block }: BlockMembersModalP
               <Table.Tr>
                 <Table.Th>VK</Table.Th>
                 <Table.Th>Пользователь бота</Table.Th>
+                <Table.Th>Чат</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -52,6 +54,13 @@ export function BlockMembersModal({ opened, onClose, block }: BlockMembersModalP
                       </>
                     ) : (
                       <Text c="dimmed">не подключил бота</Text>
+                    )}
+                  </Table.Td>
+                  <Table.Td>
+                    {member.user?.chat_status ? (
+                      <ChatStatusBadge status={member.user.chat_status} />
+                    ) : (
+                      <Text c="dimmed">—</Text>
                     )}
                   </Table.Td>
                 </Table.Tr>
