@@ -1,17 +1,20 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app.enums import RemovalRequestStatus, SheetIssueKind, SheetSyncStatus
+from app.enums import ReminderStatus, RemovalRequestStatus, SheetIssueKind, SheetSyncStatus
 from app.services import StatusService
 from tests.factories import (
     make_block,
     make_club,
+    make_lesson,
     make_membership,
+    make_reminder,
     make_removal_request,
     make_sheet_sync,
     make_user,
 )
+from tests.providers import DEFAULT_NOW
 
 
 @pytest.fixture
@@ -100,3 +103,30 @@ async def test_no_active_clubs(service) -> None:
     report = await service.build()
 
     assert report.clubs == []
+
+
+async def test_reports_next_three_pending_reminders_and_failed_last_day(service, db_session) -> None:
+    club = await make_club(db_session)
+    other_club = await make_club(db_session)
+    lesson = await make_lesson(db_session, club)
+    for hours in (4, 1, 3, 2):
+        await make_reminder(db_session, lesson, send_at=DEFAULT_NOW + timedelta(hours=hours))
+    await make_reminder(db_session, lesson, send_at=DEFAULT_NOW, status=ReminderStatus.SENT)
+    await make_reminder(db_session, await make_lesson(db_session, other_club), send_at=DEFAULT_NOW)
+    for hours_ago in (1, 23, 25):
+        await make_reminder(
+            db_session,
+            lesson,
+            send_at=DEFAULT_NOW - timedelta(hours=hours_ago),
+            status=ReminderStatus.FAILED,
+        )
+
+    report = await service.build()
+
+    status = next(status for status in report.clubs if status.club.id == club.id)
+    assert [reminder.send_at for reminder in status.reminders.upcoming] == [
+        DEFAULT_NOW + timedelta(hours=1),
+        DEFAULT_NOW + timedelta(hours=2),
+        DEFAULT_NOW + timedelta(hours=3),
+    ]
+    assert status.reminders.failed_last_day == 2
