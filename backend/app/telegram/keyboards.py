@@ -2,6 +2,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from app import texts
 from app.enums import RemovalDecision
+from app.schemas import ClubAccess
 from app.telegram.callbacks import RemovalRequestCallback
 
 
@@ -16,3 +17,12 @@ def removal_request_keyboard(request_id: int) -> InlineKeyboardMarkup:
             ],
         ],
     )
+
+
+def chat_invite_keyboard(access: list[ClubAccess]) -> InlineKeyboardMarkup | None:
+    buttons = [
+        [InlineKeyboardButton(text=texts.chat_access.join_button(item.club_title), url=item.invite_link)]
+        for item in access
+        if item.invite_link is not None
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons) if buttons else None

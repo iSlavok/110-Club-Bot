@@ -1,7 +1,6 @@
 from dishka import Provider, Scope, provide_all
 
 from app.queries import (
-    AccessQueries,
     ChatAccessQueries,
     ClubStatsQueries,
     MembershipQueries,
@@ -34,6 +33,7 @@ from app.services import (
     AuthCleanupService,
     BlockService,
     BotAdminService,
+    ChatAccessService,
     ClubService,
     ClubStatsService,
     HealthService,
@@ -79,7 +79,7 @@ class QueriesProvider(Provider):
     scope = Scope.REQUEST
 
     queries = provide_all(
-        AccessQueries, ChatAccessQueries, ClubStatsQueries, MembershipQueries, MembershipRemovalQueries, SystemQueries
+        ChatAccessQueries, ClubStatsQueries, MembershipQueries, MembershipRemovalQueries, SystemQueries
     )
 
 
@@ -94,6 +94,7 @@ class ServicesProvider(Provider):
         AuthCleanupService,
         BlockService,
         BotAdminService,
+        ChatAccessService,
         ClubService,
         ClubStatsService,
         HealthService,

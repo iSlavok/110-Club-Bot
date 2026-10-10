@@ -1,8 +1,10 @@
 from datetime import UTC, datetime
+from itertools import count
+from typing import TYPE_CHECKING, cast
 from unittest.mock import AsyncMock, MagicMock
 
 from aiogram import Bot
-from aiogram.types import User
+from aiogram.types import ChatInviteLink, User
 from dishka import Provider, Scope, provide
 from pydantic import SecretStr
 from redis.asyncio import Redis
@@ -14,6 +16,9 @@ from app.telegram import AdminAlerts, CommandMenu, RateLimitMiddleware
 from app.utils import Clock
 from tests.fakes import FakeLoginThrottle, FakeSheetsClient, FakeTimer, FakeVkClient, FrozenClock
 
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
 DEFAULT_NOW = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
 OWNER_TG_ID = 777
 BOT_TOKEN = "123456:test-token"
@@ -23,6 +28,7 @@ PUBLIC_URL = "https://club.example.com"
 VK_CLIENT_ID = 5100001
 VK_SERVICE_TOKEN = "vk-service-token"
 ALERT_MESSAGE_ID = 4242
+INVITE_LINK_PREFIX = "https://t.me/+join"
 
 
 class TestDatabaseProvider(Provider):
@@ -106,6 +112,7 @@ class TestInfraProvider(Provider):
         bot = AsyncMock(spec=Bot)
         bot.me.return_value = User(id=1, is_bot=True, first_name="Club", username=BOT_USERNAME)
         bot.send_message.return_value = MagicMock(message_id=ALERT_MESSAGE_ID)
+        bot.create_chat_invite_link.side_effect = _invite_links()
         return bot
 
     @provide
@@ -114,3 +121,20 @@ class TestInfraProvider(Provider):
         # redis-py declares ping() as a plain method returning an awaitable, so spec alone yields a sync mock.
         redis.ping = AsyncMock(return_value=True)
         return redis
+
+
+def _invite_links() -> "Callable[..., Awaitable[ChatInviteLink]]":
+    numbers = count(1)
+    creator = User(id=1, is_bot=True, first_name="Club", username=BOT_USERNAME)
+
+    async def create(**kwargs: object) -> ChatInviteLink:
+        return ChatInviteLink(
+            invite_link=f"{INVITE_LINK_PREFIX}{next(numbers)}",
+            creator=creator,
+            creates_join_request=bool(kwargs.get("creates_join_request")),
+            is_primary=False,
+            is_revoked=False,
+            name=cast("str | None", kwargs.get("name")),
+        )
+
+    return create

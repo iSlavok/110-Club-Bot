@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramAPIError, TelegramForbiddenError
+from aiogram.types import InlineKeyboardMarkup
 from loguru import logger
 
 from app import texts
@@ -21,10 +22,8 @@ from app.exceptions import (
     VkUnavailableError,
 )
 from app.models import User, VkAuthRequest
-from app.queries import AccessQueries
 from app.repositories import UserRepository, VkAuthRequestRepository
 from app.schemas import (
-    ClubAccess,
     VkAlreadyLinked,
     VkCandidate,
     VkLinkByOAuth,
@@ -35,7 +34,9 @@ from app.schemas import (
     VkOAuthCompletion,
 )
 from app.services.app_settings_service import AppSettingsService
+from app.services.chat_access_service import ChatAccessService
 from app.services.vk_link_availability import VkLinkAvailability
+from app.telegram import chat_invite_keyboard
 from app.utils import (
     Clock,
     VkIdReference,
@@ -62,7 +63,7 @@ class VkLinkService:
         *,
         user_repository: UserRepository,
         vk_auth_request_repository: VkAuthRequestRepository,
-        access_queries: AccessQueries,
+        chat_access_service: ChatAccessService,
         app_settings_service: AppSettingsService,
         vk_link_availability: VkLinkAvailability,
         vk_client: VkClient,
@@ -73,7 +74,7 @@ class VkLinkService:
     ) -> None:
         self._user_repository = user_repository
         self._vk_auth_request_repository = vk_auth_request_repository
-        self._access_queries = access_queries
+        self._chat_access_service = chat_access_service
         self._app_settings_service = app_settings_service
         self._vk_link_availability = vk_link_availability
         self._vk_client = vk_client
@@ -85,7 +86,7 @@ class VkLinkService:
     async def offer(self, tg_id: int) -> VkLinkOffer:
         user = await self._get_user(tg_id)
         if user.vk_id is not None:
-            access = await self._access(user.vk_id)
+            access = await self._chat_access_service.access_for_user(user.id)
             return VkAlreadyLinked(vk_id=user.vk_id, access=access)
         mode = await self._current_mode()
         if not self._vk_link_availability.is_configured(mode):
@@ -185,12 +186,12 @@ class VkLinkService:
         except VkAccountTakenError:
             await self._notify(user.tg_id, texts.vk_link.OAUTH_VK_TAKEN)
             return
-        await self._notify(user.tg_id, texts.vk_link.linked(result))
+        await self._notify(user.tg_id, texts.vk_link.linked(result), chat_invite_keyboard(result.access))
 
     # The link is already saved, so a failed message is only logged: /vk shows the status again.
-    async def _notify(self, tg_id: int, text: str) -> None:
+    async def _notify(self, tg_id: int, text: str, reply_markup: InlineKeyboardMarkup | None = None) -> None:
         try:
-            await self._bot.send_message(tg_id, text)
+            await self._bot.send_message(tg_id, text, reply_markup=reply_markup)
         except TelegramForbiddenError:
             logger.info("User {} blocked the bot, VK ID result not delivered", tg_id)
         except TelegramAPIError:
@@ -215,7 +216,7 @@ class VkLinkService:
         user.vk_linked_at = self._clock.now()
         await self._user_repository.flush()
         logger.info("User {} linked VK {}", user.id, vk_id)
-        access = await self._access(vk_id)
+        access = await self._chat_access_service.access_for_user(user.id)
         return VkLinkResult(vk_id=vk_id, access=access)
 
     async def _resolve(self, reference: VkReference) -> VkUser:
@@ -251,10 +252,6 @@ class VkLinkService:
     async def _current_mode(self) -> VkLinkMode:
         settings = await self._app_settings_service.get()
         return settings.vk_link_mode
-
-    async def _access(self, vk_id: int) -> list[ClubAccess]:
-        rows = await self._access_queries.current_blocks_for_vk(vk_id=vk_id, now=self._clock.now())
-        return [ClubAccess(club_title=row.club_title, block_title=row.block_title) for row in rows]
 
     async def _get_user(self, tg_id: int) -> User:
         user = await self._user_repository.get_by_tg_id(tg_id)
