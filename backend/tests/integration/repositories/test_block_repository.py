@@ -36,3 +36,31 @@ async def test_no_current_block_between_blocks_or_in_another_club(db_session) ->
     current = await BlockRepository(db_session).get_current_for_club(club_id=club.id, now=NOW)
 
     assert current is None
+
+
+async def test_access_block_is_the_running_one_even_with_an_upcoming(db_session) -> None:
+    club = await make_club(db_session)
+    running = await make_block(db_session, club, starts_at=datetime(2026, 9, 1, tzinfo=UTC))
+    await make_block(db_session, club, starts_at=datetime(2026, 10, 5, tzinfo=UTC))
+
+    block = await BlockRepository(db_session).get_access_block(club_id=club.id, now=NOW)
+
+    assert block is running
+
+
+async def test_access_block_between_blocks_is_the_nearest_upcoming(db_session) -> None:
+    club = await make_club(db_session)
+    await make_block(db_session, club, starts_at=datetime(2026, 7, 1, tzinfo=UTC))
+    nearest = await make_block(db_session, club, starts_at=datetime(2026, 10, 5, tzinfo=UTC))
+    await make_block(db_session, club, starts_at=datetime(2026, 12, 5, tzinfo=UTC))
+
+    block = await BlockRepository(db_session).get_access_block(club_id=club.id, now=NOW)
+
+    assert block is nearest
+
+
+async def test_no_access_block_after_the_last_block(db_session) -> None:
+    club = await make_club(db_session)
+    await make_block(db_session, club, starts_at=datetime(2026, 7, 1, tzinfo=UTC))
+
+    assert await BlockRepository(db_session).get_access_block(club_id=club.id, now=NOW) is None

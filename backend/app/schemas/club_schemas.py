@@ -21,6 +21,8 @@ class ClubDTO(BaseModel):
     spreadsheet_id: str | None
     sheet_name: str | None
     is_active: bool
+    chat_kicks_on_hold: bool
+    chat_error: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -34,6 +36,8 @@ class ClubDTO(BaseModel):
             spreadsheet_id=club.spreadsheet_id,
             sheet_name=club.sheet_name,
             is_active=club.is_active,
+            chat_kicks_on_hold=club.chat_kicks_on_hold,
+            chat_error=club.chat_error,
             created_at=club.created_at,
             updated_at=club.updated_at,
         )

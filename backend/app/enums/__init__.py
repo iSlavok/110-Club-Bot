@@ -1,3 +1,4 @@
+from app.enums.chat_access import ChatAccessStatus
 from app.enums.health import CheckStatus, HealthStatus
 from app.enums.lesson import LessonKind, LessonView
 from app.enums.membership_removal import RemovalDecision, RemovalRequestStatus
@@ -7,6 +8,7 @@ from app.enums.sheet_sync import SheetIssueKind, SheetSyncStatus
 from app.enums.vk_link_mode import VkLinkMode
 
 __all__ = [
+    "ChatAccessStatus",
     "CheckStatus",
     "HealthStatus",
     "LessonKind",

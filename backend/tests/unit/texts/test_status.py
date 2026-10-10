@@ -32,6 +32,8 @@ def _club(title: str) -> ClubDTO:
         spreadsheet_id=None,
         sheet_name=None,
         is_active=True,
+        chat_kicks_on_hold=False,
+        chat_error=None,
         created_at=NOW,
         updated_at=NOW,
     )

@@ -2,6 +2,7 @@ from app.repositories.admin_session_repository import AdminSessionRepository
 from app.repositories.admin_user_repository import AdminUserRepository
 from app.repositories.app_settings_repository import AppSettingsRepository
 from app.repositories.block_repository import BlockRepository
+from app.repositories.chat_access_repository import ChatAccessRepository
 from app.repositories.club_repository import ClubRepository
 from app.repositories.lesson_repository import LessonRepository
 from app.repositories.login_code_repository import LoginCodeRepository
@@ -19,6 +20,7 @@ __all__ = [
     "AdminUserRepository",
     "AppSettingsRepository",
     "BlockRepository",
+    "ChatAccessRepository",
     "ClubRepository",
     "LessonRepository",
     "LoginCodeRepository",
