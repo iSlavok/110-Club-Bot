@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -35,7 +35,8 @@ describe('SettingsPage', () => {
     );
     renderWithProviders(<SettingsPage />);
 
-    const save = await screen.findByRole('button', { name: 'Сохранить' });
+    const form = await screen.findByRole('form', { name: 'Привязка VK' });
+    const save = within(form).getByRole('button', { name: 'Сохранить' });
     expect(save).toBeDisabled();
     await userEvent.click(screen.getByRole('radio', { name: 'Ссылка на страницу' }));
     await userEvent.click(save);
@@ -58,11 +59,38 @@ describe('SettingsPage', () => {
     expect(screen.getByRole('radio', { name: 'Ссылка на страницу' })).toBeDisabled();
   });
 
+  it('changes only the edited default reminder offsets', async () => {
+    let body: unknown;
+    server.use(
+      meHandler(makeAdmin('settings.edit')),
+      settingsHandler(SETTINGS),
+      http.patch('/api/v1/settings', async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({
+          ...SETTINGS,
+          default_homework_offsets: [4320, 2880, 1440, 180],
+        });
+      }),
+    );
+    renderWithProviders(<SettingsPage />);
+
+    const form = await screen.findByRole('form', { name: 'Напоминания по умолчанию' });
+    expect(within(form).getByText('в момент начала')).toBeInTheDocument();
+    await userEvent.type(within(form).getByLabelText('О дедлайне ДЗ: своё значение'), '72');
+    await userEvent.click(within(form).getByRole('button', { name: 'О дедлайне ДЗ: добавить' }));
+    await userEvent.click(within(form).getByRole('button', { name: 'Сохранить' }));
+
+    await waitFor(() => {
+      expect(body).toEqual({ default_homework_offsets: [4320, 2880, 1440, 180] });
+    });
+  });
+
   it('is read-only without the settings.edit permission', async () => {
     server.use(meHandler(makeAdmin()), settingsHandler(SETTINGS));
     renderWithProviders(<SettingsPage />);
 
     expect(await screen.findByRole('radio', { name: 'Вход через VK ID' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Сохранить' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /добавить/ })).not.toBeInTheDocument();
   });
 });
