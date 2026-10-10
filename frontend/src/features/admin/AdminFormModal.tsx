@@ -71,7 +71,6 @@ export function AdminFormModal({ opened, onClose, roles, admin }: AdminFormModal
         <Stack>
           <NumberInput
             label="Telegram id"
-            description="Узнать id можно у @userinfobot"
             allowDecimal={false}
             allowNegative={false}
             hideControls

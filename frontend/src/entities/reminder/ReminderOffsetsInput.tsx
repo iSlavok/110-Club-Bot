@@ -13,7 +13,6 @@ import {
 
 interface ReminderOffsetsInputProps {
   label: string;
-  description: string;
   value: number[];
   onChange: (value: number[]) => void;
   /** How the zero offset reads: «в момент начала», «в дедлайн». */
@@ -24,7 +23,6 @@ interface ReminderOffsetsInputProps {
 
 export function ReminderOffsetsInput({
   label,
-  description,
   value,
   onChange,
   zeroLabel,
@@ -50,7 +48,6 @@ export function ReminderOffsetsInput({
     <Stack gap={6}>
       <MultiSelect
         label={label}
-        description={description}
         data={options}
         value={value.map(String)}
         onChange={(selected) => {

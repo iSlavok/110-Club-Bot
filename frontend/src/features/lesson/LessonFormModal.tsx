@@ -211,7 +211,6 @@ function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
         />
         <Textarea
           label="Описание"
-          description="Попадёт в напоминание об уроке"
           autosize
           minRows={2}
           maxRows={6}
@@ -219,7 +218,6 @@ function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
         />
         <ReminderOffsetsInput
           label="Напоминания об уроке"
-          description="За сколько до начала напомнить в топике чата"
           value={values.reminder_offsets}
           onChange={(value) => {
             form.setFieldValue('reminder_offsets', value);
@@ -241,7 +239,6 @@ function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
             />
             <ReminderOffsetsInput
               label="Напоминания о дедлайне"
-              description="За сколько до дедлайна напомнить в топике чата"
               zeroLabel="в момент дедлайна"
               value={values.homework_reminder_offsets}
               onChange={(value) => {
