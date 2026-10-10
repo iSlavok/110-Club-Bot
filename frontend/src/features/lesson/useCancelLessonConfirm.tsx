@@ -28,7 +28,7 @@ export function useCancelLessonConfirm(): (lesson: LessonResponse) => void {
       labels: { confirm: 'Отменить урок', cancel: 'Назад' },
       confirmProps: { color: 'red' },
       onConfirm: () => {
-        void askNotifyChat(['урок отменён']).then((notify) => {
+        void askNotifyChat(['cancelled'], lesson.kind).then((notify) => {
           if (notify !== null) {
             cancel.mutate({ lessonId: lesson.id, data: { notify_chat: notify } });
           }
