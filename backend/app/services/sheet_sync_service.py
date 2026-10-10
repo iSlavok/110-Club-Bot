@@ -10,6 +10,7 @@ from app.exceptions import ClubNotFoundError, ClubNotSyncableError, SheetSyncDis
 from app.models import Club, SheetSync
 from app.repositories import BlockRepository, ClubRepository, MembershipRepository, SheetSyncRepository
 from app.schemas import PageParams, Paginated, SheetIssue, SheetSyncDTO
+from app.services.chat_access_service import ChatAccessService
 from app.services.membership_removal_service import MembershipRemovalService
 from app.services.sheet_parser import parse_sheet
 from app.telegram import AdminAlerts
@@ -28,6 +29,7 @@ class SheetSyncService:
         block_repository: BlockRepository,
         membership_repository: MembershipRepository,
         membership_removal_service: MembershipRemovalService,
+        chat_access_service: ChatAccessService,
         sheets_client: SheetsClient,
         admin_alerts: AdminAlerts,
         clock: Clock,
@@ -37,6 +39,7 @@ class SheetSyncService:
         self._block_repository = block_repository
         self._membership_repository = membership_repository
         self._membership_removal_service = membership_removal_service
+        self._chat_access_service = chat_access_service
         self._sheets_client = sheets_client
         self._admin_alerts = admin_alerts
         self._clock = clock
@@ -102,7 +105,7 @@ class SheetSyncService:
             removal_requested,
             len(parsed.issues),
         )
-        return await self._record(
+        result = await self._record(
             club,
             started_at,
             status=SheetSyncStatus.OK,
@@ -110,6 +113,9 @@ class SheetSyncService:
             removal_requested=removal_requested,
             issues=parsed.issues,
         )
+        # Students added by the sheet get their chat invite now, not on the chat job's next run.
+        await self._chat_access_service.reconcile_club(club_id)
+        return result
 
     # For a sync that crashed: its own transaction was rolled back, so this runs in a new one.
     async def record_internal_error(self, club_id: int) -> SheetSyncDTO:

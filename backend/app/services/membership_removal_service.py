@@ -16,6 +16,7 @@ from app.repositories import (
 )
 from app.schemas import RemovalCandidate, RemovalRequestAlert, TelegramProfile
 from app.services.admin_access_resolver import AdminAccessResolver
+from app.services.chat_access_service import ChatAccessService
 from app.telegram import AdminAlerts, removal_request_keyboard
 from app.utils import Clock
 
@@ -34,6 +35,7 @@ class MembershipRemovalService:
         admin_user_repository: AdminUserRepository,
         removal_queries: MembershipRemovalQueries,
         access_resolver: AdminAccessResolver,
+        chat_access_service: ChatAccessService,
         admin_alerts: AdminAlerts,
         clock: Clock,
     ) -> None:
@@ -44,6 +46,7 @@ class MembershipRemovalService:
         self._admin_user_repository = admin_user_repository
         self._removal_queries = removal_queries
         self._access_resolver = access_resolver
+        self._chat_access_service = chat_access_service
         self._admin_alerts = admin_alerts
         self._clock = clock
 
@@ -91,6 +94,8 @@ class MembershipRemovalService:
         if request.alert_message_id is not None:
             alert = await self._alert(request, decided_by=decider.full_name)
             await self._admin_alerts.edit(request.alert_message_id, texts.alerts.removal_request(alert))
+        if request.status is RemovalRequestStatus.CONFIRMED:
+            await self._chat_access_service.reconcile_club(found.club_id)
         return request.status
 
     async def _open_request(self, block_id: int, vk_ids: Set[int]) -> None:
