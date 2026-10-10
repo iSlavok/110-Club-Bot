@@ -13,6 +13,7 @@ from app.services.login_service import LoginService
 from app.services.membership_removal_service import MembershipRemovalService
 from app.services.reminder_dispatch_service import ReminderDispatchService
 from app.services.reminder_planner import ReminderPlanner
+from app.services.reminder_service import ReminderService
 from app.services.role_service import RoleService
 from app.services.sheet_sync_service import SheetSyncService
 from app.services.status_service import StatusService
@@ -36,6 +37,7 @@ __all__ = [
     "MembershipRemovalService",
     "ReminderDispatchService",
     "ReminderPlanner",
+    "ReminderService",
     "RoleService",
     "SheetSyncService",
     "StatusService",

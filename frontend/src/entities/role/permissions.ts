@@ -2,6 +2,7 @@ import type { PermissionGroup, PermissionResponse } from '@/shared/api';
 
 export const PERMISSION_GROUP_TITLES: Record<PermissionGroup, string> = {
   clubs: 'Клубы',
+  lessons: 'Уроки и напоминания',
   users: 'Пользователи',
   admins: 'Админы и роли',
   settings: 'Настройки',

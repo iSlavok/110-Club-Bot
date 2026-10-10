@@ -10,11 +10,14 @@ class Permission(StrEnum):
     ADMINS_VIEW = "admins.view"
     ADMINS_EDIT = "admins.edit"
     ROLES_EDIT = "roles.edit"
+    LESSONS_VIEW = "lessons.view"
+    LESSONS_EDIT = "lessons.edit"
     SETTINGS_EDIT = "settings.edit"
 
 
 class PermissionGroup(StrEnum):
     CLUBS = "clubs"
+    LESSONS = "lessons"
     USERS = "users"
     ADMINS = "admins"
     SETTINGS = "settings"
