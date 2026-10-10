@@ -12,6 +12,7 @@ interface ClubFormValues {
   spreadsheet_id: string;
   sheet_name: string;
   is_active: boolean;
+  hide_service_messages: boolean;
 }
 
 interface ClubFormModalProps {
@@ -28,6 +29,7 @@ function toValues(club?: ClubResponse): ClubFormValues {
     spreadsheet_id: club?.spreadsheet_id ?? '',
     sheet_name: club?.sheet_name ?? '',
     is_active: club?.is_active ?? true,
+    hide_service_messages: club?.hide_service_messages ?? false,
   };
 }
 
@@ -39,6 +41,7 @@ function toBody(values: ClubFormValues): ClubCreate {
       typeof values.reminders_topic_id === 'number' ? values.reminders_topic_id : null,
     spreadsheet_id: values.spreadsheet_id.trim() || null,
     sheet_name: values.sheet_name.trim() || null,
+    hide_service_messages: values.hide_service_messages,
   };
 }
 
@@ -96,6 +99,11 @@ export function ClubFormModal({ opened, onClose, club }: ClubFormModalProps) {
             {...form.getInputProps('spreadsheet_id')}
           />
           <TextInput label="Лист с составом" {...form.getInputProps('sheet_name')} />
+          <Switch
+            label="Скрывать сообщения о входе и выходе"
+            description="Бот удаляет их из чата. Нужно право «Удаление сообщений»."
+            {...form.getInputProps('hide_service_messages', { type: 'checkbox' })}
+          />
           {club && (
             <Switch
               label="Клуб активен"
