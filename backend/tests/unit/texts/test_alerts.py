@@ -2,12 +2,13 @@ from datetime import UTC, datetime
 
 import pytest
 
-from app.enums import RemovalRequestStatus, SheetIssueKind
-from app.schemas import RemovalCandidate, RemovalRequestAlert, SheetIssue
+from app.enums import LessonKind, ReminderKind, ReminderStatus, RemovalRequestStatus, SheetIssueKind
+from app.schemas import LessonDTO, ReminderWithLessonDTO, RemovalCandidate, RemovalRequestAlert, SheetIssue
 from app.texts import alerts
 
 DETECTED_AT = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
 DECIDED_AT = datetime(2026, 10, 1, 10, 30, tzinfo=UTC)
+NOW = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
 
 
 def _alert(*vk_ids: int, **overrides: object) -> RemovalRequestAlert:
@@ -120,3 +121,42 @@ def test_sync_failure_shows_the_escaped_error() -> None:
 
     assert text.startswith("⚠️ <b>Клуб &lt;110&gt;</b>: синк таблицы не работает")
     assert "Ошибка: error &lt;403&gt;" in text
+
+
+def test_reminder_failed_alert() -> None:
+    lesson = LessonDTO(
+        id=1,
+        club_id=1,
+        kind=LessonKind.LESSON,
+        title="Кислоты <1>",
+        description=None,
+        starts_at=NOW,
+        call_url=None,
+        is_cancelled=False,
+        reminder_offsets=[],
+        homework_deadline_at=NOW,
+        homework_reminder_offsets=[],
+        created_at=NOW,
+        updated_at=NOW,
+    )
+    reminder = ReminderWithLessonDTO(
+        id=1,
+        club_id=1,
+        lesson_id=1,
+        kind=ReminderKind.HOMEWORK_DEADLINE,
+        send_at=NOW,
+        status=ReminderStatus.FAILED,
+        attempts=3,
+        sent_at=None,
+        message_id=None,
+        error="Bad Request: chat not found",
+        created_at=NOW,
+        updated_at=NOW,
+        lesson=lesson,
+    )
+
+    assert alerts.reminder_failed("Химия & био", reminder) == (
+        "⚠️ <b>Химия &amp; био</b>: напоминание не ушло в чат.\n"
+        "«Кислоты &lt;1&gt;» — дедлайн ДЗ, должно было уйти 01.10 12:00 МСК.\n"
+        "Ошибка: Bad Request: chat not found"
+    )

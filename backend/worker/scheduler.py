@@ -6,7 +6,7 @@ from dishka import AsyncContainer
 
 from app.config import SyncSettings
 from app.utils import BUSINESS_TZ
-from worker.jobs import cleanup_rate_limiters, purge_expired_auth, purge_sheet_syncs, sync_sheets
+from worker.jobs import cleanup_rate_limiters, dispatch_reminders, purge_expired_auth, purge_sheet_syncs, sync_sheets
 
 
 # auto_inject: every job run gets its own request scope, so DatabaseProvider commits or rolls back per run.
@@ -25,5 +25,11 @@ def create_scheduler(container: AsyncContainer, sync_settings: SyncSettings) -> 
         purge_sheet_syncs,
         CronTrigger(hour=4, minute=30, timezone=BUSINESS_TZ),
         id="purge_sheet_syncs",
+    )
+    scheduler.add_job(
+        dispatch_reminders,
+        IntervalTrigger(minutes=1),
+        kwargs={"container": container},
+        id="dispatch_reminders",
     )
     return scheduler
