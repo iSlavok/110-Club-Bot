@@ -1,7 +1,9 @@
 import pytest
+from aiogram.types import ChatMemberMember
+from aiogram.types import User as TelegramUser
 from sqlalchemy import select
 
-from app.enums import Permission, RemovalDecision, RemovalRequestStatus
+from app.enums import ChatAccessStatus, Permission, RemovalDecision, RemovalRequestStatus
 from app.exceptions import PermissionDeniedError, RemovalRequestDecidedError, RemovalRequestNotFoundError
 from app.models import Block, MembershipRemovalItem, MembershipRemovalRequest
 from app.repositories import MembershipRepository
@@ -11,6 +13,7 @@ from app.telegram import RemovalRequestCallback
 from tests.factories import (
     make_admin_user,
     make_block,
+    make_chat_access,
     make_club,
     make_membership,
     make_removal_request,
@@ -153,6 +156,22 @@ async def test_owner_confirms_the_removal(service, db_session, block, bot, membe
     edit = bot.edit_message_text.await_args.kwargs
     assert "Удалены из блока — Владелец Клуба" in edit["text"]
     assert edit["reply_markup"] is None
+
+
+async def test_confirmed_removal_kicks_from_the_chat_right_away(service, db_session, bot) -> None:
+    club = await make_club(db_session, chat_id=-100500)
+    block = await make_block(db_session, club)
+    await make_membership(db_session, block, vk_id=501)
+    await make_membership(db_session, block, vk_id=502)
+    user = await make_user(db_session, vk_id=501)
+    access = await make_chat_access(db_session, club, user)
+    bot.get_chat_member.return_value = ChatMemberMember(user=TelegramUser(id=user.tg_id, is_bot=False, first_name="S"))
+    request = await make_removal_request(db_session, block, 501)
+
+    await service.decide(request.id, RemovalDecision.CONFIRM, OWNER)
+
+    bot.ban_chat_member.assert_awaited_once_with(chat_id=-100500, user_id=user.tg_id)
+    assert access.status is ChatAccessStatus.KICKED
 
 
 async def test_rejected_members_stay_in_the_block(service, db_session, block, bot, members) -> None:

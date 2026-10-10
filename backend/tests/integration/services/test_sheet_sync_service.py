@@ -11,7 +11,7 @@ from app.repositories import MembershipRepository
 from app.schemas import SheetIssue
 from app.services import SheetSyncService
 from app.services.sheet_sync_service import INTERNAL_ERROR_MESSAGE
-from tests.factories import make_block, make_club, make_membership, make_sheet_sync
+from tests.factories import make_block, make_club, make_membership, make_sheet_sync, make_user
 from tests.providers import DEFAULT_NOW
 
 SPREADSHEET_ID = "spreadsheet-1"
@@ -48,6 +48,19 @@ async def test_ready_column_becomes_block_members(service, db_session, club, she
     assert (sync.added, sync.removal_requested) == (2, 0)
     assert sync.started_at == DEFAULT_NOW
     assert sync.issues == []
+
+
+async def test_students_added_by_the_sheet_are_invited_to_the_chat_right_away(
+    service, db_session, sheets_client, bot
+) -> None:
+    club = await make_club(db_session, spreadsheet_id=SPREADSHEET_ID, sheet_name=SHEET_NAME, chat_id=-100500)
+    await make_block(db_session, club, sheet_column_title="Блок 5")
+    user = await make_user(db_session, vk_id=501)
+    sheets_client.set_sheet(SPREADSHEET_ID, SHEET_NAME, [[True, "Блок 5", 501]])
+
+    await service.sync_club(club.id)
+
+    assert [call.args[0] for call in bot.send_message.await_args_list] == [user.tg_id]
 
 
 async def test_members_gone_from_sheet_wait_for_confirmation(service, db_session, club, sheets_client, members) -> None:

@@ -2,7 +2,7 @@ from datetime import datetime
 from html import escape
 
 from app.enums import RemovalRequestStatus, SheetIssueKind
-from app.schemas import ReminderWithLessonDTO, RemovalCandidate, RemovalRequestAlert, SheetIssue
+from app.schemas import KickedMember, ReminderWithLessonDTO, RemovalCandidate, RemovalRequestAlert, SheetIssue
 from app.texts.reminders import KIND_LABELS
 from app.utils import BUSINESS_TZ
 
@@ -64,6 +64,41 @@ def reminder_failed(club_title: str, reminder: ReminderWithLessonDTO) -> str:
     )
 
 
+def chat_kicked(club_title: str, kicked: list[KickedMember]) -> str:
+    lines = [f"<b>{escape(club_title)}</b>: бот убрал из чата {_people(len(kicked))} — их нет в текущем блоке."]
+    lines.extend(_candidate(member) for member in kicked[:MAX_LISTED])
+    lines.extend(_more(len(kicked)))
+    return "\n".join(lines)
+
+
+def chat_kicks_on_hold(club_title: str, block_title: str | None, waiting: int) -> str:
+    reason = (
+        f"в блоке {escape(block_title)} нет участников — таблицу ещё не заполнили"
+        if block_title is not None
+        else "у клуба нет текущего и следующего блока"
+    )
+    return (
+        f"⚠️ <b>{escape(club_title)}</b>: кик из чата ждёт таблицу: {reason}.\n"
+        f"Впущенные ботом остаются в чате ({_people(waiting)}). Напишу, когда кик снова заработает."
+    )
+
+
+def chat_kicks_resumed(club_title: str) -> str:
+    return f"✅ <b>{escape(club_title)}</b>: кик из чата снова работает."
+
+
+def chat_failed(club_title: str, error: str) -> str:
+    return (
+        f"⚠️ <b>{escape(club_title)}</b>: бот не может управлять чатом клуба.\n"
+        f"Ошибка: {escape(error)}\n"
+        "Проверь, что бот — админ чата с правами приглашать по ссылке и блокировать. Напишу, когда заработает."
+    )
+
+
+def chat_recovered(club_title: str) -> str:
+    return f"✅ <b>{escape(club_title)}</b>: бот снова управляет чатом клуба."
+
+
 def _removal_status(alert: RemovalRequestAlert) -> str:
     count = _people(len(alert.candidates))
     detected = f"Пропали из таблицы {_moscow(alert.created_at)} МСК"
@@ -104,7 +139,7 @@ def _more(total: int) -> list[str]:
     return [f"и ещё {hidden}"] if hidden > 0 else []
 
 
-def _candidate(candidate: RemovalCandidate) -> str:
+def _candidate(candidate: RemovalCandidate | KickedMember) -> str:
     link = f'<a href="https://vk.com/id{candidate.vk_id}">id{candidate.vk_id}</a>'
     if candidate.full_name is None:
         return f"• {link}"

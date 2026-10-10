@@ -1,6 +1,7 @@
 from html import escape
 
 from app.schemas import ClubAccess, VkAlreadyLinked, VkCandidate, VkLinkByOAuth, VkLinkResult
+from app.texts.chat_access import access_line
 from app.utils import BUSINESS_TZ
 
 ASK_PROFILE_LINK = (
@@ -59,15 +60,7 @@ def already_linked(offer: VkAlreadyLinked) -> str:
 def access_status(access: list[ClubAccess]) -> str:
     if not access:
         return "В текущем блоке тебя нет в списках. Если это ошибка — напиши куратору."
-    lines = [_club_access(item) for item in access]
+    lines = [access_line(item) for item in access]
     if any(item.invite_link for item in access):
         lines.append(JOIN_HINT)
     return "\n".join(lines)
-
-
-def _club_access(item: ClubAccess) -> str:
-    line = f"Ты в клубе {escape(item.club_title)}, блок {escape(item.block_title)}"
-    if item.is_upcoming:
-        starts = item.block_starts_at.astimezone(BUSINESS_TZ).strftime("%d.%m")
-        return f"{line} — начнётся {starts}."
-    return f"{line}."

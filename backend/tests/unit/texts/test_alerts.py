@@ -3,7 +3,14 @@ from datetime import UTC, datetime
 import pytest
 
 from app.enums import LessonKind, ReminderKind, ReminderStatus, RemovalRequestStatus, SheetIssueKind
-from app.schemas import LessonDTO, ReminderWithLessonDTO, RemovalCandidate, RemovalRequestAlert, SheetIssue
+from app.schemas import (
+    KickedMember,
+    LessonDTO,
+    ReminderWithLessonDTO,
+    RemovalCandidate,
+    RemovalRequestAlert,
+    SheetIssue,
+)
 from app.texts import alerts
 
 DETECTED_AT = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
@@ -160,3 +167,18 @@ def test_reminder_failed_alert() -> None:
         "«Кислоты &lt;1&gt;» — дедлайн ДЗ, должно было уйти 01.10 12:00 МСК.\n"
         "Ошибка: Bad Request: chat not found"
     )
+
+
+def test_chat_kick_lists_people_and_shortens_long_lists() -> None:
+    kicked = [KickedMember(vk_id=500 + n, full_name=f"Ученик {n}", tg_username=None) for n in range(17)]
+
+    lines = alerts.chat_kicked("Клуб 110", kicked).splitlines()
+
+    assert lines[0] == "<b>Клуб 110</b>: бот убрал из чата 17 человек — их нет в текущем блоке."
+    assert lines[1] == '• <a href="https://vk.com/id500">id500</a> — Ученик 0'
+    assert lines[-1] == "и ещё 2"
+
+
+def test_held_kicks_name_the_unfilled_block_or_the_missing_one() -> None:
+    assert "в блоке Блок 6 нет участников" in alerts.chat_kicks_on_hold("Клуб 110", "Блок 6", 3)
+    assert "у клуба нет текущего и следующего блока" in alerts.chat_kicks_on_hold("Клуб 110", None, 3)
