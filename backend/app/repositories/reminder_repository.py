@@ -122,6 +122,32 @@ class ReminderRepository(BaseRepository[Reminder]):
         reminders = await self._session.scalars(statement)
         return PageResult(items=list(reminders), total=total)
 
+    async def list_pending_for_club(self, *, club_id: int, limit: int) -> list[Reminder]:
+        statement = (
+            select(Reminder)
+            .where(
+                Reminder.club_id == club_id,
+                Reminder.status == ReminderStatus.PENDING,
+            )
+            .options(joinedload(Reminder.lesson))
+            .order_by(Reminder.send_at, Reminder.id)
+            .limit(limit)
+        )
+        reminders = await self._session.scalars(statement)
+        return list(reminders)
+
+    async def count_failed_since(self, *, club_id: int, since: datetime) -> int:
+        statement = (
+            select(func.count())
+            .select_from(Reminder)
+            .where(
+                Reminder.club_id == club_id,
+                Reminder.status == ReminderStatus.FAILED,
+                Reminder.send_at >= since,
+            )
+        )
+        return await self._session.scalar(statement) or 0
+
     async def cancel_pending(self, *, lesson_id: int, kinds: Collection[ReminderKind] | None = None) -> None:
         conditions: list[ColumnElement[bool]] = [
             Reminder.lesson_id == lesson_id,

@@ -21,7 +21,7 @@ from app.schemas.patch_schemas import Maybe, PatchSchema
 from app.schemas.reminder_schemas import ReminderDTO, ReminderWithLessonDTO
 from app.schemas.role_schemas import PermissionInfo, RoleCreate, RoleDTO, RoleUpdate
 from app.schemas.sheet_sync_schemas import SheetIssue, SheetSyncDTO
-from app.schemas.status_schemas import ClubStatus, ClubSyncStatus, StatusReport
+from app.schemas.status_schemas import ClubStatus, ClubSyncStatus, ReminderStatusSection, StatusReport
 from app.schemas.user_schemas import TelegramProfile, UserDTO
 from app.schemas.vk_link_schemas import (
     ClubAccess,
@@ -71,6 +71,7 @@ __all__ = [
     "PermissionInfo",
     "ReadinessReport",
     "ReminderDTO",
+    "ReminderStatusSection",
     "ReminderWithLessonDTO",
     "RemovalCandidate",
     "RemovalRequestAlert",

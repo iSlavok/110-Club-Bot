@@ -2,7 +2,8 @@ from datetime import datetime
 from html import escape
 
 from app.enums import SheetSyncStatus
-from app.schemas import ClubStatus, ClubSyncStatus, CurrentBlockStats, SheetSyncDTO, StatusReport
+from app.schemas import ClubStatus, ClubSyncStatus, CurrentBlockStats, ReminderStatusSection, SheetSyncDTO, StatusReport
+from app.texts.reminders import KIND_LABELS, short_time
 from app.utils import BUSINESS_TZ
 
 NO_ACTIVE_CLUBS = "Активных клубов нет."
@@ -21,6 +22,7 @@ def _club_status(status: ClubStatus) -> str:
         f"<b>{escape(status.club.title)}</b>",
         *_current_block(status.current_block),
         *_sync(status.sync),
+        *_reminders(status.reminders),
     ]
     return "\n".join(lines)
 
@@ -55,6 +57,17 @@ def _last_sync(sync: SheetSyncDTO | None) -> list[str]:
 # Cut before escaping, so an HTML entity is never split.
 def _shorten(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[:limit] + "…"
+
+
+def _reminders(section: ReminderStatusSection) -> list[str]:
+    lines = ["Ближайшие напоминания:" if section.upcoming else "Ближайших напоминаний нет."]
+    lines.extend(
+        f"• {short_time(reminder.send_at)} — {KIND_LABELS[reminder.kind]}, «{escape(reminder.lesson.title)}»"
+        for reminder in section.upcoming
+    )
+    if section.failed_last_day:
+        lines.append(f"Не ушло в чат за сутки: {section.failed_last_day}")
+    return lines
 
 
 def _day(moment: datetime) -> str:
