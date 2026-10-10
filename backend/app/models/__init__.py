@@ -2,6 +2,7 @@ from app.models.admin_session import AdminSession
 from app.models.admin_user import AdminUser
 from app.models.app_settings import AppSettings
 from app.models.block import Block
+from app.models.chat_access import ChatAccess
 from app.models.club import Club
 from app.models.lesson import Lesson
 from app.models.login_code import LoginCode
@@ -19,6 +20,7 @@ __all__ = [
     "AdminUser",
     "AppSettings",
     "Block",
+    "ChatAccess",
     "Club",
     "Lesson",
     "LoginCode",

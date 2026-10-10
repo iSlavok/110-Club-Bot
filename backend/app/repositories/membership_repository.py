@@ -20,6 +20,18 @@ class MembershipRepository(BaseRepository[Membership]):
         exists = await self._session.scalar(statement)
         return bool(exists)
 
+    async def is_member(self, *, block_id: int, vk_id: int) -> bool:
+        member = (
+            select(Membership.id)
+            .where(
+                Membership.block_id == block_id,
+                Membership.vk_id == vk_id,
+            )
+        )
+        statement = select(member.exists())
+        exists = await self._session.scalar(statement)
+        return bool(exists)
+
     async def count_by_block(self, block_ids: Collection[int]) -> dict[int, int]:
         statement = (
             select(Membership.block_id, func.count())

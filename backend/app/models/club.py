@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, String, true
+from sqlalchemy import BigInteger, String, Text, false, true
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -13,3 +13,6 @@ class Club(Base):
     spreadsheet_id: Mapped[str | None] = mapped_column(String(CLUB_TEXT_MAX_LEN))
     sheet_name: Mapped[str | None] = mapped_column(String(CLUB_TEXT_MAX_LEN))
     is_active: Mapped[bool] = mapped_column(server_default=true())
+    # Chat state kept by the worker, so the owner is alerted on a change, not on every run.
+    chat_kicks_on_hold: Mapped[bool] = mapped_column(server_default=false())
+    chat_error: Mapped[str | None] = mapped_column(Text)

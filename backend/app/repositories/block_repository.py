@@ -35,6 +35,22 @@ class BlockRepository(BaseRepository[Block]):
         )
         return await self._session.scalar(statement)
 
+    # Chat access follows one block: the running one, or the nearest upcoming while none is running.
+    async def get_access_block(self, *, club_id: int, now: datetime) -> Block | None:
+        current = await self.get_current_for_club(club_id=club_id, now=now)
+        if current is not None:
+            return current
+        statement = (
+            select(Block)
+            .where(
+                Block.club_id == club_id,
+                Block.starts_at > now,
+            )
+            .order_by(Block.starts_at, Block.id)
+            .limit(1)
+        )
+        return await self._session.scalar(statement)
+
     async def list_for_club(self, club_id: int) -> list[Block]:
         statement = (
             select(Block)
