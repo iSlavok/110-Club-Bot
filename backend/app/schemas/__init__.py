@@ -29,6 +29,7 @@ from app.schemas.status_schemas import (
     ReminderStatusSection,
     StatusReport,
 )
+from app.schemas.student_status_schemas import StudentClubStatus, StudentStatus
 from app.schemas.user_schemas import TelegramProfile, UserDTO
 from app.schemas.vk_link_schemas import (
     ClubAccess,
@@ -91,6 +92,8 @@ __all__ = [
     "SheetIssue",
     "SheetSyncDTO",
     "StatusReport",
+    "StudentClubStatus",
+    "StudentStatus",
     "TelegramProfile",
     "TelegramWidgetPayload",
     "UserDTO",

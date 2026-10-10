@@ -64,3 +64,14 @@ async def test_no_access_block_after_the_last_block(db_session) -> None:
     await make_block(db_session, club, starts_at=datetime(2026, 7, 1, tzinfo=UTC))
 
     assert await BlockRepository(db_session).get_access_block(club_id=club.id, now=NOW) is None
+
+
+async def test_upcoming_block_is_the_nearest_not_started_one_even_while_one_runs(db_session) -> None:
+    club = await make_club(db_session)
+    await make_block(db_session, club, starts_at=datetime(2026, 9, 1, tzinfo=UTC))
+    nearest = await make_block(db_session, club, starts_at=datetime(2026, 10, 31, tzinfo=UTC))
+    await make_block(db_session, club, starts_at=datetime(2026, 12, 30, tzinfo=UTC))
+
+    block = await BlockRepository(db_session).get_upcoming(club_id=club.id, now=NOW)
+
+    assert block is nearest

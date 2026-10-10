@@ -41,6 +41,7 @@ def _access(block: Block) -> ClubAccess:
         club_title="Химия",
         block_title="Блок 5",
         block_starts_at=block.starts_at,
+        block_ends_at=block.ends_at,
         is_upcoming=False,
         invite_link=None,
     )
@@ -66,14 +67,12 @@ async def kate(vk):
     return vk.add_user(VK_ID, "Катя", "Орлова", screen_name="kate.orlova")
 
 
-async def test_linked_user_gets_access_status(service, db_session) -> None:
+async def test_linked_user_is_told_the_link_is_final(service, db_session) -> None:
     user = await make_user(db_session, vk_id=VK_ID)
-    block = await make_block(db_session, await make_club(db_session, title="Химия"), title="Блок 5")
-    await make_membership(db_session, block, vk_id=VK_ID)
 
     offer = await service.offer(user.tg_id)
 
-    assert offer == VkAlreadyLinked(vk_id=VK_ID, access=[_access(block)])
+    assert offer == VkAlreadyLinked(vk_id=VK_ID)
 
 
 @pytest.mark.usefixtures("link_mode")

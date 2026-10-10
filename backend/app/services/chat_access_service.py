@@ -9,7 +9,7 @@ from app.enums import ChatAccessStatus
 from app.models import Block, ChatAccess, Club, User
 from app.queries import ChatAccessQueries
 from app.repositories import BlockRepository, ChatAccessRepository, ClubRepository, MembershipRepository, UserRepository
-from app.schemas import ClubAccess, KickedMember
+from app.schemas import ClubAccess, KickedMember, StudentClubStatus
 from app.telegram import AdminAlerts, chat_invite_keyboard
 from app.utils import Clock
 
@@ -115,6 +115,29 @@ class ChatAccessService:
             access.append(self._club_access(club, block, invite_link))
         return access
 
+    # Telegram is asked directly: a student an admin let in by hand is in the chat too.
+    async def student_clubs(self, user_id: int) -> list[StudentClubStatus]:
+        user = await self._user_repository.get_by_id(user_id)
+        if user is None or user.vk_id is None:
+            return []
+        statuses: list[StudentClubStatus] = []
+        clubs = await self._club_repository.list_active()
+        for club in clubs:
+            block = await self._access_block(club, user.vk_id)
+            if block is None:
+                continue
+            in_chat = await self._is_in_chat(club, user)
+            invite_link = await self._try_invite_link(club, user) if in_chat is False else None
+            next_block_title = await self._next_block_title(club, block, user.vk_id)
+            statuses.append(
+                StudentClubStatus(
+                    access=self._club_access(club, block, invite_link),
+                    in_chat=in_chat,
+                    next_block_title=next_block_title,
+                ),
+            )
+        return statuses
+
     async def handle_join_request(self, *, chat_id: int, tg_id: int, invite_link: str | None) -> None:
         if invite_link is None:
             return
@@ -156,6 +179,7 @@ class ChatAccessService:
             club_title=club.title,
             block_title=block.title,
             block_starts_at=block.starts_at,
+            block_ends_at=block.ends_at,
             is_upcoming=block.starts_at > self._clock.now(),
             invite_link=invite_link,
         )
@@ -231,6 +255,27 @@ class ChatAccessService:
             return None
         is_member = await self._membership_repository.is_member(block_id=block.id, vk_id=vk_id)
         return block if is_member else None
+
+    # An unknown state reads as "not in the chat": the student then gets a join link and loses nothing.
+    async def _is_in_chat(self, club: Club, user: User) -> bool | None:
+        if club.chat_id is None:
+            return None
+        try:
+            member = await self._bot.get_chat_member(chat_id=club.chat_id, user_id=user.tg_id)
+        except TelegramAPIError as error:
+            logger.warning("Cannot check user {} in the chat of club {}: {}", user.id, club.id, error)
+            return False
+        return _in_chat(member)
+
+    async def _next_block_title(self, club: Club, block: Block, vk_id: int) -> str | None:
+        now = self._clock.now()
+        if block.starts_at > now:
+            return None
+        upcoming = await self._block_repository.get_upcoming(club_id=club.id, now=now)
+        if upcoming is None:
+            return None
+        is_member = await self._membership_repository.is_member(block_id=upcoming.id, vk_id=vk_id)
+        return upcoming.title if is_member else None
 
     async def _try_invite_link(self, club: Club, user: User) -> str | None:
         if club.chat_id is None:

@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from app import texts
 from app.schemas import ClubAccess
@@ -11,6 +11,7 @@ def _access(*, is_upcoming: bool, invite_link: str | None) -> ClubAccess:
         club_title="Химия",
         block_title="Блок 6",
         block_starts_at=STARTS_AT,
+        block_ends_at=STARTS_AT + timedelta(days=60),
         is_upcoming=is_upcoming,
         invite_link=invite_link,
     )

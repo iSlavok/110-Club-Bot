@@ -18,6 +18,7 @@ from app.services.reminder_service import ReminderService
 from app.services.role_service import RoleService
 from app.services.sheet_sync_service import SheetSyncService
 from app.services.status_service import StatusService
+from app.services.student_status_service import StudentStatusService
 from app.services.user_service import UserService
 from app.services.vk_link_availability import VkLinkAvailability
 from app.services.vk_link_service import VkLinkService
@@ -43,6 +44,7 @@ __all__ = [
     "RoleService",
     "SheetSyncService",
     "StatusService",
+    "StudentStatusService",
     "UserService",
     "VkLinkAvailability",
     "VkLinkService",

@@ -2,6 +2,7 @@ from html import escape
 
 from app.schemas import ClubAccess, VkAlreadyLinked, VkCandidate, VkLinkByOAuth, VkLinkResult
 from app.texts.chat_access import access_line
+from app.texts.student_status import NO_ACCESS
 from app.utils import BUSINESS_TZ
 
 ASK_PROFILE_LINK = (
@@ -52,14 +53,14 @@ def linked(result: VkLinkResult) -> str:
 
 def already_linked(offer: VkAlreadyLinked) -> str:
     return (
-        f"VK уже привязан: vk.com/id{offer.vk_id}. Изменить привязку нельзя — по вопросам пиши куратору.\n\n"
-        f"{access_status(offer.access)}"
+        f"VK уже привязан: vk.com/id{offer.vk_id}. Изменить привязку нельзя — по вопросам пиши куратору.\n"
+        "Клуб, блок и чат — /status."
     )
 
 
 def access_status(access: list[ClubAccess]) -> str:
     if not access:
-        return "В текущем блоке тебя нет в списках. Если это ошибка — напиши куратору."
+        return NO_ACCESS
     lines = [access_line(item) for item in access]
     if any(item.invite_link for item in access):
         lines.append(JOIN_HINT)
