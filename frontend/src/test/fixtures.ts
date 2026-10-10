@@ -1,6 +1,12 @@
 import { http, HttpResponse } from 'msw';
 
-import type { ClubResponse, CurrentAdminResponse, Permission } from '@/shared/api';
+import type {
+  ClubResponse,
+  CurrentAdminResponse,
+  LessonResponse,
+  Permission,
+  ReminderResponse,
+} from '@/shared/api';
 
 export function makeAdmin(...permissions: Permission[]): CurrentAdminResponse {
   return { id: 1, tg_id: 1001, name: 'Тестовый админ', is_owner: false, permissions };
@@ -15,6 +21,46 @@ export function makeClub(id: number, overrides: Partial<ClubResponse> = {}): Clu
     spreadsheet_id: null,
     sheet_name: null,
     is_active: true,
+    ...overrides,
+  };
+}
+
+export function makeLesson(id: number, overrides: Partial<LessonResponse> = {}): LessonResponse {
+  return {
+    id,
+    club_id: 1,
+    kind: 'lesson',
+    title: `Урок ${id}`,
+    description: null,
+    starts_at: '2026-10-03T16:00:00Z',
+    call_url: null,
+    is_cancelled: false,
+    reminder_offsets: [1440, 60, 0],
+    homework_deadline_at: null,
+    homework_reminder_offsets: [2880, 1440, 180],
+    ...overrides,
+  };
+}
+
+export function makeReminder(
+  id: number,
+  overrides: Partial<ReminderResponse> = {},
+): ReminderResponse {
+  return {
+    id,
+    lesson: {
+      id: 1,
+      kind: 'lesson',
+      title: 'Кислоты',
+      starts_at: '2026-10-03T16:00:00Z',
+      is_cancelled: false,
+    },
+    kind: 'lesson_upcoming',
+    send_at: '2026-10-02T16:00:00Z',
+    status: 'pending',
+    attempts: 0,
+    sent_at: null,
+    error: null,
     ...overrides,
   };
 }
