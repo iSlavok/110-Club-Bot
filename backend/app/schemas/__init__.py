@@ -18,6 +18,7 @@ from app.schemas.lesson_schemas import LessonCreate, LessonDTO, LessonUpdate
 from app.schemas.membership_removal_schemas import RemovalCandidate, RemovalRequestAlert
 from app.schemas.pagination_schemas import MAX_PER_PAGE, PageParams, Paginated
 from app.schemas.patch_schemas import Maybe, PatchSchema
+from app.schemas.reminder_schemas import ReminderDTO, ReminderWithLessonDTO
 from app.schemas.role_schemas import PermissionInfo, RoleCreate, RoleDTO, RoleUpdate
 from app.schemas.sheet_sync_schemas import SheetIssue, SheetSyncDTO
 from app.schemas.status_schemas import ClubStatus, ClubSyncStatus, StatusReport
@@ -69,6 +70,8 @@ __all__ = [
     "PatchSchema",
     "PermissionInfo",
     "ReadinessReport",
+    "ReminderDTO",
+    "ReminderWithLessonDTO",
     "RemovalCandidate",
     "RemovalRequestAlert",
     "RoleCreate",
