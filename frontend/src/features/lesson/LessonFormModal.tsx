@@ -106,8 +106,10 @@ function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
     validate: {
       title: (value) => (value.trim() ? null : 'Укажите тему'),
       starts_at: (value) => (value ? null : 'Укажите начало'),
-      call_url: (value) =>
-        !value.trim() || /^https?:\/\/[^\s<>"']+$/.test(value.trim())
+      call_url: (value, values) =>
+        values.kind !== 'curator_call' ||
+        !value.trim() ||
+        /^https?:\/\/[^\s<>"']+$/.test(value.trim())
           ? null
           : 'Ссылка вида https://…',
       homework_deadline_at: (value, values) =>
@@ -162,7 +164,7 @@ function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
       kind: submitted.kind,
       title: submitted.title.trim(),
       starts_at: startsAt,
-      call_url: submitted.call_url.trim() || null,
+      call_url: submitted.kind === 'curator_call' ? submitted.call_url.trim() || null : null,
       description: submitted.description.trim() || null,
       reminder_offsets: reminderOffsets,
       homework_deadline_at: homeworkDeadline,
@@ -204,11 +206,13 @@ function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
           withAsterisk
           {...form.getInputProps('starts_at')}
         />
-        <TextInput
-          label="Ссылка на созвон"
-          placeholder="https://…"
-          {...form.getInputProps('call_url')}
-        />
+        {values.kind === 'curator_call' && (
+          <TextInput
+            label="Ссылка на созвон"
+            placeholder="https://…"
+            {...form.getInputProps('call_url')}
+          />
+        )}
         <Textarea
           label="Описание"
           autosize

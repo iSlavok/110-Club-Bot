@@ -30,6 +30,7 @@ describe('ClubLessonPage', () => {
   it('shows the lesson, its homework and its reminders', async () => {
     const requests = renderCard(
       makeLesson(5, {
+        kind: 'curator_call',
         title: 'Кислоты',
         call_url: 'https://meet.example.com/abc',
         description: 'Повторить оксиды',
@@ -48,6 +49,13 @@ describe('ClubLessonPage', () => {
       expect(requests.at(-1)?.get('lesson_id')).toBe('5');
     });
     expect(screen.queryByRole('button', { name: 'Отменить урок' })).not.toBeInTheDocument();
+  });
+
+  it('has no call link field for a lesson', async () => {
+    renderCard(makeLesson(6, { title: 'Кислоты' }));
+
+    expect(await screen.findByRole('heading', { name: 'Кислоты' })).toBeInTheDocument();
+    expect(screen.queryByText('Ссылка на созвон')).not.toBeInTheDocument();
   });
 
   it('cancels the lesson and asks whether to tell the chat', async () => {
