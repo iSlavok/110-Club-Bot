@@ -1,5 +1,5 @@
 from app.enums.health import CheckStatus, HealthStatus
-from app.enums.lesson import LessonKind
+from app.enums.lesson import LessonKind, LessonView
 from app.enums.membership_removal import RemovalDecision, RemovalRequestStatus
 from app.enums.permission import Permission, PermissionGroup, known_permissions
 from app.enums.reminder import ReminderKind, ReminderStatus
@@ -10,6 +10,7 @@ __all__ = [
     "CheckStatus",
     "HealthStatus",
     "LessonKind",
+    "LessonView",
     "Permission",
     "PermissionGroup",
     "ReminderKind",
