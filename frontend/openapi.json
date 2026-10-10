@@ -2677,13 +2677,25 @@
             ],
             "title": "Tg Username",
             "description": "Telegram username without @"
+          },
+          "chat_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatAccessStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "State in the club chat for students the bot invited; null if the bot never invited them"
           }
         },
         "type": "object",
         "required": [
           "id",
           "full_name",
-          "tg_username"
+          "tg_username",
+          "chat_status"
         ],
         "title": "BlockMemberUserResponse"
       },
@@ -2764,6 +2776,16 @@
         "type": "string",
         "maxLength": 1000,
         "pattern": "^https?://[^\\s<>\\\"']+$"
+      },
+      "ChatAccessStatus": {
+        "type": "string",
+        "enum": [
+          "invited",
+          "joined",
+          "left",
+          "kicked"
+        ],
+        "title": "ChatAccessStatus"
       },
       "ClubCreate": {
         "properties": {

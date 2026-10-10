@@ -3,6 +3,7 @@ from typing import Self
 
 from pydantic import BaseModel, Field
 
+from app.enums import ChatAccessStatus
 from app.schemas import BlockDTO, BlockMember, BlockMemberUser, BlockSummary, ClubDTO
 
 
@@ -69,10 +70,18 @@ class BlockMemberUserResponse(BaseModel):
     id: int = Field(description="User id")
     full_name: str = Field(description="Telegram display name")
     tg_username: str | None = Field(description="Telegram username without @")
+    chat_status: ChatAccessStatus | None = Field(
+        description="State in the club chat for students the bot invited; null if the bot never invited them",
+    )
 
     @classmethod
     def from_dto(cls, user: BlockMemberUser) -> Self:
-        return cls(id=user.id, full_name=user.full_name, tg_username=user.tg_username)
+        return cls(
+            id=user.id,
+            full_name=user.full_name,
+            tg_username=user.tg_username,
+            chat_status=user.chat_status,
+        )
 
 
 class BlockMemberResponse(BaseModel):

@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 import pytest
 
+from app.enums import ChatAccessStatus
 from app.exceptions import (
     BlockColumnTakenError,
     BlockHasMembersError,
@@ -11,7 +12,7 @@ from app.exceptions import (
 )
 from app.schemas import BlockCreate, BlockMemberUser, BlockUpdate, PageParams
 from app.services import BlockService
-from tests.factories import make_block, make_club, make_membership, make_user
+from tests.factories import make_block, make_chat_access, make_club, make_membership, make_user
 
 SEPT = datetime(2026, 9, 1, tzinfo=UTC)
 NOV = datetime(2026, 11, 1, tzinfo=UTC)
@@ -114,8 +115,27 @@ async def test_members_show_linked_bot_users(service, db_session) -> None:
 
     assert page.total == 2
     assert [member.vk_id for member in page.items] == [501, 502]
-    assert page.items[0].user == BlockMemberUser(id=user.id, full_name="Ученик Тестов", tg_username="pupil")
+    assert page.items[0].user == BlockMemberUser(
+        id=user.id,
+        full_name="Ученик Тестов",
+        tg_username="pupil",
+        chat_status=None,
+    )
     assert page.items[1].user is None
+
+
+async def test_members_show_their_state_in_the_club_chat(service, db_session) -> None:
+    club = await make_club(db_session, chat_id=-100500)
+    block = await make_block(db_session, club)
+    await make_membership(db_session, block, vk_id=501)
+    user = await make_user(db_session, vk_id=501)
+    await make_chat_access(db_session, club, user, status=ChatAccessStatus.KICKED)
+    await make_chat_access(db_session, await make_club(db_session, chat_id=-100501), user)
+
+    page = await service.list_members(block.id, PageParams())
+
+    assert page.items[0].user is not None
+    assert page.items[0].user.chat_status is ChatAccessStatus.KICKED
 
 
 async def test_members_of_unknown_block(service) -> None:
