@@ -1526,6 +1526,636 @@
         }
       }
     },
+    "/api/v1/clubs/{club_id}/lessons": {
+      "get": {
+        "tags": [
+          "lessons"
+        ],
+        "summary": "List Lessons",
+        "operationId": "list_lessons",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "club_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Club Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 46116860184273879,
+              "minimum": 1,
+              "description": "Page number, starting from 1",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number, starting from 1"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 50,
+              "title": "Per Page"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/LessonView",
+              "description": "upcoming: not started yet, soonest first; past: started, latest first; all: latest first",
+              "default": "upcoming"
+            },
+            "description": "upcoming: not started yet, soonest first; past: started, latest first; all: latest first"
+          },
+          {
+            "name": "include_cancelled",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Also show cancelled lessons",
+              "default": false,
+              "title": "Include Cancelled"
+            },
+            "description": "Also show cancelled lessons"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_LessonResponse_"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "lessons"
+        ],
+        "summary": "Create Lesson",
+        "operationId": "create_lesson",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "club_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Club Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LessonCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/lessons/{lesson_id}": {
+      "get": {
+        "tags": [
+          "lessons"
+        ],
+        "summary": "Get Lesson",
+        "operationId": "get_lesson",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "lesson_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Lesson Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "lessons"
+        ],
+        "summary": "Update Lesson",
+        "operationId": "update_lesson",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "lesson_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Lesson Id"
+            }
+          },
+          {
+            "name": "notify_chat",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Tell the club chat about a new start time, a moved deadline or removed homework",
+              "default": false,
+              "title": "Notify Chat"
+            },
+            "description": "Tell the club chat about a new start time, a moved deadline or removed homework"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LessonUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/lessons/{lesson_id}/cancel": {
+      "post": {
+        "tags": [
+          "lessons"
+        ],
+        "summary": "Cancel Lesson",
+        "operationId": "cancel_lesson",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "lesson_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Lesson Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LessonCancelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clubs/{club_id}/reminders": {
+      "get": {
+        "tags": [
+          "reminders"
+        ],
+        "summary": "List Reminders",
+        "operationId": "list_reminders",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "club_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Club Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 46116860184273879,
+              "minimum": 1,
+              "description": "Page number, starting from 1",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number, starting from 1"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 50,
+              "title": "Per Page"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ReminderView",
+              "description": "pending: soonest first; sent: latest sent first; all: every status, latest first",
+              "default": "pending"
+            },
+            "description": "pending: soonest first; sent: latest sent first; all: every status, latest first"
+          },
+          {
+            "name": "include_cancelled",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Also show cancelled reminders; in the pending view only those that would still be ahead",
+              "default": false,
+              "title": "Include Cancelled"
+            },
+            "description": "Also show cancelled reminders; in the pending view only those that would still be ahead"
+          },
+          {
+            "name": "lesson_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PositiveBigInt"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only the reminders of this lesson",
+              "title": "Lesson Id"
+            },
+            "description": "Only the reminders of this lesson"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ReminderResponse_"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reminders/{reminder_id}/preview": {
+      "get": {
+        "tags": [
+          "reminders"
+        ],
+        "summary": "Preview Reminder",
+        "operationId": "preview_reminder",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "reminder_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Reminder Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderPreviewResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reminders/{reminder_id}/cancel": {
+      "post": {
+        "tags": [
+          "reminders"
+        ],
+        "summary": "Cancel Reminder",
+        "operationId": "cancel_reminder",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "reminder_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Reminder Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users": {
       "get": {
         "tags": [
@@ -2130,6 +2760,11 @@
         "type": "object",
         "title": "BlockUpdate"
       },
+      "CallUrl": {
+        "type": "string",
+        "maxLength": 1000,
+        "pattern": "^https?://[^\\s<>\\\"']+$"
+      },
       "ClubCreate": {
         "properties": {
           "title": {
@@ -2483,6 +3118,293 @@
         ],
         "title": "FieldError"
       },
+      "LessonCancelRequest": {
+        "properties": {
+          "notify_chat": {
+            "type": "boolean",
+            "title": "Notify Chat",
+            "description": "Tell the club chat that the lesson is cancelled",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "LessonCancelRequest"
+      },
+      "LessonCreate": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/LessonKind",
+            "description": "Teacher's lesson or a call with the curator"
+          },
+          "title": {
+            "$ref": "#/components/schemas/LessonTitle",
+            "description": "Lesson topic"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LessonDescription"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Shown in the reminders"
+          },
+          "starts_at": {
+            "$ref": "#/components/schemas/Moment",
+            "description": "Start time"
+          },
+          "call_url": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CallUrl"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Link to the video call, http(s)"
+          },
+          "reminder_offsets": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReminderOffsets"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Minutes before the start to remind at, unique; 0 means at the start. Omitted: bot settings"
+          },
+          "homework_deadline_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Moment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Homework deadline; null: no homework"
+          },
+          "homework_reminder_offsets": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReminderOffsets"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Minutes before the homework deadline to remind at, unique. Omitted: bot settings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "title",
+          "starts_at"
+        ],
+        "title": "LessonCreate"
+      },
+      "LessonDescription": {
+        "type": "string",
+        "maxLength": 2000,
+        "minLength": 1
+      },
+      "LessonKind": {
+        "type": "string",
+        "enum": [
+          "lesson",
+          "curator_call"
+        ],
+        "title": "LessonKind"
+      },
+      "LessonResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Lesson id"
+          },
+          "club_id": {
+            "type": "integer",
+            "title": "Club Id",
+            "description": "Club the lesson belongs to"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LessonKind",
+            "description": "Teacher's lesson or a call with the curator"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Lesson topic"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Shown in the reminders"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At",
+            "description": "Start time, UTC"
+          },
+          "call_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Url",
+            "description": "Link to the video call"
+          },
+          "is_cancelled": {
+            "type": "boolean",
+            "title": "Is Cancelled",
+            "description": "Cancelled lessons can no longer be changed"
+          },
+          "reminder_offsets": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Reminder Offsets",
+            "description": "Minutes before the start to remind at, latest first"
+          },
+          "homework_deadline_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Homework Deadline At",
+            "description": "Homework deadline, UTC; null: no homework"
+          },
+          "homework_reminder_offsets": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Homework Reminder Offsets",
+            "description": "Minutes before the homework deadline to remind at, latest first"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "club_id",
+          "kind",
+          "title",
+          "description",
+          "starts_at",
+          "call_url",
+          "is_cancelled",
+          "reminder_offsets",
+          "homework_deadline_at",
+          "homework_reminder_offsets"
+        ],
+        "title": "LessonResponse"
+      },
+      "LessonTitle": {
+        "type": "string",
+        "maxLength": 200,
+        "minLength": 1
+      },
+      "LessonUpdate": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/LessonKind",
+            "title": "Kind",
+            "description": "Teacher's lesson or a call with the curator"
+          },
+          "title": {
+            "$ref": "#/components/schemas/LessonTitle",
+            "title": "Title",
+            "description": "Lesson topic"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LessonDescription"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Shown in the reminders"
+          },
+          "starts_at": {
+            "$ref": "#/components/schemas/Moment",
+            "title": "Starts At",
+            "description": "Start time; a change replans the lesson reminders"
+          },
+          "call_url": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CallUrl"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Url",
+            "description": "Link to the video call, http(s)"
+          },
+          "reminder_offsets": {
+            "$ref": "#/components/schemas/ReminderOffsets",
+            "title": "Reminder Offsets",
+            "description": "Minutes before the start to remind at, unique; 0 means at the start"
+          },
+          "homework_deadline_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Moment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Homework Deadline At",
+            "description": "Homework deadline; null removes the homework"
+          },
+          "homework_reminder_offsets": {
+            "$ref": "#/components/schemas/ReminderOffsets",
+            "title": "Homework Reminder Offsets",
+            "description": "Minutes before the homework deadline to remind at, unique"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "LessonUpdate"
+      },
+      "LessonView": {
+        "type": "string",
+        "enum": [
+          "upcoming",
+          "past",
+          "all"
+        ],
+        "title": "LessonView"
+      },
       "LoginCodeRequest": {
         "properties": {
           "code": {
@@ -2670,6 +3592,90 @@
         ],
         "title": "Page[ClubResponse]"
       },
+      "Page_LessonResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LessonResponse"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Items of the current page"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number, starting from 1"
+          },
+          "per_page": {
+            "type": "integer",
+            "title": "Per Page",
+            "description": "Requested page size"
+          },
+          "total_items": {
+            "type": "integer",
+            "title": "Total Items",
+            "description": "Total number of items matching the query"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages",
+            "description": "Total number of pages",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "per_page",
+          "total_items",
+          "total_pages"
+        ],
+        "title": "Page[LessonResponse]"
+      },
+      "Page_ReminderResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReminderResponse"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Items of the current page"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number, starting from 1"
+          },
+          "per_page": {
+            "type": "integer",
+            "title": "Per Page",
+            "description": "Requested page size"
+          },
+          "total_items": {
+            "type": "integer",
+            "title": "Total Items",
+            "description": "Total number of items matching the query"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages",
+            "description": "Total number of pages",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "per_page",
+          "total_items",
+          "total_pages"
+        ],
+        "title": "Page[ReminderResponse]"
+      },
       "Page_SheetSyncResponse_": {
         "properties": {
           "items": {
@@ -2765,6 +3771,8 @@
           "admins.view",
           "admins.edit",
           "roles.edit",
+          "lessons.view",
+          "lessons.edit",
           "settings.edit"
         ],
         "title": "Permission"
@@ -2773,6 +3781,7 @@
         "type": "string",
         "enum": [
           "clubs",
+          "lessons",
           "users",
           "admins",
           "settings"
@@ -2813,6 +3822,57 @@
         "maximum": 2147483647.0,
         "minimum": 1.0
       },
+      "ReminderKind": {
+        "type": "string",
+        "enum": [
+          "lesson_upcoming",
+          "lesson_starting",
+          "homework_deadline",
+          "lesson_rescheduled",
+          "lesson_cancelled",
+          "homework_deadline_changed",
+          "homework_removed"
+        ],
+        "title": "ReminderKind"
+      },
+      "ReminderLessonResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Lesson id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LessonKind",
+            "description": "Teacher's lesson or a call with the curator"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Lesson topic"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At",
+            "description": "Start time, UTC"
+          },
+          "is_cancelled": {
+            "type": "boolean",
+            "title": "Is Cancelled",
+            "description": "Whether the lesson is cancelled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "starts_at",
+          "is_cancelled"
+        ],
+        "title": "ReminderLessonResponse"
+      },
       "ReminderOffset": {
         "type": "integer",
         "maximum": 43200.0,
@@ -2824,6 +3884,109 @@
         },
         "type": "array",
         "maxItems": 10
+      },
+      "ReminderPreviewResponse": {
+        "properties": {
+          "html": {
+            "type": "string",
+            "title": "Html",
+            "description": "Message text in Telegram HTML, admin-entered parts escaped"
+          }
+        },
+        "type": "object",
+        "required": [
+          "html"
+        ],
+        "title": "ReminderPreviewResponse"
+      },
+      "ReminderResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Reminder id"
+          },
+          "lesson": {
+            "$ref": "#/components/schemas/ReminderLessonResponse",
+            "description": "Lesson the reminder is about"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ReminderKind",
+            "description": "What the message says"
+          },
+          "send_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Send At",
+            "description": "When it goes or went out, UTC"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReminderStatus",
+            "description": "Delivery status"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts",
+            "description": "Send attempts made"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent At",
+            "description": "When it was sent, UTC"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Last error or the reason it was skipped"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "lesson",
+          "kind",
+          "send_at",
+          "status",
+          "attempts",
+          "sent_at",
+          "error"
+        ],
+        "title": "ReminderResponse"
+      },
+      "ReminderStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "sent",
+          "failed",
+          "skipped",
+          "cancelled"
+        ],
+        "title": "ReminderStatus"
+      },
+      "ReminderView": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "sent",
+          "all"
+        ],
+        "title": "ReminderView"
       },
       "RoleCreate": {
         "properties": {

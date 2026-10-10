@@ -9,6 +9,7 @@ export type PermissionGroup = (typeof PermissionGroup)[keyof typeof PermissionGr
 
 export const PermissionGroup = {
   clubs: 'clubs',
+  lessons: 'lessons',
   users: 'users',
   admins: 'admins',
   settings: 'settings',

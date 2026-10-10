@@ -17,3 +17,9 @@ class ReminderStatus(StrEnum):
     FAILED = "failed"
     SKIPPED = "skipped"
     CANCELLED = "cancelled"
+
+
+class ReminderView(StrEnum):
+    PENDING = "pending"
+    SENT = "sent"
+    ALL = "all"
