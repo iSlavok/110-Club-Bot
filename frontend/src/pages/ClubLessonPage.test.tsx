@@ -72,8 +72,8 @@ describe('ClubLessonPage', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Отменить урок' }));
     const confirm = await screen.findByRole('dialog', { name: 'Отменить урок?' });
     await userEvent.click(within(confirm).getByRole('button', { name: 'Отменить урок' }));
-    expect(await screen.findByText('Сообщить в чат?')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Нет' }));
+    expect(await screen.findByText('Сообщить в чат об отмене урока?')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Не сообщать' }));
 
     await waitFor(() => {
       expect(body).toEqual({ notify_chat: false });

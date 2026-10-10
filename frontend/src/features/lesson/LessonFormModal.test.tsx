@@ -69,7 +69,7 @@ describe('LessonFormModal', () => {
     await waitFor(() => {
       expect(onClose).toHaveBeenCalledOnce();
     });
-    expect(screen.queryByText('Сообщить в чат?')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Сообщить в чат/)).not.toBeInTheDocument();
     expect(patches).toEqual([
       {
         notify: null,
@@ -88,8 +88,8 @@ describe('LessonFormModal', () => {
   });
 
   it.each([
-    ['Да, сообщить', 'true'],
-    ['Нет', null],
+    ['Сообщить', 'true'],
+    ['Не сообщать', null],
   ])('removing homework asks about the chat: «%s»', async (answer, notify) => {
     const lesson = makeLesson(4, { homework_deadline_at: '2026-10-06T20:59:00Z' });
     const patches = servePatch(lesson);
@@ -97,7 +97,7 @@ describe('LessonFormModal', () => {
 
     await userEvent.click(await screen.findByRole('switch', { name: 'Есть ДЗ' }));
     await userEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
-    expect(await screen.findByText(/ДЗ отменено/)).toBeInTheDocument();
+    expect(await screen.findByText('Сообщить в чат об отмене ДЗ?')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: answer }));
 
     await waitFor(() => {

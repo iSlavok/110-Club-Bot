@@ -20,13 +20,13 @@ describe('chatNotices', () => {
         { starts_at: START, homework_deadline_at: DEADLINE },
         { starts_at: '2026-10-04T16:00:00Z', homework_deadline_at: '2026-10-07T20:59:00Z' },
       ),
-    ).toEqual(['новое время урока', 'новый дедлайн ДЗ']);
+    ).toEqual(['rescheduled', 'deadline_changed']);
     expect(
       chatNotices(
         { starts_at: START, homework_deadline_at: DEADLINE },
         { starts_at: START, homework_deadline_at: null },
       ),
-    ).toEqual(['ДЗ отменено']);
+    ).toEqual(['homework_removed']);
   });
 
   it('does not offer a notice for added homework', () => {

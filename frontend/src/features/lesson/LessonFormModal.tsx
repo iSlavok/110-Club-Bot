@@ -178,7 +178,7 @@ function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
       starts_at: startsAt,
       homework_deadline_at: homeworkDeadline,
     });
-    const notify = notices.length > 0 ? await askNotifyChat(notices) : false;
+    const notify = notices.length > 0 ? await askNotifyChat(notices, submitted.kind) : false;
     if (notify !== null) {
       update.mutate({
         lessonId: lesson.id,

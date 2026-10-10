@@ -7,17 +7,19 @@ export interface LessonSchedule {
 
 const sameMoment = (a: string, b: string) => Date.parse(a) === Date.parse(b);
 
+export type ChatNotice = 'rescheduled' | 'cancelled' | 'deadline_changed' | 'homework_removed';
+
 /** Changes the chat may be told about; offsets are replanned silently and are not among them. */
-export function chatNotices(before: LessonSchedule, after: LessonSchedule): string[] {
-  const notices: string[] = [];
+export function chatNotices(before: LessonSchedule, after: LessonSchedule): ChatNotice[] {
+  const notices: ChatNotice[] = [];
   if (!sameMoment(before.starts_at, after.starts_at)) {
-    notices.push('новое время урока');
+    notices.push('rescheduled');
   }
   if (before.homework_deadline_at !== null) {
     if (after.homework_deadline_at === null) {
-      notices.push('ДЗ отменено');
+      notices.push('homework_removed');
     } else if (!sameMoment(before.homework_deadline_at, after.homework_deadline_at)) {
-      notices.push('новый дедлайн ДЗ');
+      notices.push('deadline_changed');
     }
   }
   return notices;
