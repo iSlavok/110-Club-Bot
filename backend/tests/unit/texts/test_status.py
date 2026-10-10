@@ -126,3 +126,14 @@ def test_clubs_are_separated_by_blank_line() -> None:
 
 def test_no_active_clubs() -> None:
     assert texts.status.status_report(StatusReport(clubs=[])) == texts.status.NO_ACTIVE_CLUBS
+
+
+# Several clubs with long Google errors must not push the report past Telegram's 4096-character limit.
+def test_long_sync_error_is_cut_before_escaping() -> None:
+    last_sync = _sync(SheetSyncStatus.FAILED, error="x" * 199 + "<" + "y" * 300)
+    sync = ClubSyncStatus(last_sync=last_sync, pending_removal_requests=0)
+
+    text = texts.status.status_report(_report(sync))
+
+    assert "ошибка: " + "x" * 199 + "&lt;…\n" in text
+    assert "y" not in text

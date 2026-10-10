@@ -6,6 +6,8 @@ from app.schemas import ClubStatus, ClubSyncStatus, CurrentBlockStats, SheetSync
 from app.utils import BUSINESS_TZ
 
 NO_ACTIVE_CLUBS = "Активных клубов нет."
+# Keeps a report with several failed clubs within Telegram's 4096-character message limit.
+SYNC_ERROR_MAX_LEN = 200
 
 
 def status_report(report: StatusReport) -> str:
@@ -46,8 +48,13 @@ def _last_sync(sync: SheetSyncDTO | None) -> list[str]:
         return ["Синков ещё не было."]
     finished = f"Синк: {_moment(sync.finished_at)} МСК"
     if sync.status is SheetSyncStatus.FAILED:
-        return [f"{finished}, ошибка: {escape(sync.error or '')}"]
+        return [f"{finished}, ошибка: {escape(_shorten(sync.error or '', SYNC_ERROR_MAX_LEN))}"]
     return [f"{finished}, успешно", f"Проблем в таблице: {len(sync.issues)}"]
+
+
+# Cut before escaping, so an HTML entity is never split.
+def _shorten(text: str, limit: int) -> str:
+    return text if len(text) <= limit else text[:limit] + "…"
 
 
 def _day(moment: datetime) -> str:
