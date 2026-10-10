@@ -66,8 +66,8 @@ export function ClubBlocksPage() {
                 <Table.Tr>
                   <Table.Th>Название</Table.Th>
                   <Table.Th>Столбец таблицы</Table.Th>
-                  <Table.Th>Начало (МСК)</Table.Th>
-                  <Table.Th>Конец (МСК)</Table.Th>
+                  <Table.Th>Начало</Table.Th>
+                  <Table.Th>Конец</Table.Th>
                   <Table.Th>Статус</Table.Th>
                   <Table.Th>Участников</Table.Th>
                   <Table.Th />

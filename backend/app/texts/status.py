@@ -57,7 +57,7 @@ def _sync(status: ClubSyncStatus) -> list[str]:
 def _last_sync(sync: SheetSyncDTO | None) -> list[str]:
     if sync is None:
         return ["Синков ещё не было."]
-    finished = f"Синк: {_moment(sync.finished_at)} МСК"
+    finished = f"Синк: {_moment(sync.finished_at)}"
     if sync.status is SheetSyncStatus.FAILED:
         return [f"{finished}, ошибка: {escape(_shorten(sync.error or '', SYNC_ERROR_MAX_LEN))}"]
     return [f"{finished}, успешно", f"Проблем в таблице: {len(sync.issues)}"]

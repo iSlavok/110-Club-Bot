@@ -20,8 +20,8 @@ export function useCancelReminderConfirm(): (reminder: ReminderResponse) => void
       title: 'Отменить напоминание?',
       children: (
         <Text size="sm">
-          Сообщение на {formatDateTime(reminder.send_at)} (МСК) не уйдёт в чат. Вернуть его нельзя,
-          но можно заново сохранить урок с нужными напоминаниями.
+          Сообщение на {formatDateTime(reminder.send_at)} не уйдёт в чат. Вернуть его нельзя, но
+          можно заново сохранить урок с нужными напоминаниями.
         </Text>
       ),
       labels: { confirm: 'Отменить напоминание', cancel: 'Назад' },

@@ -117,7 +117,7 @@ def test_successful_sync_with_sheet_problems_and_pending_removals() -> None:
 
     assert texts.status.status_report(_report(sync)) == (
         "<b>Химия</b>\nТекущего блока нет.\n"
-        "Синк: 01.10 12:30 МСК, успешно\nПроблем в таблице: 2\nЗапросов на удаление ждут решения: 3\n"
+        "Синк: 01.10 12:30, успешно\nПроблем в таблице: 2\nЗапросов на удаление ждут решения: 3\n"
         f"{NO_REMINDERS_LINES}\n{NO_CHAT_LINES}"
     )
 
@@ -128,7 +128,7 @@ def test_failed_sync_shows_escaped_error_instead_of_problems() -> None:
 
     assert texts.status.status_report(_report(sync)) == (
         "<b>Химия</b>\nТекущего блока нет.\n"
-        "Синк: 01.10 12:30 МСК, ошибка: Sheet &lt;Лист1&gt; not found\nЗапросов на удаление ждут решения: 0\n"
+        "Синк: 01.10 12:30, ошибка: Sheet &lt;Лист1&gt; not found\nЗапросов на удаление ждут решения: 0\n"
         f"{NO_REMINDERS_LINES}\n{NO_CHAT_LINES}"
     )
 

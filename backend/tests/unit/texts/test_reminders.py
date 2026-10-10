@@ -57,7 +57,7 @@ def test_upcoming_lesson_tomorrow_with_link_and_description() -> None:
 
     assert text == (
         "<b>Урок «Кислоты»</b>\n"
-        "Завтра в 19:00 (МСК)\n"
+        "Завтра в 19:00\n"
         'Подключиться: <a href="https://meet.example.com/abc?x=1&amp;y=2">ссылка на созвон</a>\n'
         "\nПовторить &lt;оксиды&gt;"
     )
@@ -66,13 +66,13 @@ def test_upcoming_lesson_tomorrow_with_link_and_description() -> None:
 @pytest.mark.parametrize(
     ("starts_in", "expected"),
     [
-        (timedelta(minutes=1), "Через 1 минуту, в 12:01 (МСК)"),
-        (timedelta(minutes=45), "Через 45 минут, в 12:45 (МСК)"),
-        (timedelta(minutes=60), "Через час, в 13:00 (МСК)"),
-        (timedelta(minutes=90), "Через 1 ч 30 мин, в 13:30 (МСК)"),
-        (timedelta(hours=3), "Сегодня в 15:00 (МСК)"),
-        (timedelta(days=2), "Послезавтра в 12:00 (МСК)"),
-        (timedelta(days=5), "6 октября (вт) в 12:00 (МСК)"),
+        (timedelta(minutes=1), "Через 1 минуту, в 12:01"),
+        (timedelta(minutes=45), "Через 45 минут, в 12:45"),
+        (timedelta(minutes=60), "Через час, в 13:00"),
+        (timedelta(minutes=90), "Через 1 ч 30 мин, в 13:30"),
+        (timedelta(hours=3), "Сегодня в 15:00"),
+        (timedelta(days=2), "Послезавтра в 12:00"),
+        (timedelta(days=5), "6 октября (вт) в 12:00"),
     ],
 )
 def test_upcoming_lesson_time_phrases(starts_in, expected) -> None:
@@ -84,9 +84,9 @@ def test_upcoming_lesson_time_phrases(starts_in, expected) -> None:
 @pytest.mark.parametrize(
     ("late_by", "expected"),
     [
-        (timedelta(seconds=40), "Через час, в 13:00 (МСК)"),
-        (timedelta(minutes=5), "Через час, в 13:00 (МСК)"),
-        (timedelta(minutes=6), "Через 54 минуты, в 13:00 (МСК)"),
+        (timedelta(seconds=40), "Через час, в 13:00"),
+        (timedelta(minutes=5), "Через час, в 13:00"),
+        (timedelta(minutes=6), "Через 54 минуты, в 13:00"),
     ],
 )
 def test_relative_time_is_counted_from_send_at_unless_sent_much_later(late_by, expected) -> None:
@@ -112,19 +112,19 @@ def test_curator_call_starting() -> None:
 def test_homework_deadline() -> None:
     text = _render(ReminderKind.HOMEWORK_DEADLINE, homework_deadline_at=datetime(2026, 10, 3, 20, 59, tzinfo=UTC))
 
-    assert text == "<b>Дедлайн ДЗ к уроку «Кислоты»</b>\nСдать до: послезавтра в 23:59 (МСК)"
+    assert text == "<b>Дедлайн ДЗ к уроку «Кислоты»</b>\nСдать до: послезавтра в 23:59"
 
 
 def test_lesson_rescheduled() -> None:
     text = _render(ReminderKind.LESSON_RESCHEDULED)
 
-    assert text == "<b>Урок «Кислоты» перенесён</b>\nНовое время: завтра в 19:00 (МСК)"
+    assert text == "<b>Урок «Кислоты» перенесён</b>\nНовое время: завтра в 19:00"
 
 
 def test_lesson_cancelled() -> None:
     text = _render(ReminderKind.LESSON_CANCELLED, kind=LessonKind.CURATOR_CALL)
 
-    assert text == "<b>Созвон с куратором «Кислоты» отменён</b>\nБыл запланирован на завтра в 19:00 (МСК)."
+    assert text == "<b>Созвон с куратором «Кислоты» отменён</b>\nБыл запланирован на завтра в 19:00."
 
 
 def test_homework_deadline_changed() -> None:
@@ -134,7 +134,7 @@ def test_homework_deadline_changed() -> None:
         homework_deadline_at=datetime(2026, 10, 2, 20, 0, tzinfo=UTC),
     )
 
-    assert text == "<b>Дедлайн ДЗ к созвону «Кислоты» изменён</b>\nНовый дедлайн: завтра в 23:00 (МСК)"
+    assert text == "<b>Дедлайн ДЗ к созвону «Кислоты» изменён</b>\nНовый дедлайн: завтра в 23:00"
 
 
 def test_homework_removed() -> None:

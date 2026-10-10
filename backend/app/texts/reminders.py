@@ -133,7 +133,7 @@ def _join(*lines: str | None) -> str:
 
 def _when(moment: datetime, now: datetime) -> str:
     local = moment.astimezone(BUSINESS_TZ)
-    clock = f"{local:%H:%M} (МСК)"
+    clock = f"{local:%H:%M}"
     minutes_left = round((moment - now).total_seconds() / 60)
     if 0 < minutes_left < _RELATIVE_MINUTES:
         return f"через {_in_minutes(minutes_left)}, в {clock}"

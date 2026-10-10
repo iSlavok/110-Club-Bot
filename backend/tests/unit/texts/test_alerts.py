@@ -35,7 +35,7 @@ def test_pending_request_asks_and_lists_vk_links() -> None:
     text = alerts.removal_request(_alert(501, 502))
 
     assert text.splitlines()[0] == "<b>Клуб 110 · Блок 5</b>"
-    assert "Пропали из таблицы 01.10 12:00 МСК: 2 человека. Удалить из блока?" in text
+    assert "Пропали из таблицы 01.10 12:00: 2 человека. Удалить из блока?" in text
     assert '• <a href="https://vk.com/id501">id501</a>' in text
 
 
@@ -164,7 +164,7 @@ def test_reminder_failed_alert() -> None:
 
     assert alerts.reminder_failed("Химия & био", reminder) == (
         "⚠️ <b>Химия &amp; био</b>: напоминание не ушло в чат.\n"
-        "«Кислоты &lt;1&gt;» — дедлайн ДЗ, должно было уйти 01.10 12:00 МСК.\n"
+        "«Кислоты &lt;1&gt;» — дедлайн ДЗ, должно было уйти 01.10 12:00.\n"
         "Ошибка: Bad Request: chat not found"
     )
 

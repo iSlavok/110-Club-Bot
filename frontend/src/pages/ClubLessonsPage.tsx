@@ -76,10 +76,10 @@ export function ClubLessonsPage() {
             <Table verticalSpacing="sm">
               <Table.Thead>
                 <Table.Tr>
-                  <Table.Th>Начало (МСК)</Table.Th>
+                  <Table.Th>Начало</Table.Th>
                   <Table.Th>Тема</Table.Th>
                   <Table.Th>Тип</Table.Th>
-                  <Table.Th>Дедлайн ДЗ (МСК)</Table.Th>
+                  <Table.Th>Дедлайн ДЗ</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
