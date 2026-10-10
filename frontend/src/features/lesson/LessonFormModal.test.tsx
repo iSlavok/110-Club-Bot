@@ -119,6 +119,24 @@ describe('LessonFormModal', () => {
     expect(screen.getByText(/за 2 дня — уйдёт в чат ещё до начала урока/)).toBeInTheDocument();
   });
 
+  it('offers the call link only for a curator call and drops it for a lesson', async () => {
+    const call = makeLesson(7, { kind: 'curator_call', call_url: 'https://meet.example.com/abc' });
+    const patches = servePatch(call);
+    renderWithProviders(<LessonFormModal clubId={1} lesson={call} onClose={vi.fn()} />);
+
+    expect(await screen.findByLabelText('Ссылка на созвон')).toHaveValue(
+      'https://meet.example.com/abc',
+    );
+    await userEvent.click(screen.getByRole('radio', { name: 'Урок' }));
+    expect(screen.queryByLabelText('Ссылка на созвон')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+
+    await waitFor(() => {
+      expect(patches).toHaveLength(1);
+    });
+    expect(patches[0]?.body).toMatchObject({ kind: 'lesson', call_url: null });
+  });
+
   it('turns «remind now» into the minutes left before the start', async () => {
     // Whole minutes, as the picker keeps them: otherwise the start would look changed.
     const startsAt = new Date(

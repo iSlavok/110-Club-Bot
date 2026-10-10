@@ -95,15 +95,17 @@ function LessonCard({ clubId, lesson }: { clubId: number; lesson: LessonResponse
         <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
           <Field label="Тип">{LESSON_KIND_LABELS[lesson.kind]}</Field>
           <Field label="Начало (МСК)">{formatDateTime(lesson.starts_at)}</Field>
-          <Field label="Ссылка на созвон">
-            {lesson.call_url ? (
-              <Anchor href={lesson.call_url} target="_blank" rel="noreferrer">
-                {lesson.call_url}
-              </Anchor>
-            ) : (
-              <Text c="dimmed">нет</Text>
-            )}
-          </Field>
+          {lesson.kind === 'curator_call' && (
+            <Field label="Ссылка на созвон">
+              {lesson.call_url ? (
+                <Anchor href={lesson.call_url} target="_blank" rel="noreferrer">
+                  {lesson.call_url}
+                </Anchor>
+              ) : (
+                <Text c="dimmed">нет</Text>
+              )}
+            </Field>
+          )}
           <Field label="Напоминания">{offsets(lesson.reminder_offsets)}</Field>
           <Field label="Дедлайн ДЗ (МСК)">
             {lesson.homework_deadline_at ? (
