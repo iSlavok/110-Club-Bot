@@ -37,7 +37,8 @@ def create_scheduler(container: AsyncContainer, sync_settings: SyncSettings) -> 
     )
     scheduler.add_job(
         dispatch_reminders,
-        IntervalTrigger(minutes=1),
+        # At the top of each minute: send_at is whole minutes, so reminders go out on time, not up to a minute late.
+        CronTrigger(second=0, timezone=BUSINESS_TZ),
         kwargs={"container": container},
         id="dispatch_reminders",
     )
