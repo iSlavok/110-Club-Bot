@@ -19,4 +19,6 @@ export interface ClubCreate {
   spreadsheet_id?: ClubText | null;
   /** Sheet with block columns */
   sheet_name?: ClubText | null;
+  /** Bot deletes the join and leave messages in the club chat */
+  hide_service_messages?: boolean;
 }

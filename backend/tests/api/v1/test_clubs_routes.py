@@ -36,7 +36,10 @@ async def test_club_and_block_flow(api_client, login_as, manager) -> None:
     await login_as(manager)
 
     club = (await api_client.post("/api/v1/clubs", json={"title": "Клуб 110", "chat_id": -100500})).json()
-    patched = await api_client.patch(f"/api/v1/clubs/{club['id']}", json={"reminders_topic_id": 7})
+    patched = await api_client.patch(
+        f"/api/v1/clubs/{club['id']}",
+        json={"reminders_topic_id": 7, "hide_service_messages": True},
+    )
     block = await api_client.post(
         f"/api/v1/clubs/{club['id']}/blocks",
         json={
@@ -49,7 +52,9 @@ async def test_club_and_block_flow(api_client, login_as, manager) -> None:
     blocks = await api_client.get(f"/api/v1/clubs/{club['id']}/blocks")
     deleted = await api_client.delete(f"/api/v1/blocks/{block.json()['id']}")
 
+    assert club["hide_service_messages"] is False
     assert patched.json()["reminders_topic_id"] == 7
+    assert patched.json()["hide_service_messages"] is True
     assert block.status_code == 201
     assert block.json()["starts_at"] == "2026-08-31T21:00:00Z"
     assert blocks.json()["total_items"] == 1

@@ -141,6 +141,16 @@ class ChatAccessService:
         await self._chat_access_repository.flush()
         logger.info("User {} joined the chat of club {}", access.user_id, club.id)
 
+    # Join and leave notices clutter the chat; Telegram has no setting to turn them off.
+    async def hide_service_message(self, *, chat_id: int, message_id: int) -> None:
+        club = await self._club_repository.get_active_by_chat_id(chat_id)
+        if club is None or not club.hide_service_messages:
+            return
+        try:
+            await self._bot.delete_message(chat_id=chat_id, message_id=message_id)
+        except TelegramAPIError as error:
+            logger.warning("Cannot delete service message {} in club {}: {}", message_id, club.id, error)
+
     def _club_access(self, club: Club, block: Block, invite_link: str | None) -> ClubAccess:
         return ClubAccess(
             club_title=club.title,

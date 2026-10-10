@@ -2836,6 +2836,12 @@
               }
             ],
             "description": "Sheet with block columns"
+          },
+          "hide_service_messages": {
+            "type": "boolean",
+            "title": "Hide Service Messages",
+            "description": "Bot deletes the join and leave messages in the club chat",
+            "default": false
           }
         },
         "type": "object",
@@ -2908,6 +2914,11 @@
             "type": "boolean",
             "title": "Is Active",
             "description": "Inactive clubs are skipped by the bot"
+          },
+          "hide_service_messages": {
+            "type": "boolean",
+            "title": "Hide Service Messages",
+            "description": "Bot deletes the join and leave messages in the club chat"
           }
         },
         "type": "object",
@@ -2918,7 +2929,8 @@
           "reminders_topic_id",
           "spreadsheet_id",
           "sheet_name",
-          "is_active"
+          "is_active",
+          "hide_service_messages"
         ],
         "title": "ClubResponse"
       },
@@ -3018,6 +3030,11 @@
             "type": "boolean",
             "title": "Is Active",
             "description": "Inactive clubs are skipped by the bot"
+          },
+          "hide_service_messages": {
+            "type": "boolean",
+            "title": "Hide Service Messages",
+            "description": "Bot deletes the join and leave messages in the club chat"
           }
         },
         "additionalProperties": false,

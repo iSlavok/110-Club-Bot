@@ -16,6 +16,18 @@ class ClubRepository(BaseRepository[Club]):
         )
         return await self._session.scalar(statement)
 
+    async def get_active_by_chat_id(self, chat_id: int) -> Club | None:
+        statement = (
+            select(Club)
+            .where(
+                Club.chat_id == chat_id,
+                Club.is_active,
+            )
+            .order_by(Club.id)
+            .limit(1)
+        )
+        return await self._session.scalar(statement)
+
     async def list_active(self) -> list[Club]:
         statement = (
             select(Club)
