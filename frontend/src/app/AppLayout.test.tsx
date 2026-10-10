@@ -76,24 +76,29 @@ describe('AppLayout', () => {
     expect(screen.queryByRole('button', { name: 'Сменить клуб' })).not.toBeInTheDocument();
   });
 
-  it('shows the reminders section of a club only with lessons.view', async () => {
+  it('shows the lessons and reminders sections of a club only with lessons.view', async () => {
     server.use(...clubsHandlers([makeClub(7), makeClub(8)]));
 
     renderAt('/clubs/7', 'clubs.view', 'lessons.view');
 
+    expect(await navbar().findByRole('link', { name: 'Уроки' })).toHaveAttribute(
+      'href',
+      '/clubs/7/lessons',
+    );
     expect(await navbar().findByRole('link', { name: 'Напоминания' })).toHaveAttribute(
       'href',
       '/clubs/7/reminders',
     );
   });
 
-  it('hides the reminders section without lessons.view', async () => {
+  it('hides the lessons and reminders sections without lessons.view', async () => {
     server.use(...clubsHandlers([makeClub(7), makeClub(8)]));
 
     renderAt('/clubs/7', 'clubs.view');
 
     expect(await navbar().findByRole('link', { name: 'Обзор' })).toBeInTheDocument();
     expect(navbar().queryByRole('link', { name: 'Напоминания' })).not.toBeInTheDocument();
+    expect(navbar().queryByRole('link', { name: 'Уроки' })).not.toBeInTheDocument();
   });
 
   it('without clubs.view shows no club sections', async () => {
