@@ -7,7 +7,7 @@ from app import texts
 from app.config import PublicSettings
 from app.services import LoginService, StatusService
 from bot.handlers import admin_commands
-from bot.handlers.admin_commands import adminka, login, status
+from bot.handlers.admin_commands import adminka, login, summary
 from tests.factories import make_admin_user, make_block, make_club, make_role
 from tests.providers import OWNER_TG_ID, PUBLIC_URL
 
@@ -79,12 +79,12 @@ async def test_adminka_without_configured_address() -> None:
     message.answer.assert_awaited_once_with(texts.auth.ADMIN_PANEL_URL_MISSING)
 
 
-async def test_status_replies_with_active_clubs(request_container, db_session) -> None:
+async def test_summary_replies_with_active_clubs(request_container, db_session) -> None:
     club = await make_club(db_session, title="Химия")
     await make_block(db_session, club, title="Блок 5", starts_at=datetime(2026, 9, 1, tzinfo=UTC))
     message = _message(OWNER_TG_ID)
 
-    await status(message, await request_container.get(StatusService))
+    await summary(message, await request_container.get(StatusService))
 
     text = message.answer.await_args.args[0]
     assert "<b>Химия</b>" in text

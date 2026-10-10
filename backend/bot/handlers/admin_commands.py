@@ -33,7 +33,7 @@ async def adminka(message: Message, settings: FromDishka[PublicSettings]) -> Non
     await message.answer(texts.auth.admin_panel_link(settings.url))
 
 
-@router.message(Command("status"))
-async def status(message: Message, status_service: FromDishka[StatusService]) -> None:
+@router.message(Command("summary"))
+async def summary(message: Message, status_service: FromDishka[StatusService]) -> None:
     report = await status_service.build()
     await message.answer(texts.status.status_report(report))

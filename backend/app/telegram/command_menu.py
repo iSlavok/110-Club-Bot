@@ -13,7 +13,7 @@ ADMIN_COMMANDS = (
     *DEFAULT_COMMANDS,
     BotCommand(command="login", description=texts.commands.LOGIN),
     BotCommand(command="adminka", description=texts.commands.ADMINKA),
-    BotCommand(command="status", description=texts.commands.STATUS),
+    BotCommand(command="summary", description=texts.commands.SUMMARY),
 )
 
 
