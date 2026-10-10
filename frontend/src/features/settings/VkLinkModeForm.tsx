@@ -55,7 +55,7 @@ export function VkLinkModeForm({ settings, canEdit }: VkLinkModeFormProps) {
   });
 
   return (
-    <form onSubmit={submit}>
+    <form onSubmit={submit} aria-label="Привязка VK">
       <Stack>
         <Radio.Group
           label="Привязка VK в боте"
