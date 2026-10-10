@@ -1,3 +1,5 @@
+import pytest
+
 from app.config import VkSettings
 from app.enums import Permission
 from tests.factories import make_admin_user, make_role
@@ -53,6 +55,39 @@ async def test_unknown_mode_fails_validation(api_client, login_as, db_session) -
     await login_as(await make_admin_user(db_session, await make_role(db_session, Permission.SETTINGS_EDIT)))
 
     response = await api_client.patch("/api/v1/settings", json={"vk_link_mode": "sms"})
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "VALIDATION_FAILED"
+
+
+async def test_settings_include_default_reminder_offsets(api_client, login_as, db_session) -> None:
+    await login_as(await make_admin_user(db_session, await make_role(db_session)))
+
+    response = await api_client.get("/api/v1/settings")
+
+    body = response.json()
+    assert body["default_lesson_offsets"] == [1440, 60, 0]
+    assert body["default_homework_offsets"] == [2880, 1440, 180]
+
+
+async def test_editor_changes_default_reminder_offsets(api_client, login_as, db_session) -> None:
+    await login_as(await make_admin_user(db_session, await make_role(db_session, Permission.SETTINGS_EDIT)))
+
+    response = await api_client.patch("/api/v1/settings", json={"default_lesson_offsets": [60, 1440]})
+
+    assert response.status_code == 200
+    assert response.json()["default_lesson_offsets"] == [1440, 60]
+
+
+@pytest.mark.parametrize(
+    "offsets",
+    [[60, 60], [-1], [43201], list(range(11))],
+    ids=["duplicate", "negative", "over-30-days", "too-many"],
+)
+async def test_invalid_default_offsets_fail_validation(api_client, login_as, db_session, offsets) -> None:
+    await login_as(await make_admin_user(db_session, await make_role(db_session, Permission.SETTINGS_EDIT)))
+
+    response = await api_client.patch("/api/v1/settings", json={"default_homework_offsets": offsets})
 
     assert response.status_code == 422
     assert response.json()["code"] == "VALIDATION_FAILED"

@@ -47,6 +47,8 @@ export * from './permissionGroup';
 export * from './permissionResponse';
 export * from './positiveBigInt';
 export * from './positiveInt32';
+export * from './reminderOffset';
+export * from './reminderOffsets';
 export * from './roleCreate';
 export * from './roleRefResponse';
 export * from './roleResponse';

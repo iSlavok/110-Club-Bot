@@ -1838,6 +1838,22 @@
             "title": "Configured Vk Link Modes",
             "description": "Modes with credentials in the server environment; only these can be switched on"
           },
+          "default_lesson_offsets": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Default Lesson Offsets",
+            "description": "Minutes before the start prefilled in a new lesson, latest first; 0 means at the start"
+          },
+          "default_homework_offsets": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Default Homework Offsets",
+            "description": "Minutes before the homework deadline prefilled in a new lesson, latest first"
+          },
           "updated_at": {
             "type": "string",
             "format": "date-time",
@@ -1849,6 +1865,8 @@
         "required": [
           "vk_link_mode",
           "configured_vk_link_modes",
+          "default_lesson_offsets",
+          "default_homework_offsets",
           "updated_at"
         ],
         "title": "AppSettingsResponse"
@@ -1859,6 +1877,16 @@
             "$ref": "#/components/schemas/VkLinkMode",
             "title": "Vk Link Mode",
             "description": "How students link their VK profile in the bot"
+          },
+          "default_lesson_offsets": {
+            "$ref": "#/components/schemas/ReminderOffsets",
+            "title": "Default Lesson Offsets",
+            "description": "Minutes before the start prefilled in a new lesson, unique; 0 means at the start"
+          },
+          "default_homework_offsets": {
+            "$ref": "#/components/schemas/ReminderOffsets",
+            "title": "Default Homework Offsets",
+            "description": "Minutes before the homework deadline prefilled in a new lesson, unique"
           }
         },
         "additionalProperties": false,
@@ -2784,6 +2812,18 @@
         "type": "integer",
         "maximum": 2147483647.0,
         "minimum": 1.0
+      },
+      "ReminderOffset": {
+        "type": "integer",
+        "maximum": 43200.0,
+        "minimum": 0.0
+      },
+      "ReminderOffsets": {
+        "items": {
+          "$ref": "#/components/schemas/ReminderOffset"
+        },
+        "type": "array",
+        "maxItems": 10
       },
       "RoleCreate": {
         "properties": {

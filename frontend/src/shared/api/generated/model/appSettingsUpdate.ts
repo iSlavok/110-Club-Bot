@@ -4,9 +4,14 @@
  * 110 Club Admin API
  * OpenAPI spec version: 0.1.0
  */
+import type { ReminderOffsets } from './reminderOffsets';
 import type { VkLinkMode } from './vkLinkMode';
 
 export interface AppSettingsUpdate {
   /** How students link their VK profile in the bot */
   vk_link_mode?: VkLinkMode;
+  /** Minutes before the start prefilled in a new lesson, unique; 0 means at the start */
+  default_lesson_offsets?: ReminderOffsets;
+  /** Minutes before the homework deadline prefilled in a new lesson, unique */
+  default_homework_offsets?: ReminderOffsets;
 }
