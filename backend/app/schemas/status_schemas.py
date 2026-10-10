@@ -17,11 +17,20 @@ class ReminderStatusSection(BaseModel):
     failed_last_day: int
 
 
+class ChatStatusSection(BaseModel):
+    joined: int
+    invited: int
+    kicks_on_hold: bool
+    error: str | None
+
+
 class ClubStatus(BaseModel):
     club: ClubDTO
     current_block: CurrentBlockStats | None
     sync: ClubSyncStatus
     reminders: ReminderStatusSection
+    # None when the club has no chat set.
+    chat: ChatStatusSection | None
 
 
 class StatusReport(BaseModel):

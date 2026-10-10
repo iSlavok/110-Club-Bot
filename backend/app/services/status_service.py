@@ -1,9 +1,11 @@
 from datetime import timedelta
 
+from app.enums import ChatAccessStatus
 from app.models import Club
 from app.queries import MembershipRemovalQueries
-from app.repositories import ClubRepository, ReminderRepository, SheetSyncRepository
+from app.repositories import ChatAccessRepository, ClubRepository, ReminderRepository, SheetSyncRepository
 from app.schemas import (
+    ChatStatusSection,
     ClubDTO,
     ClubStatus,
     ClubSyncStatus,
@@ -29,6 +31,7 @@ class StatusService:
         membership_removal_queries: MembershipRemovalQueries,
         club_stats_service: ClubStatsService,
         reminder_repository: ReminderRepository,
+        chat_access_repository: ChatAccessRepository,
         clock: Clock,
     ) -> None:
         self._club_repository = club_repository
@@ -36,6 +39,7 @@ class StatusService:
         self._membership_removal_queries = membership_removal_queries
         self._club_stats_service = club_stats_service
         self._reminder_repository = reminder_repository
+        self._chat_access_repository = chat_access_repository
         self._clock = clock
 
     async def build(self) -> StatusReport:
@@ -50,11 +54,13 @@ class StatusService:
         current_block = await self._current_block_section(club)
         sync = await self._sync_section(club)
         reminders = await self._reminders_section(club)
+        chat = await self._chat_section(club)
         return ClubStatus(
             club=ClubDTO.from_orm_obj(club),
             current_block=current_block,
             sync=sync,
             reminders=reminders,
+            chat=chat,
         )
 
     async def _current_block_section(self, club: Club) -> CurrentBlockStats | None:
@@ -78,4 +84,15 @@ class StatusService:
         return ReminderStatusSection(
             upcoming=[ReminderWithLessonDTO.from_orm_obj_with_lesson(reminder) for reminder in upcoming],
             failed_last_day=failed,
+        )
+
+    async def _chat_section(self, club: Club) -> ChatStatusSection | None:
+        if club.chat_id is None:
+            return None
+        counts = await self._chat_access_repository.count_by_status(club_id=club.id, chat_id=club.chat_id)
+        return ChatStatusSection(
+            joined=counts.get(ChatAccessStatus.JOINED, 0),
+            invited=counts.get(ChatAccessStatus.INVITED, 0),
+            kicks_on_hold=club.chat_kicks_on_hold,
+            error=club.chat_error,
         )

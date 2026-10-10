@@ -2,10 +2,12 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app.enums import ReminderStatus, RemovalRequestStatus, SheetIssueKind, SheetSyncStatus
+from app.enums import ChatAccessStatus, ReminderStatus, RemovalRequestStatus, SheetIssueKind, SheetSyncStatus
+from app.schemas import ChatStatusSection
 from app.services import StatusService
 from tests.factories import (
     make_block,
+    make_chat_access,
     make_club,
     make_lesson,
     make_membership,
@@ -130,3 +132,16 @@ async def test_reports_next_three_pending_reminders_and_failed_last_day(service,
         DEFAULT_NOW + timedelta(hours=3),
     ]
     assert status.reminders.failed_last_day == 2
+
+
+async def test_reports_chat_of_the_club(service, db_session) -> None:
+    club = await make_club(db_session, chat_id=-100500, chat_kicks_on_hold=True, chat_error="no rights")
+    for status in (ChatAccessStatus.JOINED, ChatAccessStatus.JOINED, ChatAccessStatus.INVITED):
+        await make_chat_access(db_session, club, await make_user(db_session), status=status)
+    await make_club(db_session)
+
+    report = await service.build()
+
+    chats = [status.chat for status in report.clubs]
+    assert ChatStatusSection(joined=2, invited=1, kicks_on_hold=True, error="no rights") in chats
+    assert None in chats

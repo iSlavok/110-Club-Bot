@@ -4,6 +4,7 @@ from app import texts
 from app.enums import LessonKind, ReminderKind, ReminderStatus, SheetIssueKind, SheetSyncStatus
 from app.schemas import (
     BlockDTO,
+    ChatStatusSection,
     ClubDTO,
     ClubStatus,
     ClubSyncStatus,
@@ -21,6 +22,7 @@ NO_SYNC = ClubSyncStatus(last_sync=None, pending_removal_requests=0)
 NO_SYNC_LINES = "Синков ещё не было.\nЗапросов на удаление ждут решения: 0"
 NO_REMINDERS = ReminderStatusSection(upcoming=[], failed_last_day=0)
 NO_REMINDERS_LINES = "Ближайших напоминаний нет."
+NO_CHAT_LINES = "Чат клуба не задан."
 
 
 def _club(title: str) -> ClubDTO:
@@ -74,29 +76,34 @@ def _sync(
     )
 
 
-def _report(sync: ClubSyncStatus = NO_SYNC, reminders: ReminderStatusSection = NO_REMINDERS) -> StatusReport:
-    return StatusReport(clubs=[ClubStatus(club=_club("Химия"), current_block=None, sync=sync, reminders=reminders)])
+def _status(title: str, current_block: CurrentBlockStats | None = None) -> ClubStatus:
+    return ClubStatus(club=_club(title), current_block=current_block, sync=NO_SYNC, reminders=NO_REMINDERS, chat=None)
+
+
+def _report(
+    sync: ClubSyncStatus = NO_SYNC,
+    reminders: ReminderStatusSection = NO_REMINDERS,
+    chat: ChatStatusSection | None = None,
+) -> StatusReport:
+    club = ClubStatus(club=_club("Химия"), current_block=None, sync=sync, reminders=reminders, chat=chat)
+    return StatusReport(clubs=[club])
 
 
 def test_club_with_current_block() -> None:
     current_block = CurrentBlockStats(block=_block("Блок 5"), members=120, members_with_tg=80)
-    report = StatusReport(
-        clubs=[ClubStatus(club=_club("Химия"), current_block=current_block, sync=NO_SYNC, reminders=NO_REMINDERS)]
-    )
+    report = StatusReport(clubs=[_status("Химия", current_block)])
 
     assert texts.status.status_report(report) == (
         "<b>Химия</b>\nБлок: Блок 5 (01.09–01.11)\nУчастников: 120, из них в боте: 80\n"
-        f"{NO_SYNC_LINES}\n{NO_REMINDERS_LINES}"
+        f"{NO_SYNC_LINES}\n{NO_REMINDERS_LINES}\n{NO_CHAT_LINES}"
     )
 
 
 def test_club_without_current_block_and_escaping() -> None:
-    report = StatusReport(
-        clubs=[ClubStatus(club=_club("Био & <химия>"), current_block=None, sync=NO_SYNC, reminders=NO_REMINDERS)]
-    )
+    report = StatusReport(clubs=[_status("Био & <химия>")])
 
     assert texts.status.status_report(report) == (
-        f"<b>Био &amp; &lt;химия&gt;</b>\nТекущего блока нет.\n{NO_SYNC_LINES}\n{NO_REMINDERS_LINES}"
+        f"<b>Био &amp; &lt;химия&gt;</b>\nТекущего блока нет.\n{NO_SYNC_LINES}\n{NO_REMINDERS_LINES}\n{NO_CHAT_LINES}"
     )
 
 
@@ -110,7 +117,7 @@ def test_successful_sync_with_sheet_problems_and_pending_removals() -> None:
     assert texts.status.status_report(_report(sync)) == (
         "<b>Химия</b>\nТекущего блока нет.\n"
         "Синк: 01.10 12:30 МСК, успешно\nПроблем в таблице: 2\nЗапросов на удаление ждут решения: 3\n"
-        f"{NO_REMINDERS_LINES}"
+        f"{NO_REMINDERS_LINES}\n{NO_CHAT_LINES}"
     )
 
 
@@ -121,19 +128,19 @@ def test_failed_sync_shows_escaped_error_instead_of_problems() -> None:
     assert texts.status.status_report(_report(sync)) == (
         "<b>Химия</b>\nТекущего блока нет.\n"
         "Синк: 01.10 12:30 МСК, ошибка: Sheet &lt;Лист1&gt; not found\nЗапросов на удаление ждут решения: 0\n"
-        f"{NO_REMINDERS_LINES}"
+        f"{NO_REMINDERS_LINES}\n{NO_CHAT_LINES}"
     )
 
 
 def test_clubs_are_separated_by_blank_line() -> None:
     report = StatusReport(
         clubs=[
-            ClubStatus(club=_club("А"), current_block=None, sync=NO_SYNC, reminders=NO_REMINDERS),
-            ClubStatus(club=_club("Б"), current_block=None, sync=NO_SYNC, reminders=NO_REMINDERS),
+            _status("А"),
+            _status("Б"),
         ],
     )
 
-    club_text = f"Текущего блока нет.\n{NO_SYNC_LINES}\n{NO_REMINDERS_LINES}"
+    club_text = f"Текущего блока нет.\n{NO_SYNC_LINES}\n{NO_REMINDERS_LINES}\n{NO_CHAT_LINES}"
     assert texts.status.status_report(report) == f"<b>А</b>\n{club_text}\n\n<b>Б</b>\n{club_text}"
 
 
@@ -201,5 +208,18 @@ def test_upcoming_and_failed_reminders() -> None:
         "Ближайшие напоминания:\n"
         "• 01.10 18:00 — напоминание об уроке, «Кислоты &lt;1&gt;»\n"
         "• 02.10 20:30 — дедлайн ДЗ, «Оксиды»\n"
-        "Не ушло в чат за сутки: 2"
+        "Не ушло в чат за сутки: 2\n"
+        f"{NO_CHAT_LINES}"
     )
+
+
+def test_chat_counts_and_its_problems() -> None:
+    chat = ChatStatusSection(joined=40, invited=3, kicks_on_hold=True, error="Bad Request: <not enough rights>")
+
+    lines = texts.status.status_report(_report(chat=chat)).splitlines()
+
+    assert lines[-3:] == [
+        "Чат: вступили через бота 40, приглашены и не вступили 3",
+        "⚠️ Кик из чата ждёт таблицу блока",
+        "⚠️ Бот не может управлять чатом: Bad Request: &lt;not enough rights&gt;",
+    ]

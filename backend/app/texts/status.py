@@ -2,7 +2,15 @@ from datetime import datetime
 from html import escape
 
 from app.enums import SheetSyncStatus
-from app.schemas import ClubStatus, ClubSyncStatus, CurrentBlockStats, ReminderStatusSection, SheetSyncDTO, StatusReport
+from app.schemas import (
+    ChatStatusSection,
+    ClubStatus,
+    ClubSyncStatus,
+    CurrentBlockStats,
+    ReminderStatusSection,
+    SheetSyncDTO,
+    StatusReport,
+)
 from app.texts.reminders import KIND_LABELS, short_time
 from app.utils import BUSINESS_TZ
 
@@ -23,6 +31,7 @@ def _club_status(status: ClubStatus) -> str:
         *_current_block(status.current_block),
         *_sync(status.sync),
         *_reminders(status.reminders),
+        *_chat(status.chat),
     ]
     return "\n".join(lines)
 
@@ -67,6 +76,17 @@ def _reminders(section: ReminderStatusSection) -> list[str]:
     )
     if section.failed_last_day:
         lines.append(f"Не ушло в чат за сутки: {section.failed_last_day}")
+    return lines
+
+
+def _chat(section: ChatStatusSection | None) -> list[str]:
+    if section is None:
+        return ["Чат клуба не задан."]
+    lines = [f"Чат: вступили через бота {section.joined}, приглашены и не вступили {section.invited}"]
+    if section.kicks_on_hold:
+        lines.append("⚠️ Кик из чата ждёт таблицу блока")
+    if section.error is not None:
+        lines.append(f"⚠️ Бот не может управлять чатом: {escape(_shorten(section.error, SYNC_ERROR_MAX_LEN))}")
     return lines
 
 
