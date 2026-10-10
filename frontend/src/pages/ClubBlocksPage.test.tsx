@@ -22,7 +22,10 @@ const BLOCK: BlockListItemResponse = {
 };
 
 const MEMBERS: BlockMemberResponse[] = [
-  { vk_id: 501, user: { id: 1, full_name: 'Анна Белова', tg_username: 'anna', chat_status: null } },
+  {
+    vk_id: 501,
+    user: { id: 1, full_name: 'Анна Белова', tg_username: 'anna', chat_status: 'joined' },
+  },
   { vk_id: 502, user: null },
 ];
 
@@ -52,6 +55,7 @@ describe('ClubBlocksPage', () => {
       'https://vk.com/id502',
     );
     expect(modal.getByText('не подключил бота')).toBeInTheDocument();
+    expect(modal.getByText('в чате')).toBeInTheDocument();
   });
 
   it('shows only the member count without users.view', async () => {
