@@ -100,17 +100,23 @@ class ChatAccessService:
             error=errors[0] if errors else None,
         )
 
+    async def access_blocks(self, vk_id: int) -> list[tuple[Club, Block]]:
+        club_blocks: list[tuple[Club, Block]] = []
+        clubs = await self._club_repository.list_active()
+        for club in clubs:
+            block = await self._access_block(club, vk_id)
+            if block is not None:
+                club_blocks.append((club, block))
+        return club_blocks
+
     # Every access comes with the student's join link: showing the status is the moment they need it.
     async def access_for_user(self, user_id: int) -> list[ClubAccess]:
         user = await self._user_repository.get_by_id(user_id)
         if user is None or user.vk_id is None:
             return []
         access: list[ClubAccess] = []
-        clubs = await self._club_repository.list_active()
-        for club in clubs:
-            block = await self._access_block(club, user.vk_id)
-            if block is None:
-                continue
+        club_blocks = await self.access_blocks(user.vk_id)
+        for club, block in club_blocks:
             invite_link = await self._try_invite_link(club, user)
             access.append(self._club_access(club, block, invite_link))
         return access
@@ -121,11 +127,8 @@ class ChatAccessService:
         if user is None or user.vk_id is None:
             return []
         statuses: list[StudentClubStatus] = []
-        clubs = await self._club_repository.list_active()
-        for club in clubs:
-            block = await self._access_block(club, user.vk_id)
-            if block is None:
-                continue
+        club_blocks = await self.access_blocks(user.vk_id)
+        for club, block in club_blocks:
             in_chat = await self._is_in_chat(club, user)
             invite_link = await self._try_invite_link(club, user) if in_chat is False else None
             next_block_title = await self._next_block_title(club, block, user.vk_id)

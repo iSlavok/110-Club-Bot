@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import ColumnElement, UnaryExpression, func, select
+from sqlalchemy import ColumnElement, UnaryExpression, and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import BaseRepository, PageResult
@@ -53,3 +53,20 @@ class LessonRepository(BaseRepository[Lesson]):
         )
         lessons = await self._session.scalars(statement)
         return PageResult(items=list(lessons), total=total)
+
+    # A lesson is in the period if it starts there or its homework is due there.
+    async def list_for_schedule(self, *, club_id: int, start: datetime, end: datetime) -> list[Lesson]:
+        statement = (
+            select(Lesson)
+            .where(
+                Lesson.club_id == club_id,
+                Lesson.is_cancelled.is_(False),
+                or_(
+                    and_(Lesson.starts_at >= start, Lesson.starts_at < end),
+                    and_(Lesson.homework_deadline_at >= start, Lesson.homework_deadline_at < end),
+                ),
+            )
+            .order_by(Lesson.starts_at, Lesson.id)
+        )
+        lessons = await self._session.scalars(statement)
+        return list(lessons)

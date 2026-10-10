@@ -21,6 +21,7 @@ from app.schemas.pagination_schemas import MAX_PER_PAGE, PageParams, Paginated
 from app.schemas.patch_schemas import Maybe, PatchSchema
 from app.schemas.reminder_schemas import ReminderDTO, ReminderWithLessonDTO
 from app.schemas.role_schemas import PermissionInfo, RoleCreate, RoleDTO, RoleUpdate
+from app.schemas.schedule_schemas import ClubSchedule, ScheduleItem
 from app.schemas.sheet_sync_schemas import SheetIssue, SheetSyncDTO
 from app.schemas.status_schemas import (
     ChatStatusSection,
@@ -64,6 +65,7 @@ __all__ = [
     "ClubAccess",
     "ClubCreate",
     "ClubDTO",
+    "ClubSchedule",
     "ClubStats",
     "ClubStatus",
     "ClubSyncStatus",
@@ -88,6 +90,7 @@ __all__ = [
     "RoleCreate",
     "RoleDTO",
     "RoleUpdate",
+    "ScheduleItem",
     "SessionGrant",
     "SheetIssue",
     "SheetSyncDTO",
