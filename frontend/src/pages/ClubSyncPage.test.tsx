@@ -57,7 +57,7 @@ describe('ClubSyncPage', () => {
 
     expect(await screen.findByText('Проблемы в таблице: 1')).toBeInTheDocument();
     expect(
-      screen.getByText('Столбец «Блок 5», строка 4: «abc» — не VK id, пропущено'),
+      screen.getByText('Столбец «Блок 5», строка 4: «abc» — не VK ID, пропущено'),
     ).toBeInTheDocument();
     expect(await screen.findByText('Google Sheets API error 403')).toBeInTheDocument();
     expect(screen.getAllByText('· на удаление: 2')).toHaveLength(2);

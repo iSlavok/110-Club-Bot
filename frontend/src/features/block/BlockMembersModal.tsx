@@ -24,7 +24,7 @@ export function BlockMembersModal({ opened, onClose, block }: BlockMembersModalP
           <Table verticalSpacing="xs">
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>VK</Table.Th>
+                <Table.Th>ВК</Table.Th>
                 <Table.Th>Пользователь бота</Table.Th>
                 <Table.Th>Чат</Table.Th>
               </Table.Tr>

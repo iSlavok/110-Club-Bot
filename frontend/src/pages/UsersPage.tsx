@@ -29,7 +29,7 @@ export function UsersPage() {
             w={420}
             maw="100%"
             leftSection={<IconSearch size={16} />}
-            placeholder="Имя, username, Telegram или VK id"
+            placeholder="Имя, username, Telegram или VK ID"
             aria-label="Поиск"
             value={search}
             onChange={(event) => {
@@ -45,8 +45,8 @@ export function UsersPage() {
                 <Table.Tr>
                   <Table.Th>Имя</Table.Th>
                   <Table.Th>Telegram</Table.Th>
-                  <Table.Th>VK</Table.Th>
-                  <Table.Th>VK привязан</Table.Th>
+                  <Table.Th>ВК</Table.Th>
+                  <Table.Th>ВК привязан</Table.Th>
                   <Table.Th>Первый /start</Table.Th>
                 </Table.Tr>
               </Table.Thead>

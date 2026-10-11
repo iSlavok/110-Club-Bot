@@ -5,10 +5,10 @@ import { describeIssue } from './issues';
 describe('describeIssue', () => {
   it('points to the cell for value problems', () => {
     expect(describeIssue({ kind: 'invalid_value', column: 'Блок 5', row: 12, value: 'id42' })).toBe(
-      'Столбец «Блок 5», строка 12: «id42» — не VK id, пропущено',
+      'Столбец «Блок 5», строка 12: «id42» — не VK ID, пропущено',
     );
     expect(describeIssue({ kind: 'duplicate', column: 'Блок 5', row: 7, value: '42' })).toBe(
-      'Столбец «Блок 5», строка 7: VK id 42 повторяется',
+      'Столбец «Блок 5», строка 7: VK ID 42 повторяется',
     );
   });
 

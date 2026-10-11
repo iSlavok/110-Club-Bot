@@ -16,8 +16,8 @@ export function describeIssue(issue: SheetIssueResponse): string {
     case 'duplicate_column':
       return `Столбец ${column} отмечен дважды, учтён только первый`;
     case 'invalid_value':
-      return `Столбец ${column}, строка ${row}: «${value}» — не VK id, пропущено`;
+      return `Столбец ${column}, строка ${row}: «${value}» — не VK ID, пропущено`;
     case 'duplicate':
-      return `Столбец ${column}, строка ${row}: VK id ${value} повторяется`;
+      return `Столбец ${column}, строка ${row}: VK ID ${value} повторяется`;
   }
 }
