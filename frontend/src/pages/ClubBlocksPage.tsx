@@ -64,7 +64,7 @@ export function ClubBlocksPage() {
             <Table verticalSpacing="sm">
               <Table.Thead>
                 <Table.Tr>
-                  <Table.Th>Название</Table.Th>
+                  <Table.Th>Блок</Table.Th>
                   <Table.Th>Столбец таблицы</Table.Th>
                   <Table.Th>Начало</Table.Th>
                   <Table.Th>Конец</Table.Th>

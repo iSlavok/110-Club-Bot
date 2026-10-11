@@ -19,7 +19,7 @@ export function useDeleteBlockConfirm(): (block: BlockResponse) => void {
       title: 'Удалить блок?',
       children: (
         <Text size="sm">
-          Блок «{block.title}» будет удалён. Если в нём уже есть участники из таблицы, удалить не
+          Блок {block.title} будет удалён. Если в нём уже есть участники из таблицы, удалить не
           получится.
         </Text>
       ),

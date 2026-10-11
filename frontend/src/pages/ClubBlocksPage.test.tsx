@@ -14,7 +14,7 @@ import { ClubBlocksPage } from './ClubBlocksPage';
 const BLOCK: BlockListItemResponse = {
   id: 3,
   club_id: 7,
-  title: 'Блок 5',
+  title: '5',
   sheet_column_title: 'Блок 5',
   starts_at: '2026-09-01T00:00:00Z',
   ends_at: '2099-11-01T00:00:00Z',
@@ -44,7 +44,7 @@ describe('ClubBlocksPage', () => {
   it('opens the members of a block for admins with users.view', async () => {
     renderBlocks('users.view');
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Участники блока Блок 5' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Участники блока 5' }));
     revealListEnds();
 
     const modal = within(await screen.findByRole('dialog'));
@@ -61,10 +61,9 @@ describe('ClubBlocksPage', () => {
   it('shows only the member count without users.view', async () => {
     renderBlocks();
 
-    expect(await screen.findAllByText('Блок 5')).toHaveLength(2);
+    expect(await screen.findByText('Блок 5')).toBeInTheDocument();
+    expect(screen.getByText('5')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Участники блока Блок 5' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Участники блока 5' })).not.toBeInTheDocument();
   });
 });

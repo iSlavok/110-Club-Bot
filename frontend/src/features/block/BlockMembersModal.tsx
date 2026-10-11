@@ -15,7 +15,7 @@ export function BlockMembersModal({ opened, onClose, block }: BlockMembersModalP
   const query = useListBlockMembersInfinite(block.id, { per_page: PER_PAGE }, infinitePage);
   const members = useInfinitePage(query);
   return (
-    <Modal opened={opened} onClose={onClose} title={`Участники: ${block.title}`} size="lg">
+    <Modal opened={opened} onClose={onClose} title={`Участники блока ${block.title}`} size="lg">
       <InfiniteList
         list={members}
         emptyText="В блоке пока никого: столбец не отмечен в таблице или синка ещё не было"
