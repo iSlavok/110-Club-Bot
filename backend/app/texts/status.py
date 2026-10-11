@@ -1,0 +1,98 @@
+from datetime import datetime
+from html import escape
+
+from app.enums import SheetSyncStatus
+from app.schemas import (
+    ChatStatusSection,
+    ClubStatus,
+    ClubSyncStatus,
+    CurrentBlockStats,
+    ReminderStatusSection,
+    SheetSyncDTO,
+    StatusReport,
+)
+from app.texts.reminders import KIND_LABELS, short_time
+from app.utils import BUSINESS_TZ
+
+NO_ACTIVE_CLUBS = "Активных клубов нет."
+# Keeps a report with several failed clubs within Telegram's 4096-character message limit.
+SYNC_ERROR_MAX_LEN = 200
+
+
+def status_report(report: StatusReport) -> str:
+    if not report.clubs:
+        return NO_ACTIVE_CLUBS
+    return "\n\n".join(_club_status(status) for status in report.clubs)
+
+
+def _club_status(status: ClubStatus) -> str:
+    lines = [
+        f"<b>Клуб {escape(status.club.title)}</b>",
+        *_current_block(status.current_block),
+        *_sync(status.sync),
+        *_reminders(status.reminders),
+        *_chat(status.chat),
+    ]
+    return "\n".join(lines)
+
+
+def _current_block(stats: CurrentBlockStats | None) -> list[str]:
+    if stats is None:
+        return ["Текущего блока нет."]
+    block = stats.block
+    return [
+        f"Блок {escape(block.title)} ({_day(block.starts_at)}–{_day(block.ends_at)})",
+        f"Участников: {stats.members}, из них в боте: {stats.members_with_tg}",
+    ]
+
+
+def _sync(status: ClubSyncStatus) -> list[str]:
+    return [
+        *_last_sync(status.last_sync),
+        f"Запросов на удаление ждут решения: {status.pending_removal_requests}",
+    ]
+
+
+# A failed sync never read the sheet, so it has no problem count to show.
+def _last_sync(sync: SheetSyncDTO | None) -> list[str]:
+    if sync is None:
+        return ["Синков ещё не было."]
+    finished = f"Синк: {_moment(sync.finished_at)}"
+    if sync.status is SheetSyncStatus.FAILED:
+        return [f"{finished}, ошибка: {escape(_shorten(sync.error or '', SYNC_ERROR_MAX_LEN))}"]
+    return [f"{finished}, успешно", f"Проблем в таблице: {len(sync.issues)}"]
+
+
+# Cut before escaping, so an HTML entity is never split.
+def _shorten(text: str, limit: int) -> str:
+    return text if len(text) <= limit else text[:limit] + "…"
+
+
+def _reminders(section: ReminderStatusSection) -> list[str]:
+    lines = ["Ближайшие напоминания:" if section.upcoming else "Ближайших напоминаний нет."]
+    lines.extend(
+        f"• {short_time(reminder.send_at)} — {KIND_LABELS[reminder.kind]}, «{escape(reminder.lesson.title)}»"
+        for reminder in section.upcoming
+    )
+    if section.failed_last_day:
+        lines.append(f"Не ушло в чат за сутки: {section.failed_last_day}")
+    return lines
+
+
+def _chat(section: ChatStatusSection | None) -> list[str]:
+    if section is None:
+        return ["Чат клуба не задан."]
+    lines = [f"Чат: вступили через бота {section.joined}, приглашены и не вступили {section.invited}"]
+    if section.kicks_on_hold:
+        lines.append("⚠️ Кик из чата ждёт таблицу блока")
+    if section.error is not None:
+        lines.append(f"⚠️ Бот не может управлять чатом: {escape(_shorten(section.error, SYNC_ERROR_MAX_LEN))}")
+    return lines
+
+
+def _day(moment: datetime) -> str:
+    return moment.astimezone(BUSINESS_TZ).strftime("%d.%m")
+
+
+def _moment(moment: datetime) -> str:
+    return moment.astimezone(BUSINESS_TZ).strftime("%d.%m %H:%M")

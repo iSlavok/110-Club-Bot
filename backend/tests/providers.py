@@ -1,0 +1,140 @@
+from datetime import UTC, datetime
+from itertools import count
+from typing import TYPE_CHECKING, cast
+from unittest.mock import AsyncMock, MagicMock
+
+from aiogram import Bot
+from aiogram.types import ChatInviteLink, User
+from dishka import Provider, Scope, provide
+from pydantic import SecretStr
+from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, async_sessionmaker
+
+from app.clients import LoginThrottle, SheetsClient, VkClient
+from app.config import AlertsSettings, AuthSettings, BotSettings, DatabaseSettings, PublicSettings, VkSettings
+from app.telegram import AdminAlerts, CommandMenu, RateLimitMiddleware
+from app.utils import Clock
+from tests.fakes import FakeLoginThrottle, FakeSheetsClient, FakeTimer, FakeVkClient, FrozenClock
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
+DEFAULT_NOW = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
+OWNER_TG_ID = 777
+BOT_TOKEN = "123456:test-token"
+BOT_USERNAME = "club_test_bot"
+ALERTS_CHAT_ID = -1001
+PUBLIC_URL = "https://club.example.com"
+VK_CLIENT_ID = 5100001
+VK_SERVICE_TOKEN = "vk-service-token"
+ALERT_MESSAGE_ID = 4242
+INVITE_LINK_PREFIX = "https://t.me/+join"
+
+
+class TestDatabaseProvider(Provider):
+    def __init__(self, session: AsyncSession) -> None:
+        super().__init__()
+        self._session = session
+
+    @provide(scope=Scope.REQUEST)
+    def session(self) -> AsyncSession:
+        return self._session
+
+
+# Lets the real DatabaseProvider commit and roll back: "commit" releases a savepoint of the test's outer transaction.
+class ConnectionSessionmakerProvider(Provider):
+    def __init__(self, connection: AsyncConnection) -> None:
+        super().__init__()
+        self._connection = connection
+
+    # The engine factory stays in the graph and needs settings, but is never built.
+    @provide(scope=Scope.APP)
+    def settings(self) -> DatabaseSettings:
+        return DatabaseSettings(name="unused", user="unused", password=SecretStr("unused"))
+
+    @provide(scope=Scope.APP)
+    def sessionmaker(self) -> async_sessionmaker[AsyncSession]:
+        return async_sessionmaker(
+            bind=self._connection,
+            expire_on_commit=False,
+            join_transaction_mode="create_savepoint",
+        )
+
+
+class TestInfraProvider(Provider):
+    scope = Scope.APP
+
+    admin_alerts = provide(AdminAlerts)
+    command_menu = provide(CommandMenu)
+
+    @provide
+    def clock(self) -> Clock:
+        return FrozenClock(DEFAULT_NOW)
+
+    @provide
+    def auth_settings(self) -> AuthSettings:
+        return AuthSettings(owner_ids=[OWNER_TG_ID], widget_enabled=True, cookie_secure=False)
+
+    @provide
+    def bot_settings(self) -> BotSettings:
+        return BotSettings(token=SecretStr(BOT_TOKEN))
+
+    @provide
+    def public_settings(self) -> PublicSettings:
+        return PublicSettings(url=PUBLIC_URL)
+
+    @provide
+    def alerts_settings(self) -> AlertsSettings:
+        return AlertsSettings(chat_id=ALERTS_CHAT_ID)
+
+    @provide
+    def vk_settings(self) -> VkSettings:
+        return VkSettings(client_id=VK_CLIENT_ID, service_token=SecretStr(VK_SERVICE_TOKEN))
+
+    @provide
+    def login_throttle(self) -> LoginThrottle:
+        return FakeLoginThrottle()
+
+    @provide
+    def rate_limit(self) -> RateLimitMiddleware:
+        return RateLimitMiddleware(FakeTimer())
+
+    @provide
+    def vk_client(self) -> VkClient:
+        return FakeVkClient()
+
+    @provide
+    def sheets_client(self) -> SheetsClient:
+        return FakeSheetsClient()
+
+    @provide
+    def bot(self) -> Bot:
+        bot = AsyncMock(spec=Bot)
+        bot.me.return_value = User(id=1, is_bot=True, first_name="Club", username=BOT_USERNAME)
+        bot.send_message.return_value = MagicMock(message_id=ALERT_MESSAGE_ID)
+        bot.create_chat_invite_link.side_effect = _invite_links()
+        return bot
+
+    @provide
+    def redis(self) -> Redis:
+        redis = AsyncMock(spec=Redis)
+        # redis-py declares ping() as a plain method returning an awaitable, so spec alone yields a sync mock.
+        redis.ping = AsyncMock(return_value=True)
+        return redis
+
+
+def _invite_links() -> "Callable[..., Awaitable[ChatInviteLink]]":
+    numbers = count(1)
+    creator = User(id=1, is_bot=True, first_name="Club", username=BOT_USERNAME)
+
+    async def create(**kwargs: object) -> ChatInviteLink:
+        return ChatInviteLink(
+            invite_link=f"{INVITE_LINK_PREFIX}{next(numbers)}",
+            creator=creator,
+            creates_join_request=bool(kwargs.get("creates_join_request")),
+            is_primary=False,
+            is_revoked=False,
+            name=cast("str | None", kwargs.get("name")),
+        )
+
+    return create

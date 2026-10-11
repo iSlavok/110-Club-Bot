@@ -1,0 +1,198 @@
+from collections.abc import Sequence
+from datetime import datetime, timedelta
+
+from loguru import logger
+
+from app import texts
+from app.clients import SheetsClient, SheetsClientError
+from app.enums import SheetSyncStatus
+from app.exceptions import ClubNotFoundError, ClubNotSyncableError, SheetSyncDisabledError
+from app.models import Club, SheetSync
+from app.repositories import BlockRepository, ClubRepository, MembershipRepository, SheetSyncRepository
+from app.schemas import PageParams, Paginated, SheetIssue, SheetSyncDTO
+from app.services.chat_access_service import ChatAccessService
+from app.services.membership_removal_service import MembershipRemovalService
+from app.services.sheet_parser import parse_sheet
+from app.telegram import AdminAlerts
+from app.utils import Clock
+
+HISTORY_DAYS = 100
+INTERNAL_ERROR_MESSAGE = "Internal error, see the server logs"
+
+
+class SheetSyncService:
+    def __init__(
+        self,
+        *,
+        sheet_sync_repository: SheetSyncRepository,
+        club_repository: ClubRepository,
+        block_repository: BlockRepository,
+        membership_repository: MembershipRepository,
+        membership_removal_service: MembershipRemovalService,
+        chat_access_service: ChatAccessService,
+        sheets_client: SheetsClient,
+        admin_alerts: AdminAlerts,
+        clock: Clock,
+    ) -> None:
+        self._sheet_sync_repository = sheet_sync_repository
+        self._club_repository = club_repository
+        self._block_repository = block_repository
+        self._membership_repository = membership_repository
+        self._membership_removal_service = membership_removal_service
+        self._chat_access_service = chat_access_service
+        self._sheets_client = sheets_client
+        self._admin_alerts = admin_alerts
+        self._clock = clock
+
+    # Empty while the client is disabled: without a key there is nothing to sync, and the startup log already says so.
+    async def list_syncable_club_ids(self) -> list[int]:
+        if not self._sheets_client.is_enabled:
+            return []
+        clubs = await self._club_repository.list_syncable()
+        return [club.id for club in clubs]
+
+    async def list_page(self, club_id: int, page: PageParams) -> Paginated[SheetSyncDTO]:
+        await self._get_club(club_id)
+        syncs = await self._sheet_sync_repository.list_page_for_club(
+            club_id=club_id,
+            limit=page.per_page,
+            offset=page.offset,
+        )
+        return Paginated(items=[SheetSyncDTO.from_orm_obj(sync) for sync in syncs.items], total=syncs.total)
+
+    # Members join a block straight from a ready column but leave it only after the owner confirms the removal:
+    # a column cleared by mistake must not drop the whole block. Chat access is reconciled against memberships.
+    async def sync_club(self, club_id: int) -> SheetSyncDTO:
+        club = await self._get_club(club_id)
+        spreadsheet_id, sheet_name = club.spreadsheet_id, club.sheet_name
+        if not self._sheets_client.is_enabled:
+            raise SheetSyncDisabledError
+        if not club.is_active or spreadsheet_id is None or sheet_name is None:
+            raise ClubNotSyncableError(club_id)
+        started_at = self._clock.now()
+        try:
+            columns = await self._sheets_client.get_columns(spreadsheet_id, sheet_name)
+        except SheetsClientError as error:
+            logger.warning("Sheet sync of club {} failed: {}", club_id, error.message)
+            return await self._record(club, started_at, status=SheetSyncStatus.FAILED, error=error.message)
+
+        # Taken after the read: a slow Google response must not hold up the club's other syncs.
+        await self._sheet_sync_repository.lock_club(club_id)
+        blocks = await self._block_repository.list_for_club(club_id)
+        parsed = parse_sheet(
+            columns,
+            block_titles={block.sheet_column_title for block in blocks},
+            open_block_titles=[block.sheet_column_title for block in blocks if block.ends_at > started_at],
+        )
+        added = removal_requested = 0
+        for block in blocks:
+            wanted = parsed.members.get(block.sheet_column_title)
+            if wanted is None:
+                continue
+            members = await self._membership_repository.list_vk_ids(block.id)
+            joined = wanted - members
+            await self._membership_repository.add_many(block_id=block.id, vk_ids=joined)
+            added += len(joined)
+            removal_requested += await self._membership_removal_service.reconcile_block(
+                block.id,
+                members=members,
+                wanted=wanted,
+            )
+        logger.info(
+            "Synced club {}: +{}, {} sent for removal, {} issues",
+            club_id,
+            added,
+            removal_requested,
+            len(parsed.issues),
+        )
+        result = await self._record(
+            club,
+            started_at,
+            status=SheetSyncStatus.OK,
+            added=added,
+            removal_requested=removal_requested,
+            issues=parsed.issues,
+        )
+        # Students added by the sheet get their chat invite now, not on the chat job's next run.
+        await self._chat_access_service.reconcile_club(club_id)
+        return result
+
+    # For a sync that crashed: its own transaction was rolled back, so this runs in a new one.
+    async def record_internal_error(self, club_id: int) -> SheetSyncDTO:
+        club = await self._get_club(club_id)
+        return await self._record(club, self._clock.now(), status=SheetSyncStatus.FAILED, error=INTERNAL_ERROR_MESSAGE)
+
+    async def purge_old(self) -> None:
+        cutoff = self._clock.now() - timedelta(days=HISTORY_DAYS)
+        await self._sheet_sync_repository.delete_started_before(cutoff)
+
+    async def _get_club(self, club_id: int) -> Club:
+        club = await self._club_repository.get_by_id(club_id)
+        if club is None:
+            raise ClubNotFoundError(club_id)
+        return club
+
+    async def _record(
+        self,
+        club: Club,
+        started_at: datetime,
+        *,
+        status: SheetSyncStatus,
+        added: int = 0,
+        removal_requested: int = 0,
+        issues: Sequence[SheetIssue] = (),
+        error: str | None = None,
+    ) -> SheetSyncDTO:
+        # Locked again for failed reads, which skip the sync's lock: comparing with the previous sync must not race.
+        await self._sheet_sync_repository.lock_club(club.id)
+        previous = await self._sheet_sync_repository.get_latest_for_club(club.id)
+        previous_ok = await self._sheet_sync_repository.get_latest_for_club(club.id, status=SheetSyncStatus.OK)
+        sync = SheetSync(
+            club_id=club.id,
+            started_at=started_at,
+            finished_at=self._clock.now(),
+            status=status,
+            added=added,
+            removal_requested=removal_requested,
+            issues=[issue.model_dump(mode="json") for issue in issues],
+            error=error,
+        )
+        self._sheet_sync_repository.add(sync)
+        await self._sheet_sync_repository.flush()
+        current = SheetSyncDTO.from_orm_obj(sync)
+        await self._alert_changes(
+            club.title,
+            current,
+            previous=SheetSyncDTO.from_orm_obj(previous) if previous else None,
+            previous_ok=SheetSyncDTO.from_orm_obj(previous_ok) if previous_ok else None,
+        )
+        return current
+
+    # Alerts go out only when the state changes, not on every run: the owner reads the chat, not the logs.
+    async def _alert_changes(
+        self,
+        club_title: str,
+        current: SheetSyncDTO,
+        *,
+        previous: SheetSyncDTO | None,
+        previous_ok: SheetSyncDTO | None,
+    ) -> None:
+        was_failing = previous is not None and previous.status is SheetSyncStatus.FAILED
+        if current.status is SheetSyncStatus.FAILED:
+            if not was_failing:
+                await self._admin_alerts.send(texts.alerts.sync_failed(club_title, current.error or ""))
+            return
+        if was_failing:
+            await self._admin_alerts.send(texts.alerts.sync_recovered(club_title))
+
+        known = {_issue_key(issue) for issue in previous_ok.issues} if previous_ok else set()
+        new_issues = [issue for issue in current.issues if _issue_key(issue) not in known]
+        if new_issues:
+            await self._admin_alerts.send(texts.alerts.sheet_issues_appeared(club_title, new_issues))
+        elif known and not current.issues:
+            await self._admin_alerts.send(texts.alerts.sheet_issues_resolved(club_title))
+
+
+# Without the row: inserting a line above a bad cell moves it, but it is the same problem.
+def _issue_key(issue: SheetIssue) -> tuple[str, str, str | None]:
+    return issue.kind, issue.column, issue.value

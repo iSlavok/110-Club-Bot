@@ -1,0 +1,79 @@
+# Reference topology for a single-host VPS. Dev overrides live in docker-compose.dev.yml.
+# Docker keeps container logs forever by default; on a small VPS that eventually fills the disk.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "5"
+
+services:
+  postgres:
+    logging: *logging
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:?set DB_NAME in .env}
+      POSTGRES_USER: ${DB_USER:?set DB_USER in .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    logging: *logging
+    image: redis:7
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" --no-auth-warning ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+  migrate:
+    logging: *logging
+    # Image names match the release workflow and `make build`: change them together.
+    image: ghcr.io/islavok/110-club-bot-backend:${IMAGE_TAG:-latest}
+    env_file: .env
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    logging: *logging
+    image: ghcr.io/islavok/110-club-bot-backend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    # Google service account key and other secret files; the folder is gitignored and may be absent.
+    volumes:
+      - ./secrets:/run/secrets:ro
+    # No published port: only the web container reaches it, which is what makes trusting forwarded headers safe.
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  # The single entry point: the host's reverse proxy terminates TLS and forwards the admin domain here.
+  web:
+    logging: *logging
+    image: ghcr.io/islavok/110-club-bot-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  pg-data:
+  redis-data:

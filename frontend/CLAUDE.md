@@ -1,0 +1,85 @@
+# Frontend — админка
+
+React 19 + TypeScript (strict) + Vite, Mantine 9, TanStack Query 5, React Router 8, dayjs. Тесты — Vitest + Testing Library + MSW. npm, Node 24+.
+
+TypeScript закреплён на 6.x: typescript-eslint пока не поддерживает 7.x. Обновлять вместе.
+
+## Команды (из `frontend/`)
+
+```bash
+npm run dev        # Vite :5173, /api проксируется на backend :8000 (make dev в соседнем терминале)
+npm run lint       # eslint + prettier --check
+npm run typecheck  # tsc --noEmit
+npm test           # vitest run
+npm run build
+npm run gen        # orval из openapi.json; из корня — make gen (сначала выгружает схему из backend)
+```
+
+## Структура (Feature-Sliced)
+
+```
+src/
+  app/        провайдеры, QueryClient, роутер, guard'ы, layout с меню, навигация по клубам
+  pages/      страница = файл; собирает features/entities, своей логики почти нет
+  features/   действия пользователя: формы, модалки, подтверждения (вход, клуб, блок, синк, админ, роль)
+  entities/   доменные кирпичи без действий: сессия и права, список клубов для выбора, статус блока, статус синка и проблемы таблицы, группировка прав
+  shared/     api (сгенерированный клиент + http-мутатор), lib (даты, ошибки, уведомления, лента), ui, config
+  test/       setup, MSW-сервер, фикстуры, render-хелперы
+```
+
+- Слой импортирует только слои ниже: `shared ← entities ← features ← pages ← app`. Проверяет eslint (`no-restricted-imports`), нарушение — ошибка.
+- Слайсы одного слоя друг друга не импортируют. Нужно общее — опусти ниже.
+- Слайс отдаёт наружу только то, что в его `index.ts`.
+- Импорты между слоями — через алиас `@/`.
+
+## API
+
+- Клиент генерирует orval из `openapi.json` в `src/shared/api/generated/`. Руками не правим. GET с параметром `page` получают и infinite-хук (`useInfiniteQueryParam: 'page'`). Изменилась схема бэка → `make gen`, коммить `openapi.json` и `generated/` вместе с бэком. CI сверяет.
+- Импорт — только из `@/shared/api` (хуки, типы, `ApiError`).
+- Запросы идут на тот же origin (`/api/v1/...`), сессия — httpOnly cookie. Токенов в JS нет.
+- Ошибка API → `ApiError { status, code, message, fields }`. Текст пользователю — `errorMessage(error)` по `code` (`shared/lib/errors.ts`). Новый код ошибки на бэке → строка там же. Ошибки полей 422 → `form.setErrors(fieldErrors(error))`.
+- После любой успешной мутации `QueryClient` инвалидирует все запросы, кроме `/auth/me`. Руками `invalidateQueries` в фичах не зови.
+- 401 на любом запросе → перезапрос `/auth/me` → guard уводит на `/login`.
+
+## Навигация
+
+- Всё рабочее — внутри клуба: `/clubs/:clubId` («Обзор»), `…/blocks`, `…/sync`, `…/lessons` (лента и `…/lessons/:lessonId` — карточка), `…/reminders`, `…/settings` — дочерние маршруты `ClubLayout` (он грузит клуб и один раз показывает «не найден»). Глобально: `/clubs`, `/users`, `/admins`, `/roles`, `/settings` (настройки бота: смотрят все админы, меняет `settings.edit`).
+- Пункты меню — `app/navigation.ts`: `GLOBAL_NAV` и `clubNav(clubId)`, пункт с `permission` виден только с этим правом. Новый раздел клуба = строка в `clubNav` + дочерний маршрут.
+- У `/` своей страницы нет (`Home`): один клуб → в него, несколько → `/clubs`, без `clubs.view` → первый доступный раздел.
+- Клуб один → его разделы в меню всегда, пункт «Клубы» скрыт. В шапке — название клуба; переключатель `ClubSwitcher` — при 2+ клубах или с `clubs.edit` (в нём «Все клубы» → создать клуб).
+- Страница клуба берёт id из URL через `useClubId()`, сам клуб — `useGetClub` (кэш общий с `ClubLayout` и шапкой).
+
+## Списки
+
+- Любой список — лента: `InfiniteList` (`shared/ui`) + orval-хук `use…Infinite` с опциями `infinitePage` → `useInfinitePage` (`shared/lib/infinite-page.ts`). API отдаёт `Page[T]`, следующая страница грузится, когда конец ленты виден (`IntersectionObserver`), и так до последней. Номеров страниц нет.
+- Хук orval вызывай отдельной строкой и передавай результат в `useInfinitePage`: вложенный вызов теряет тип элементов.
+- Фильтры и сортировка — слот `filters` над лентой, это параметры запроса, а не фильтр на клиенте. Смена фильтра начинает ленту заново; старые строки видны, пока не придут новые.
+- Короткий список, который API отдаёт целиком (роли), — `wholeList(query)` в тот же `InfiniteList`.
+- Тесты: MSW-хендлер отвечает `pageOf(items, request)`, `revealListEnds()` — «доскроллить» до конца ленты.
+
+## Права
+
+- Видимость кнопок — `<Can permission="...">`, проверка в коде — `usePermission` / `hasPermission`. Раздел целиком — `RequirePermission` в роутере.
+- Выдать можно только свои права (`canGrant`): роли и админов сильнее себя UI не предлагает. Бэк проверяет то же самое, UI лишь не показывает заведомо запрещённое.
+
+## Время
+
+- API отдаёт и принимает UTC. Пользователю — Москва: `formatDateTime` / `formatDate`. Пикеры Mantine работают со строкой московского времени: `toPickerValue` / `fromPickerValue`.
+
+## Формы и модалки
+
+- `useForm` из `@mantine/form`, базовая валидация на клиенте, окончательная — на бэке.
+- Модалка создания/редактирования рендерится, только пока открыта, с `key` по объекту: начальные значения формы берутся при монтировании.
+
+## Тесты
+
+- Обязательны при изменении логики компонента, хука, утилиты. Файл теста лежит рядом: `X.test.tsx`.
+- Сеть — только через MSW (`server.use(...)` в тесте), неперехваченный запрос роняет тест.
+- Рендер — `renderWithProviders(ui)` или `renderRoutes(routes)` из `@/test/render`. Сессия — `meHandler(makeAdmin(...permissions))`.
+- Проверяй то, что видит пользователь (роли, подписи, текст), а не внутреннее состояние.
+
+## Стиль
+
+- Prettier (single quotes, 100 символов), typescript-eslint strict type-checked. `eslint-disable` и `as` — только когда правильно нельзя, с причиной.
+- Тексты интерфейса на русском, прямо в компонентах.
+- Комментарии — по правилам корневого `CLAUDE.md`.

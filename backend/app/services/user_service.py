@@ -1,0 +1,19 @@
+from app.repositories import UserRepository
+from app.schemas import PageParams, Paginated, TelegramProfile, UserDTO
+
+
+class UserService:
+    def __init__(self, user_repository: UserRepository) -> None:
+        self._user_repository = user_repository
+
+    async def register(self, profile: TelegramProfile) -> UserDTO:
+        user = await self._user_repository.upsert_by_tg_id(
+            tg_id=profile.tg_id,
+            tg_username=profile.tg_username,
+            full_name=profile.full_name,
+        )
+        return UserDTO.from_orm_obj(user)
+
+    async def search_page(self, query: str | None, page: PageParams) -> Paginated[UserDTO]:
+        users = await self._user_repository.search_page(query=query, limit=page.per_page, offset=page.offset)
+        return Paginated(items=[UserDTO.from_orm_obj(user) for user in users.items], total=users.total)

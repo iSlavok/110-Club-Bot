@@ -1,0 +1,114 @@
+from collections.abc import AsyncIterator
+
+import httpx
+from aiogram import Bot
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
+from dishka import Provider, Scope, from_context, provide
+from redis.asyncio import Redis
+
+from app.clients import HttpxVkClient, LoginThrottle, RedisLoginThrottle, SheetsClient, VkClient, open_sheets_client
+from app.config import (
+    AlertsSettings,
+    ApiSettings,
+    AuthSettings,
+    BotSettings,
+    DatabaseSettings,
+    GoogleSettings,
+    PublicSettings,
+    RedisSettings,
+    Settings,
+    SyncSettings,
+    VkSettings,
+)
+from app.telegram import AdminAlerts, CommandMenu, RateLimitMiddleware, SystemTimer
+from app.utils import Clock, SystemClock
+
+VK_TIMEOUT_SECONDS = 10
+
+
+class SettingsProvider(Provider):
+    scope = Scope.APP
+
+    settings = from_context(provides=Settings)
+
+    @provide
+    def database(self, settings: Settings) -> DatabaseSettings:
+        return settings.db
+
+    @provide
+    def redis(self, settings: Settings) -> RedisSettings:
+        return settings.redis
+
+    @provide
+    def bot(self, settings: Settings) -> BotSettings:
+        return settings.bot
+
+    @provide
+    def api(self, settings: Settings) -> ApiSettings:
+        return settings.api
+
+    @provide
+    def auth(self, settings: Settings) -> AuthSettings:
+        return settings.auth
+
+    @provide
+    def public(self, settings: Settings) -> PublicSettings:
+        return settings.public
+
+    @provide
+    def alerts(self, settings: Settings) -> AlertsSettings:
+        return settings.alerts
+
+    @provide
+    def vk(self, settings: Settings) -> VkSettings:
+        return settings.vk
+
+    @provide
+    def google(self, settings: Settings) -> GoogleSettings:
+        return settings.google
+
+    @provide
+    def sync(self, settings: Settings) -> SyncSettings:
+        return settings.sync
+
+
+class InfraProvider(Provider):
+    scope = Scope.APP
+
+    clock = provide(SystemClock, provides=Clock)
+    login_throttle = provide(RedisLoginThrottle, provides=LoginThrottle)
+    admin_alerts = provide(AdminAlerts)
+    command_menu = provide(CommandMenu)
+
+    @provide
+    def rate_limit(self) -> RateLimitMiddleware:
+        return RateLimitMiddleware(SystemTimer())
+
+    @provide
+    async def bot(self, settings: BotSettings, rate_limit: RateLimitMiddleware) -> AsyncIterator[Bot]:
+        bot = Bot(settings.token.get_secret_value(), default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+        bot.session.middleware(rate_limit)
+        yield bot
+        await bot.session.close()
+
+    @provide
+    async def redis(self, settings: RedisSettings) -> AsyncIterator[Redis]:
+        redis = Redis(
+            host=settings.host,
+            port=settings.port,
+            password=settings.password.get_secret_value(),
+            db=settings.db,
+        )
+        yield redis
+        await redis.aclose()
+
+    @provide
+    async def vk_client(self, settings: VkSettings) -> AsyncIterator[VkClient]:
+        async with httpx.AsyncClient(timeout=VK_TIMEOUT_SECONDS) as http:
+            yield HttpxVkClient(http, settings)
+
+    @provide
+    async def sheets_client(self, settings: GoogleSettings) -> AsyncIterator[SheetsClient]:
+        async with open_sheets_client(settings) as client:
+            yield client
