@@ -40,27 +40,26 @@ async def _access_row(db_session, user) -> ChatAccess | None:
     return await db_session.scalar(select(ChatAccess).where(ChatAccess.user_id == user.id))
 
 
-async def test_access_comes_with_a_personal_join_link(service, db_session, club, bot) -> None:
-    user = await make_user(db_session, vk_id=VK_ID)
+async def test_students_share_one_join_link_of_the_chat(service, db_session, club, bot) -> None:
     block = await make_block(db_session, club, title="5")
-    await make_membership(db_session, block, vk_id=VK_ID)
+    users = [await make_user(db_session, vk_id=vk_id) for vk_id in (VK_ID, VK_ID + 1)]
+    for user in users:
+        await make_membership(db_session, block, vk_id=user.vk_id)
 
-    [access] = await service.access_for_user(user.id)
-    again = await service.access_for_user(user.id)
+    [first] = await service.access_for_user(users[0].id)
+    [second] = await service.access_for_user(users[1].id)
 
-    assert access.block_title == "5"
-    assert access.invite_link is not None
-    assert access.invite_link.startswith(INVITE_LINK_PREFIX)
-    assert again[0].invite_link == access.invite_link
-    bot.create_chat_invite_link.assert_awaited_once_with(
-        chat_id=CHAT_ID,
-        name=f"user {user.id}",
-        creates_join_request=True,
-    )
-    row = await _access_row(db_session, user)
-    assert row is not None
-    assert row.status is ChatAccessStatus.INVITED
-    assert row.invited_at == DEFAULT_NOW
+    assert first.block_title == "5"
+    assert first.invite_link is not None
+    assert first.invite_link.startswith(INVITE_LINK_PREFIX)
+    assert second.invite_link == first.invite_link
+    assert club.chat_invite_link == first.invite_link
+    bot.create_chat_invite_link.assert_awaited_once_with(chat_id=CHAT_ID, name="club bot", creates_join_request=True)
+    for user in users:
+        row = await _access_row(db_session, user)
+        assert row is not None
+        assert row.status is ChatAccessStatus.INVITED
+        assert row.invited_at == DEFAULT_NOW
 
 
 async def test_between_blocks_access_comes_from_the_next_block(service, db_session, club) -> None:
@@ -105,70 +104,83 @@ async def test_telegram_refusing_the_link_still_shows_access(service, db_session
     [access] = await service.access_for_user(user.id)
 
     assert access.invite_link is None
+    assert club.chat_invite_link is None
+    assert await _access_row(db_session, user) is None
 
 
-async def test_kicked_student_back_in_a_block_is_unbanned_and_reinvited(service, db_session, club, bot) -> None:
+async def test_kicked_student_back_in_a_block_is_unbanned_and_reinvited(service, db_session, bot) -> None:
+    club = await make_club(db_session, chat_id=CHAT_ID, chat_invite_link="https://t.me/+club")
     user = await make_user(db_session, vk_id=VK_ID)
     await make_membership(db_session, await make_block(db_session, club), vk_id=VK_ID)
     row = await make_chat_access(db_session, club, user, status=ChatAccessStatus.KICKED)
 
     [access] = await service.access_for_user(user.id)
 
-    assert access.invite_link == row.invite_link
+    assert access.invite_link == "https://t.me/+club"
     bot.unban_chat_member.assert_awaited_once_with(chat_id=CHAT_ID, user_id=user.tg_id, only_if_banned=True)
     assert row.status is ChatAccessStatus.INVITED
     bot.create_chat_invite_link.assert_not_awaited()
 
 
-async def test_club_moved_to_another_chat_gets_a_new_link(service, db_session, club) -> None:
+async def test_club_moved_to_another_chat_invites_again(service, db_session, club) -> None:
     user = await make_user(db_session, vk_id=VK_ID)
     await make_membership(db_session, await make_block(db_session, club), vk_id=VK_ID)
     row = await make_chat_access(db_session, club, user, chat_id=CHAT_ID - 1)
-    old_link = row.invite_link
 
-    [access] = await service.access_for_user(user.id)
+    await service.access_for_user(user.id)
 
-    assert access.invite_link != old_link
     assert row.chat_id == CHAT_ID
     assert row.status is ChatAccessStatus.INVITED
 
 
-async def test_join_request_of_the_link_owner_with_access_is_approved(service, db_session, club, bot) -> None:
+async def test_join_request_of_a_student_with_access_is_approved(service, db_session, club, bot) -> None:
     user = await make_user(db_session, vk_id=VK_ID)
     await make_membership(db_session, await make_block(db_session, club), vk_id=VK_ID)
     row = await make_chat_access(db_session, club, user, status=ChatAccessStatus.INVITED)
 
-    await service.handle_join_request(chat_id=CHAT_ID, tg_id=user.tg_id, invite_link=row.invite_link)
+    await service.handle_join_request(chat_id=CHAT_ID, tg_id=user.tg_id)
 
     bot.approve_chat_join_request.assert_awaited_once_with(chat_id=CHAT_ID, user_id=user.tg_id)
     assert row.status is ChatAccessStatus.JOINED
     assert row.joined_at == DEFAULT_NOW
 
 
-async def test_join_request_through_someone_elses_link_is_left_to_admins(service, db_session, club, bot) -> None:
+async def test_student_with_access_coming_through_another_link_is_approved(service, db_session, club, bot) -> None:
     user = await make_user(db_session, vk_id=VK_ID)
     await make_membership(db_session, await make_block(db_session, club), vk_id=VK_ID)
-    row = await make_chat_access(db_session, club, user, status=ChatAccessStatus.INVITED)
-    stranger = await make_user(db_session)
 
-    await service.handle_join_request(chat_id=CHAT_ID, tg_id=stranger.tg_id, invite_link=row.invite_link)
-    await service.handle_join_request(chat_id=CHAT_ID, tg_id=stranger.tg_id, invite_link="https://t.me/+admins")
-    await service.handle_join_request(chat_id=CHAT_ID, tg_id=stranger.tg_id, invite_link=None)
+    await service.handle_join_request(chat_id=CHAT_ID, tg_id=user.tg_id)
+
+    bot.approve_chat_join_request.assert_awaited_once_with(chat_id=CHAT_ID, user_id=user.tg_id)
+    row = await _access_row(db_session, user)
+    assert row is not None
+    assert row.chat_id == CHAT_ID
+    assert row.status is ChatAccessStatus.JOINED
+    assert row.invited_at == DEFAULT_NOW
+
+
+async def test_join_request_without_access_is_left_to_admins(service, db_session, club, bot) -> None:
+    await make_block(db_session, club)
+    unlinked = await make_user(db_session)
+    outsider = await make_user(db_session, vk_id=VK_ID)
+    row = await make_chat_access(db_session, club, outsider, status=ChatAccessStatus.INVITED)
+
+    await service.handle_join_request(chat_id=CHAT_ID, tg_id=unlinked.tg_id)
+    await service.handle_join_request(chat_id=CHAT_ID, tg_id=outsider.tg_id)
+    await service.handle_join_request(chat_id=CHAT_ID, tg_id=999_999)
 
     bot.approve_chat_join_request.assert_not_awaited()
     bot.decline_chat_join_request.assert_not_awaited()
     assert row.status is ChatAccessStatus.INVITED
 
 
-async def test_join_request_without_access_is_left_to_admins(service, db_session, club, bot) -> None:
+async def test_join_request_to_an_unknown_chat_is_ignored(service, db_session, club, bot) -> None:
     user = await make_user(db_session, vk_id=VK_ID)
-    await make_block(db_session, club)
-    row = await make_chat_access(db_session, club, user, status=ChatAccessStatus.INVITED)
+    await make_membership(db_session, await make_block(db_session, club), vk_id=VK_ID)
 
-    await service.handle_join_request(chat_id=CHAT_ID, tg_id=user.tg_id, invite_link=row.invite_link)
+    await service.handle_join_request(chat_id=CHAT_ID - 1, tg_id=user.tg_id)
 
     bot.approve_chat_join_request.assert_not_awaited()
-    bot.decline_chat_join_request.assert_not_awaited()
 
 
 async def test_failed_approval_keeps_the_student_invited(service, db_session, club, bot) -> None:
@@ -180,7 +192,7 @@ async def test_failed_approval_keeps_the_student_invited(service, db_session, cl
         message="Bad Request: HIDE_REQUESTER_MISSING",
     )
 
-    await service.handle_join_request(chat_id=CHAT_ID, tg_id=user.tg_id, invite_link=row.invite_link)
+    await service.handle_join_request(chat_id=CHAT_ID, tg_id=user.tg_id)
 
     assert row.status is ChatAccessStatus.INVITED
 
@@ -369,24 +381,47 @@ async def test_failed_unban_still_counts_as_kicked(service, db_session, club, bo
     assert club.chat_error is None
 
 
-async def test_failed_invite_link_is_alerted_and_others_still_invited(service, db_session, club, bot) -> None:
+async def test_reconcile_makes_one_link_for_all_invited(service, db_session, club, bot) -> None:
+    block = await make_block(db_session, club)
+    for vk_id in (1, 2, 3):
+        await make_membership(db_session, block, vk_id=vk_id)
+        await make_user(db_session, vk_id=vk_id)
+
+    await service.reconcile_club(club.id)
+
+    bot.create_chat_invite_link.assert_awaited_once()
+    assert set((await _statuses(db_session)).values()) == {ChatAccessStatus.INVITED}
+
+
+async def test_refused_join_link_is_alerted_and_nobody_is_invited(service, db_session, club, bot) -> None:
+    await make_membership(db_session, await make_block(db_session, club), vk_id=1)
+    await make_user(db_session, vk_id=1)
+    bot.create_chat_invite_link.side_effect = TelegramBadRequest(
+        method=CreateChatInviteLink(chat_id=CHAT_ID),
+        message="not enough rights",
+    )
+
+    await service.reconcile_club(club.id)
+
+    assert await _statuses(db_session) == {}
+    assert club.chat_error == "Telegram server says - not enough rights"
+
+
+async def test_failed_invite_is_alerted_and_others_still_invited(service, db_session, club, bot) -> None:
     block = await make_block(db_session, club)
     for vk_id in (1, 2):
         await make_membership(db_session, block, vk_id=vk_id)
     first = await make_user(db_session, vk_id=1)
     second = await make_user(db_session, vk_id=2)
-    create = bot.create_chat_invite_link.side_effect
-
-    async def create_link(**kwargs: object):
-        if kwargs["name"] == f"user {first.id}":
-            raise TelegramBadRequest(method=CreateChatInviteLink(chat_id=CHAT_ID), message="not enough rights")
-        return await create(**kwargs)
-
-    bot.create_chat_invite_link.side_effect = create_link
+    await make_chat_access(db_session, club, first, status=ChatAccessStatus.KICKED)
+    bot.unban_chat_member.side_effect = TelegramBadRequest(
+        method=UnbanChatMember(chat_id=CHAT_ID, user_id=first.tg_id),
+        message="not enough rights",
+    )
 
     await service.reconcile_club(club.id)
 
-    assert await _statuses(db_session) == {second.id: ChatAccessStatus.INVITED}
+    assert await _statuses(db_session) == {first.id: ChatAccessStatus.KICKED, second.id: ChatAccessStatus.INVITED}
     assert club.chat_error == "Telegram server says - not enough rights"
 
 

@@ -37,7 +37,10 @@ class ClubService:
         if patch.title.is_set and patch.title.value != club.title:
             await self._ensure_title_free(patch.title.apply(club.title))
         club.title = patch.title.apply(club.title)
-        club.chat_id = patch.chat_id.apply(club.chat_id)
+        chat_id = patch.chat_id.apply(club.chat_id)
+        if chat_id != club.chat_id:
+            club.chat_invite_link = None
+        club.chat_id = chat_id
         club.reminders_topic_id = patch.reminders_topic_id.apply(club.reminders_topic_id)
         club.spreadsheet_id = patch.spreadsheet_id.apply(club.spreadsheet_id)
         club.sheet_name = patch.sheet_name.apply(club.sheet_name)

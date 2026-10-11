@@ -21,14 +21,6 @@ class ChatAccessRepository(BaseRepository[ChatAccess]):
         )
         return await self._session.scalar(statement)
 
-    async def get_by_invite_link_with_user(self, invite_link: str) -> ChatAccess | None:
-        statement = (
-            select(ChatAccess)
-            .options(joinedload(ChatAccess.user))
-            .where(ChatAccess.invite_link == invite_link)
-        )
-        return await self._session.scalar(statement)
-
     async def get_with_user(self, access_id: int) -> ChatAccess | None:
         statement = (
             select(ChatAccess)

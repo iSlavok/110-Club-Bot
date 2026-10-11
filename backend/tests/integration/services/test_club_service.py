@@ -47,6 +47,15 @@ async def test_update_turns_on_hiding_service_messages(service, db_session) -> N
     assert updated.hide_service_messages
 
 
+@pytest.mark.parametrize(("chat_id", "link"), [(-1, "https://t.me/+club"), (-2, None)])
+async def test_join_link_is_dropped_only_when_the_chat_changes(service, db_session, chat_id, link) -> None:
+    club = await make_club(db_session, chat_id=-1, chat_invite_link="https://t.me/+club")
+
+    updated = await service.update(club.id, ClubUpdate.model_validate({"chat_id": chat_id}))
+
+    assert updated.chat_invite_link == link
+
+
 async def test_unknown_club(service) -> None:
     with pytest.raises(ClubNotFoundError):
         await service.get(999_999)

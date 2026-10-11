@@ -9,7 +9,7 @@ CHAT_ID = -100500
 VK_ID = 4242
 
 
-async def test_join_request_by_personal_link_is_approved(request_container, db_session, bot) -> None:
+async def test_join_request_of_a_student_with_access_is_approved(request_container, db_session, bot) -> None:
     club = await make_club(db_session, chat_id=CHAT_ID)
     user = await make_user(db_session, vk_id=VK_ID)
     await make_membership(db_session, await make_block(db_session, club), vk_id=VK_ID)
@@ -17,7 +17,6 @@ async def test_join_request_by_personal_link_is_approved(request_container, db_s
     request = MagicMock()
     request.chat.id = CHAT_ID
     request.from_user.id = user.tg_id
-    request.invite_link.invite_link = row.invite_link
 
     await join_request(request, await request_container.get(ChatAccessService))
 

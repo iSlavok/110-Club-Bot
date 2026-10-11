@@ -37,6 +37,7 @@ def _club(title: str) -> ClubDTO:
         hide_service_messages=False,
         chat_kicks_on_hold=False,
         chat_error=None,
+        chat_invite_link=None,
         created_at=NOW,
         updated_at=NOW,
     )
