@@ -44,6 +44,14 @@ class TokenBucketLimiter:
             # Taken even if rounding left 0.999...: the debt is repaid by the next waiter, a re-check could spin.
             self._tokens -= 1.0
 
+    # For incoming updates: an excess is dropped, not queued, so a flood holds no resources while it waits.
+    def try_acquire(self) -> bool:
+        self._refill()
+        if self._tokens < 1.0:
+            return False
+        self._tokens -= 1.0
+        return True
+
     def _refill(self) -> None:
         self._tokens = self.tokens
         self._updated = self._timer.monotonic()

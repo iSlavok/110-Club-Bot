@@ -68,3 +68,16 @@ async def test_concurrent_acquires_share_the_bucket() -> None:
     await asyncio.gather(*(limiter.acquire() for _ in range(7)))
 
     assert timer.now == pytest.approx(2.0)
+
+
+def test_try_acquire_refuses_without_waiting_once_burst_is_spent() -> None:
+    timer = FakeTimer()
+    limiter = TokenBucketLimiter(ONE_PER_SECOND_BURST_FIVE, timer)
+
+    taken = [limiter.try_acquire() for _ in range(6)]
+    timer.now += 1.0
+
+    assert taken == [True] * 5 + [False]
+    assert limiter.try_acquire()
+    assert not limiter.try_acquire()
+    assert timer.sleeps == []

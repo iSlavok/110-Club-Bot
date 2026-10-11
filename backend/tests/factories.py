@@ -209,13 +209,11 @@ async def make_reminder(session: AsyncSession, lesson: Lesson, **overrides: Any)
 
 
 async def make_chat_access(session: AsyncSession, club: Club, user: User, **overrides: Any) -> ChatAccess:
-    n = next(_ids)
     access = ChatAccess(
         **{
             "club_id": club.id,
             "user_id": user.id,
             "chat_id": club.chat_id,
-            "invite_link": f"https://t.me/+invite{n}",
             "status": ChatAccessStatus.JOINED,
             "invited_at": datetime(2026, 9, 1, tzinfo=UTC),
             **overrides,

@@ -17,10 +17,10 @@ REINVITED_STATUSES = (ChatAccessStatus.LEFT, ChatAccessStatus.KICKED)
 OUT_OF_CHAT_STATUSES = (ChatMemberStatus.LEFT, ChatMemberStatus.KICKED)
 CHAT_ADMIN_STATUSES = (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR)
 ERROR_MAX_LEN = 1000
+JOIN_LINK_NAME = "club bot"
 
 
-# The bot lets in only the owner of a personal join link who has access, and never declines a request:
-# admins approve everyone else by hand.
+# The bot lets in only students with access, and never declines a request: admins approve everyone else by hand.
 class ChatAccessService:
     def __init__(
         self,
@@ -76,13 +76,7 @@ class ChatAccessService:
             block_id=filled.id,
         )
 
-        errors: list[str] = []
-        for user_id in invite_ids:
-            try:
-                await self._invite(club, chat_id, filled, user_id)
-            except TelegramAPIError as error:
-                logger.warning("Cannot invite user {} to the chat of club {}: {}", user_id, club.id, error)
-                errors.append(str(error))
+        errors = await self._invite_all(club, chat_id, filled, invite_ids)
         kicked: list[KickedMember] = []
         for access_id in kick_ids:
             try:
@@ -141,31 +135,33 @@ class ChatAccessService:
             )
         return statuses
 
-    async def handle_join_request(self, *, chat_id: int, tg_id: int, invite_link: str | None) -> None:
-        if invite_link is None:
+    # The link does not matter, the student who asked does: a forwarded link lets nobody else in.
+    async def handle_join_request(self, *, chat_id: int, tg_id: int) -> None:
+        club = await self._club_repository.get_active_by_chat_id(chat_id)
+        if club is None:
             return
-        access = await self._chat_access_repository.get_by_invite_link_with_user(invite_link)
-        if access is None or access.chat_id != chat_id:
+        user = await self._user_repository.get_by_tg_id(tg_id)
+        if user is None or user.vk_id is None:
+            logger.info("Join request of {} to club {} without a linked VK, left to admins", tg_id, club.id)
             return
-        if access.user.tg_id != tg_id:
-            logger.info("Join request of {} came through the link of user {}, left to admins", tg_id, access.user_id)
-            return
-        club = await self._club_repository.get_by_id(access.club_id)
-        vk_id = access.user.vk_id
-        if club is None or not club.is_active or club.chat_id != chat_id or vk_id is None:
-            return
-        if await self._access_block(club, vk_id) is None:
-            logger.info("Join request of user {} to club {} without access, left to admins", access.user_id, club.id)
+        if await self._access_block(club, user.vk_id) is None:
+            logger.info("Join request of user {} to club {} without access, left to admins", user.id, club.id)
             return
         try:
             await self._bot.approve_chat_join_request(chat_id=chat_id, user_id=tg_id)
         except TelegramAPIError as error:
-            logger.warning("Cannot approve the join request of user {} to club {}: {}", access.user_id, club.id, error)
+            logger.warning("Cannot approve the join request of user {} to club {}: {}", user.id, club.id, error)
             return
+        now = self._clock.now()
+        access = await self._chat_access_repository.get_for_user(club_id=club.id, user_id=user.id)
+        if access is None:
+            access = ChatAccess(club_id=club.id, user_id=user.id, invited_at=now)
+            self._chat_access_repository.add(access)
+        access.chat_id = chat_id
         access.status = ChatAccessStatus.JOINED
-        access.joined_at = self._clock.now()
+        access.joined_at = now
         await self._chat_access_repository.flush()
-        logger.info("User {} joined the chat of club {}", access.user_id, club.id)
+        logger.info("User {} joined the chat of club {}", user.id, club.id)
 
     # Join and leave notices clutter the chat; Telegram has no setting to turn them off.
     async def hide_service_message(self, *, chat_id: int, message_id: int) -> None:
@@ -184,11 +180,28 @@ class ChatAccessService:
             invite_link=invite_link,
         )
 
-    async def _invite(self, club: Club, chat_id: int, block: Block, user_id: int) -> None:
+    async def _invite_all(self, club: Club, chat_id: int, block: Block, user_ids: list[int]) -> list[str]:
+        if not user_ids:
+            return []
+        try:
+            invite_link = await self._chat_link(club, chat_id)
+        except TelegramAPIError as error:
+            logger.warning("Cannot make the join link of club {}: {}", club.id, error)
+            return [str(error)]
+        errors: list[str] = []
+        for user_id in user_ids:
+            try:
+                await self._invite(club, chat_id, block, user_id, invite_link)
+            except TelegramAPIError as error:
+                logger.warning("Cannot invite user {} to the chat of club {}: {}", user_id, club.id, error)
+                errors.append(str(error))
+        return errors
+
+    async def _invite(self, club: Club, chat_id: int, block: Block, user_id: int, invite_link: str) -> None:
         user = await self._user_repository.get_by_id(user_id)
         if user is None:
             return
-        invite_link = await self._invite_link(club.id, chat_id, user)
+        await self._mark_invited(club.id, chat_id, user)
         item = self._club_access(club, block, invite_link)
         await self._message(user.tg_id, texts.chat_access.invite(item), chat_invite_keyboard([item]))
         logger.info("User {} invited to the chat of club {}", user.id, club.id)
@@ -281,13 +294,22 @@ class ChatAccessService:
         if club.chat_id is None:
             return None
         try:
-            return await self._invite_link(club.id, club.chat_id, user)
+            invite_link = await self._chat_link(club, club.chat_id)
+            await self._mark_invited(club.id, club.chat_id, user)
         except TelegramAPIError:
-            logger.exception("Cannot make a join link to club {} for user {}", club.id, user.id)
+            logger.exception("Cannot give the join link of club {} to user {}", club.id, user.id)
             return None
+        return invite_link
 
-    # One link per student and chat, reused: a kicked student returns through the same link.
-    async def _invite_link(self, club_id: int, chat_id: int, user: User) -> str:
+    async def _chat_link(self, club: Club, chat_id: int) -> str:
+        if club.chat_invite_link is not None:
+            return club.chat_invite_link
+        link = await self._bot.create_chat_invite_link(chat_id=chat_id, name=JOIN_LINK_NAME, creates_join_request=True)
+        club.chat_invite_link = link.invite_link
+        await self._club_repository.flush()
+        return link.invite_link
+
+    async def _mark_invited(self, club_id: int, chat_id: int, user: User) -> None:
         access = await self._chat_access_repository.get_for_user(club_id=club_id, user_id=user.id)
         now = self._clock.now()
         if access is not None and access.chat_id == chat_id:
@@ -297,24 +319,16 @@ class ChatAccessService:
                 access.status = ChatAccessStatus.INVITED
                 access.invited_at = now
                 await self._chat_access_repository.flush()
-            return access.invite_link
-
-        link = await self._bot.create_chat_invite_link(
-            chat_id=chat_id,
-            name=f"user {user.id}",
-            creates_join_request=True,
-        )
+            return
         if access is None:
             access = ChatAccess(club_id=club_id, user_id=user.id)
             self._chat_access_repository.add(access)
         access.chat_id = chat_id
-        access.invite_link = link.invite_link
         access.status = ChatAccessStatus.INVITED
         access.invited_at = now
         access.joined_at = None
         access.kicked_at = None
         await self._chat_access_repository.flush()
-        return access.invite_link
 
 
 def _in_chat(member: ResultChatMemberUnion) -> bool:
