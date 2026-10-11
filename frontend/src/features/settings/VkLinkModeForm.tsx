@@ -16,14 +16,14 @@ const MODES: ModeOption[] = [
     value: 'oauth',
     label: 'Вход через VK ID',
     description:
-      'Ученик нажимает кнопку в боте и входит в VK — так подтверждается, что страница его. Основной режим.',
+      'Ученик нажимает кнопку в боте и входит в ВК — так подтверждается, что страница его. Основной режим.',
     missing: 'Не настроено на сервере: нужны VK_CLIENT_ID и PUBLIC_URL.',
   },
   {
     value: 'link',
     label: 'Ссылка на страницу',
     description:
-      'Ученик присылает ссылку на свою страницу VK и подтверждает имя. Владение страницей не проверяется.',
+      'Ученик присылает ссылку на свою страницу ВК и подтверждает имя. Владение страницей не проверяется.',
     missing: 'Не настроено на сервере: нужен VK_SERVICE_TOKEN.',
   },
 ];
@@ -55,11 +55,11 @@ export function VkLinkModeForm({ settings, canEdit }: VkLinkModeFormProps) {
   });
 
   return (
-    <form onSubmit={submit} aria-label="Привязка VK">
+    <form onSubmit={submit} aria-label="Привязка ВК">
       <Stack>
         <Radio.Group
-          label="Привязка VK в боте"
-          description="Привязка окончательная: сменить или отвязать VK ученик не может ни в каком режиме."
+          label="Привязка ВК в боте"
+          description="Привязка окончательная: сменить или отвязать ВК ученик не может ни в каком режиме."
           {...form.getInputProps('vk_link_mode')}
         >
           <Stack mt="sm" gap="sm">

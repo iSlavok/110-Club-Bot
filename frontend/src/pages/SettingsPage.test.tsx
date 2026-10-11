@@ -35,7 +35,7 @@ describe('SettingsPage', () => {
     );
     renderWithProviders(<SettingsPage />);
 
-    const form = await screen.findByRole('form', { name: 'Привязка VK' });
+    const form = await screen.findByRole('form', { name: 'Привязка ВК' });
     const save = within(form).getByRole('button', { name: 'Сохранить' });
     expect(save).toBeDisabled();
     await userEvent.click(screen.getByRole('radio', { name: 'Ссылка на страницу' }));
