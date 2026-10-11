@@ -1,0 +1,70 @@
+name: Deploy
+
+# Runs after a release, or by hand with any published version: a rollback is a deploy of an older one.
+on:
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Image version to deploy, without the v (e.g. 1.0.0)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - name: Version is X.Y.Z
+        run: '[[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || { echo "Bad version $VERSION"; exit 1; }'
+
+      # The compose file of the deployed version, so a rollback also rolls back the topology.
+      - uses: actions/checkout@v7
+        with:
+          ref: v${{ inputs.version }}
+
+      - uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ vars.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          fingerprint: ${{ vars.SSH_FINGERPRINT }}
+          source: docker-compose.yml
+          target: ${{ vars.DEPLOY_PATH }}
+
+      # IMAGE_TAG goes to .env only after the stack is healthy, so a manual `docker compose up` keeps the last good one.
+      - uses: appleboy/ssh-action@v1.2.5
+        env:
+          IMAGE_TAG: ${{ inputs.version }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ vars.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          fingerprint: ${{ vars.SSH_FINGERPRINT }}
+          envs: IMAGE_TAG,DEPLOY_PATH
+          command_timeout: 15m
+          script: |
+            set -eu
+            cd "$DEPLOY_PATH"
+            export IMAGE_TAG
+            docker compose pull --quiet
+            docker compose up -d --wait --wait-timeout 300 --remove-orphans
+            sed -i '/^IMAGE_TAG=/d' .env
+            echo "IMAGE_TAG=$IMAGE_TAG" >> .env
+            docker image prune -f
+            docker compose ps

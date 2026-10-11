@@ -5,6 +5,8 @@ SHELL := /bin/bash
 
 COMPOSE_DEV := docker compose -f docker-compose.yml -f docker-compose.dev.yml
 COMPOSE_PROD := docker compose -p club110-prod
+# The names docker-compose.yml runs and the release workflow publishes.
+IMAGE_PREFIX := ghcr.io/islavok/110-club-bot
 UV := cd backend && DB_HOST=localhost REDIS_HOST=localhost uv run --env-file ../.env
 
 help:
@@ -21,7 +23,7 @@ help:
 	@echo "gen         regenerate the frontend API client from the backend OpenAPI schema"
 	@echo "migration   autogenerate alembic revision: make migration m=\"add lessons\""
 	@echo "migrate     alembic upgrade head on the dev database"
-	@echo "build       build docker images club110-backend:latest and club110-web:latest"
+	@echo "build       build docker images $(IMAGE_PREFIX)-backend:latest and -web:latest"
 
 infra:
 	$(COMPOSE_PROD) down
@@ -78,7 +80,7 @@ migrate:
 build: build-backend build-web
 
 build-backend:
-	docker build -f docker/backend.Dockerfile -t club110-backend:latest .
+	docker build -f docker/backend.Dockerfile -t $(IMAGE_PREFIX)-backend:latest .
 
 build-web:
-	docker build -f docker/web.Dockerfile -t club110-web:latest .
+	docker build -f docker/web.Dockerfile -t $(IMAGE_PREFIX)-web:latest .
