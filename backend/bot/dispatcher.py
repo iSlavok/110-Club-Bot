@@ -6,15 +6,19 @@ from dishka import AsyncContainer
 from dishka.integrations.aiogram import setup_dishka
 from redis.asyncio import Redis
 
+from app.telegram.rate_limit import SystemTimer
 from bot.handlers import create_router
-from bot.middlewares import ErrorsMiddleware
+from bot.middlewares import ErrorsMiddleware, ThrottlingMiddleware
 from bot.startup import sync_command_menus
 
 
 def create_dispatcher(container: AsyncContainer, redis: Redis) -> Dispatcher:
     dp = Dispatcher(storage=RedisStorage(redis))
+    throttling = ThrottlingMiddleware(SystemTimer())
     errors = ErrorsMiddleware()
+    dp.message.outer_middleware(throttling)
     dp.message.outer_middleware(errors)
+    dp.callback_query.outer_middleware(throttling)
     dp.callback_query.outer_middleware(errors)
     dp.chat_join_request.outer_middleware(errors)
     dp.include_router(create_router())
