@@ -32,7 +32,7 @@ export function BlockFormModal({ opened, onClose, clubId, block }: BlockFormModa
       ends_at: block ? toPickerValue(block.ends_at) : null,
     },
     validate: {
-      title: required('Укажите название'),
+      title: required('Укажите номер блока'),
       sheet_column_title: required('Укажите заголовок столбца'),
       starts_at: required('Укажите начало'),
       ends_at: (value, values) => {
@@ -79,7 +79,7 @@ export function BlockFormModal({ opened, onClose, clubId, block }: BlockFormModa
     <Modal opened={opened} onClose={onClose} title={block ? 'Блок' : 'Новый блок'} size="lg">
       <form onSubmit={submit}>
         <Stack>
-          <TextInput label="Название" withAsterisk {...form.getInputProps('title')} />
+          <TextInput label="Номер блока" withAsterisk {...form.getInputProps('title')} />
           <TextInput
             label="Заголовок столбца в таблице"
             withAsterisk

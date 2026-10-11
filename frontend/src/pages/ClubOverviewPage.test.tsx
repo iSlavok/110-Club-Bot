@@ -22,7 +22,7 @@ describe('ClubOverviewPage', () => {
         block: {
           id: 3,
           club_id: 7,
-          title: 'Блок 5',
+          title: '5',
           sheet_column_title: 'Блок 5',
           starts_at: '2026-09-01T00:00:00Z',
           ends_at: '2099-11-01T00:00:00Z',
@@ -33,7 +33,7 @@ describe('ClubOverviewPage', () => {
       last_sync: null,
     });
 
-    expect(await screen.findByText('Блок 5')).toBeInTheDocument();
+    expect(await screen.findByText('5')).toBeInTheDocument();
     expect(screen.getByText('120')).toBeInTheDocument();
     expect(screen.getByText('95')).toBeInTheDocument();
   });
