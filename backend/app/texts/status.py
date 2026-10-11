@@ -27,7 +27,7 @@ def status_report(report: StatusReport) -> str:
 
 def _club_status(status: ClubStatus) -> str:
     lines = [
-        f"<b>{escape(status.club.title)}</b>",
+        f"<b>Клуб {escape(status.club.title)}</b>",
         *_current_block(status.current_block),
         *_sync(status.sync),
         *_reminders(status.reminders),
@@ -41,7 +41,7 @@ def _current_block(stats: CurrentBlockStats | None) -> list[str]:
         return ["Текущего блока нет."]
     block = stats.block
     return [
-        f"Блок: {escape(block.title)} ({_day(block.starts_at)}–{_day(block.ends_at)})",
+        f"Блок {escape(block.title)} ({_day(block.starts_at)}–{_day(block.ends_at)})",
         f"Участников: {stats.members}, из них в боте: {stats.members_with_tg}",
     ]
 

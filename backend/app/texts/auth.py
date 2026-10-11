@@ -14,7 +14,4 @@ def admin_panel_link(url: str | None) -> str:
 
 def login_code(issued: IssuedLoginCode) -> str:
     expires_at = issued.expires_at.astimezone(BUSINESS_TZ).strftime("%H:%M")
-    return (
-        f"Код для входа в админку: <code>{issued.code}</code>\n"
-        f"Действует до {expires_at} по Москве. Никому его не сообщай."
-    )
+    return f"Код для входа в админку: <code>{issued.code}</code>\nДействует до {expires_at}. Никому его не сообщай."

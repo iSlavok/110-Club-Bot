@@ -161,7 +161,7 @@ class VkLinkService:
                 "scope": VK_ID_SCOPE,
             },
         )
-        return VkLinkByOAuth(authorize_url=f"{VK_ID_AUTHORIZE_URL}?{query}", expires_at=expires_at)
+        return VkLinkByOAuth(authorize_url=f"{VK_ID_AUTHORIZE_URL}?{query}")
 
     async def _finish_oauth(self, request: VkAuthRequest, *, state: str, code: str, device_id: str) -> None:
         user = request.user

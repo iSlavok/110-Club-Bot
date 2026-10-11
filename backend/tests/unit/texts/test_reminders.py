@@ -112,7 +112,7 @@ def test_curator_call_starting() -> None:
 def test_homework_deadline() -> None:
     text = _render(ReminderKind.HOMEWORK_DEADLINE, homework_deadline_at=datetime(2026, 10, 3, 20, 59, tzinfo=UTC))
 
-    assert text == "<b>Дедлайн ДЗ к уроку «Кислоты»</b>\nСдать до: послезавтра в 23:59"
+    assert text == "<b>ДЗ к уроку «Кислоты»</b>\nДедлайн — послезавтра в 23:59"
 
 
 def test_lesson_rescheduled() -> None:
@@ -134,7 +134,7 @@ def test_homework_deadline_changed() -> None:
         homework_deadline_at=datetime(2026, 10, 2, 20, 0, tzinfo=UTC),
     )
 
-    assert text == "<b>Дедлайн ДЗ к созвону «Кислоты» изменён</b>\nНовый дедлайн: завтра в 23:00"
+    assert text == "<b>Дедлайн ДЗ к созвону «Кислоты» изменён</b>\nНовый дедлайн — завтра в 23:00"
 
 
 def test_homework_removed() -> None:

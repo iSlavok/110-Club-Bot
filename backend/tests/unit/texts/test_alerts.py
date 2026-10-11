@@ -21,8 +21,8 @@ NOW = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
 def _alert(*vk_ids: int, **overrides: object) -> RemovalRequestAlert:
     candidates = [RemovalCandidate(vk_id=vk_id, full_name=None, tg_username=None) for vk_id in vk_ids]
     fields = {
-        "club_title": "Клуб 110",
-        "block_title": "Блок 5",
+        "club_title": "110",
+        "block_title": "5",
         "status": RemovalRequestStatus.PENDING,
         "created_at": DETECTED_AT,
         "candidates": candidates,
@@ -34,7 +34,7 @@ def _alert(*vk_ids: int, **overrides: object) -> RemovalRequestAlert:
 def test_pending_request_asks_and_lists_vk_links() -> None:
     text = alerts.removal_request(_alert(501, 502))
 
-    assert text.splitlines()[0] == "<b>Клуб 110 · Блок 5</b>"
+    assert text.splitlines()[0] == "<b>Клуб 110, блок 5</b>"
     assert "Пропали из таблицы 01.10 12:00: 2 человека. Удалить из блока?" in text
     assert '• <a href="https://vk.com/id501">id501</a>' in text
 
@@ -101,16 +101,16 @@ def test_people_count_is_declined(count: int, expected: str) -> None:
         ),
         (
             SheetIssue(kind=SheetIssueKind.INVALID_VALUE, column="Блок 5", row=4, value="<b>"),
-            "«Блок 5», строка 4: «&lt;b&gt;» — не VK id, пропущено",
+            "«Блок 5», строка 4: «&lt;b&gt;» — не VK ID, пропущено",
         ),
         (
             SheetIssue(kind=SheetIssueKind.DUPLICATE, column="Блок 5", row=7, value="501"),
-            "«Блок 5», строка 7: VK id 501 повторяется",
+            "«Блок 5», строка 7: VK ID 501 повторяется",
         ),
     ],
 )
 def test_sheet_issues_are_described(issue: SheetIssue, expected: str) -> None:
-    text = alerts.sheet_issues_appeared("Клуб 110", [issue])
+    text = alerts.sheet_issues_appeared("110", [issue])
 
     assert text == f"⚠️ <b>Клуб 110</b>: новые проблемы в таблице.\n• {expected}"
 
@@ -118,13 +118,13 @@ def test_sheet_issues_are_described(issue: SheetIssue, expected: str) -> None:
 def test_many_sheet_issues_are_cut() -> None:
     issues = [SheetIssue(kind=SheetIssueKind.MISSING_COLUMN, column=f"Блок {n}") for n in range(20)]
 
-    text = alerts.sheet_issues_appeared("Клуб 110", issues)
+    text = alerts.sheet_issues_appeared("110", issues)
 
     assert text.endswith("и ещё 5")
 
 
 def test_sync_failure_shows_the_escaped_error() -> None:
-    text = alerts.sync_failed("Клуб <110>", "error <403>")
+    text = alerts.sync_failed("<110>", "error <403>")
 
     assert text.startswith("⚠️ <b>Клуб &lt;110&gt;</b>: синк таблицы не работает")
     assert "Ошибка: error &lt;403&gt;" in text
@@ -163,7 +163,7 @@ def test_reminder_failed_alert() -> None:
     )
 
     assert alerts.reminder_failed("Химия & био", reminder) == (
-        "⚠️ <b>Химия &amp; био</b>: напоминание не ушло в чат.\n"
+        "⚠️ <b>Клуб Химия &amp; био</b>: напоминание не ушло в чат.\n"
         "«Кислоты &lt;1&gt;» — дедлайн ДЗ, должно было уйти 01.10 12:00.\n"
         "Ошибка: Bad Request: chat not found"
     )
@@ -172,7 +172,7 @@ def test_reminder_failed_alert() -> None:
 def test_chat_kick_lists_people_and_shortens_long_lists() -> None:
     kicked = [KickedMember(vk_id=500 + n, full_name=f"Ученик {n}", tg_username=None) for n in range(17)]
 
-    lines = alerts.chat_kicked("Клуб 110", kicked).splitlines()
+    lines = alerts.chat_kicked("110", kicked).splitlines()
 
     assert lines[0] == "<b>Клуб 110</b>: бот убрал из чата 17 человек — их нет в текущем блоке."
     assert lines[1] == '• <a href="https://vk.com/id500">id500</a> — Ученик 0'
@@ -180,5 +180,5 @@ def test_chat_kick_lists_people_and_shortens_long_lists() -> None:
 
 
 def test_held_kicks_name_the_unfilled_block_or_the_missing_one() -> None:
-    assert "в блоке Блок 6 нет участников" in alerts.chat_kicks_on_hold("Клуб 110", "Блок 6", 3)
-    assert "у клуба нет текущего и следующего блока" in alerts.chat_kicks_on_hold("Клуб 110", None, 3)
+    assert "в блоке 6 нет участников" in alerts.chat_kicks_on_hold("110", "6", 3)
+    assert "у клуба нет текущего и следующего блока" in alerts.chat_kicks_on_hold("110", None, 3)

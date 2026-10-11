@@ -181,9 +181,6 @@ class ChatAccessService:
         return ClubAccess(
             club_title=club.title,
             block_title=block.title,
-            block_starts_at=block.starts_at,
-            block_ends_at=block.ends_at,
-            is_upcoming=block.starts_at > self._clock.now(),
             invite_link=invite_link,
         )
 

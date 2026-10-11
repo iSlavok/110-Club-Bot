@@ -22,7 +22,7 @@ def schedule(schedules: list[ClubSchedule]) -> str:
 
 
 def _club(club: ClubSchedule) -> str:
-    lines = [f"<b>{escape(club.club_title)}</b>, {escape(club.block_title)}"]
+    lines = [f"<b>Клуб {escape(club.club_title)}, блок {escape(club.block_title)}</b>"]
     if not club.items:
         lines.append(EMPTY)
     shown = club.items[:MAX_ITEMS]

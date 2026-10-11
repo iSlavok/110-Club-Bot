@@ -32,8 +32,8 @@ async def service(request_container) -> MembershipRemovalService:
 
 @pytest.fixture
 async def block(db_session) -> Block:
-    club = await make_club(db_session, title="Клуб 110")
-    return await make_block(db_session, club, title="Блок 5")
+    club = await make_club(db_session, title="110")
+    return await make_block(db_session, club, title="5")
 
 
 @pytest.fixture
@@ -76,7 +76,7 @@ async def test_members_gone_from_sheet_are_asked_about(service, db_session, bloc
     assert await _items(db_session, request) == {501, 502}
     chat_id, text = bot.send_message.await_args.args
     assert chat_id == ALERTS_CHAT_ID
-    assert "Клуб 110 · Блок 5" in text
+    assert "Клуб 110, блок 5" in text
     assert "2 человека" in text
     assert "Ученик Тестов (@pupil)" in text
     buttons = bot.send_message.await_args.kwargs["reply_markup"].inline_keyboard[0]

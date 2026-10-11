@@ -109,7 +109,7 @@ async def test_unknown_profile_keeps_waiting_for_a_link(service, state, db_sessi
     with pytest.raises(VkProfileNotFoundError) as error:
         await receive_profile_link(_message("vk.com/nobody"), state, service)
 
-    assert texts.errors.for_error(error.value).startswith("Не нашёл такую личную страницу VK.")
+    assert texts.errors.for_error(error.value) == "Не нашёл такую страницу ВК."
     assert await state.get_state() == VkLinkStates.waiting_for_profile.state
 
 
@@ -171,5 +171,5 @@ async def test_vk_command_offers_vk_id_button(service, state, db_session) -> Non
     assert button.text == texts.vk_link.OAUTH_BUTTON
     assert button.url is not None
     assert button.url.startswith("https://id.vk.ru/authorize?")
-    assert "до 12:10 по Москве" in message.answer.await_args.args[0]
+    assert message.answer.await_args.args[0] == texts.vk_link.OAUTH_OFFER
     assert await state.get_state() is None

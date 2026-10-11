@@ -65,7 +65,7 @@ def _lesson_starting(lesson: LessonDTO, _now: datetime) -> str:
 
 
 def _homework_deadline(lesson: LessonDTO, now: datetime) -> str:
-    return _join(f"<b>Дедлайн {_homework(lesson)}</b>", f"Сдать до: {_when(_deadline(lesson), now)}")
+    return _join(f"<b>{_homework(lesson)}</b>", f"Дедлайн — {_when(_deadline(lesson), now)}")
 
 
 def _lesson_rescheduled(lesson: LessonDTO, now: datetime) -> str:
@@ -81,7 +81,7 @@ def _lesson_cancelled(lesson: LessonDTO, now: datetime) -> str:
 
 
 def _homework_deadline_changed(lesson: LessonDTO, now: datetime) -> str:
-    return _join(f"<b>Дедлайн {_homework(lesson)} изменён</b>", f"Новый дедлайн: {_when(_deadline(lesson), now)}")
+    return _join(f"<b>Дедлайн {_homework(lesson)} изменён</b>", f"Новый дедлайн — {_when(_deadline(lesson), now)}")
 
 
 def _homework_removed(lesson: LessonDTO, _now: datetime) -> str:

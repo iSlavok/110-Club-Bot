@@ -42,14 +42,13 @@ async def _access_row(db_session, user) -> ChatAccess | None:
 
 async def test_access_comes_with_a_personal_join_link(service, db_session, club, bot) -> None:
     user = await make_user(db_session, vk_id=VK_ID)
-    block = await make_block(db_session, club, title="Блок 5")
+    block = await make_block(db_session, club, title="5")
     await make_membership(db_session, block, vk_id=VK_ID)
 
     [access] = await service.access_for_user(user.id)
     again = await service.access_for_user(user.id)
 
-    assert access.block_title == "Блок 5"
-    assert not access.is_upcoming
+    assert access.block_title == "5"
     assert access.invite_link is not None
     assert access.invite_link.startswith(INVITE_LINK_PREFIX)
     assert again[0].invite_link == access.invite_link
@@ -72,8 +71,7 @@ async def test_between_blocks_access_comes_from_the_next_block(service, db_sessi
 
     [access] = await service.access_for_user(user.id)
 
-    assert access.is_upcoming
-    assert access.block_starts_at == upcoming.starts_at
+    assert access.block_title == upcoming.title
 
 
 async def test_next_block_gives_no_access_while_a_block_runs(service, db_session, club, bot) -> None:
@@ -233,7 +231,7 @@ async def test_reconcile_invites_new_members_and_kicks_those_out_of_the_block(se
 
 
 async def test_unfilled_access_block_holds_kicks_and_alerts_once(service, db_session, club, bot) -> None:
-    block = await make_block(db_session, club, title="Блок 6")
+    block = await make_block(db_session, club, title="6")
     access, _ = await _joined(db_session, club, 3)
     _in_chat(bot)
 
@@ -242,7 +240,7 @@ async def test_unfilled_access_block_holds_kicks_and_alerts_once(service, db_ses
 
     assert access.status is ChatAccessStatus.JOINED
     assert club.chat_kicks_on_hold
-    assert _alerts(bot) == [texts.alerts.chat_kicks_on_hold("Химия", "Блок 6", 1)]
+    assert _alerts(bot) == [texts.alerts.chat_kicks_on_hold("Химия", "6", 1)]
 
     await make_membership(db_session, block, vk_id=1)
     await service.reconcile_club(club.id)
@@ -273,15 +271,15 @@ async def test_empty_block_without_anyone_to_kick_is_not_alerted(service, db_ses
 
 async def test_invite_sends_the_join_button_once(service, db_session, club, bot) -> None:
     user = await make_user(db_session, vk_id=VK_ID)
-    await make_membership(db_session, await make_block(db_session, club, title="Блок 5"), vk_id=VK_ID)
+    await make_membership(db_session, await make_block(db_session, club, title="5"), vk_id=VK_ID)
 
     await service.reconcile_club(club.id)
     await service.reconcile_club(club.id)
 
     [message] = bot.send_message.await_args_list
     assert message.args[0] == user.tg_id
-    assert message.args[1].startswith("Ты в клубе Химия, блок Блок 5.")
-    assert message.kwargs["reply_markup"].inline_keyboard[0][0].text == "Вступить в чат: Химия"
+    assert message.args[1].startswith("Ты в клубе Химия, блок 5.")
+    assert message.kwargs["reply_markup"].inline_keyboard[0][0].text == "Вступить в чат клуба Химия"
 
 
 @pytest.fixture
@@ -419,15 +417,14 @@ async def test_failed_deletion_is_only_logged(service, db_session, bot) -> None:
 
 async def test_student_in_the_chat_gets_no_join_link(service, db_session, club, bot) -> None:
     user = await make_user(db_session, vk_id=VK_ID)
-    block = await make_block(db_session, club, title="Блок 5")
+    block = await make_block(db_session, club, title="5")
     await make_membership(db_session, block, vk_id=VK_ID)
     bot.get_chat_member.return_value = ChatMemberMember(user=_tg_user(user.tg_id))
 
     [status] = await service.student_clubs(user.id)
 
     assert status.in_chat is True
-    assert status.access.block_title == "Блок 5"
-    assert status.access.block_ends_at == block.ends_at
+    assert status.access.block_title == "5"
     assert status.access.invite_link is None
     bot.get_chat_member.assert_awaited_once_with(chat_id=CHAT_ID, user_id=user.tg_id)
     bot.create_chat_invite_link.assert_not_awaited()
@@ -465,7 +462,7 @@ async def test_club_without_chat_has_no_chat_state(service, db_session, bot) -> 
 async def test_student_listed_for_the_next_block_is_told_so(service, db_session, club) -> None:
     user = await make_user(db_session, vk_id=VK_ID)
     running = await make_block(db_session, club, starts_at=datetime(2026, 9, 1, tzinfo=UTC))
-    following = await make_block(db_session, club, title="Блок 6", starts_at=datetime(2026, 10, 31, tzinfo=UTC))
+    following = await make_block(db_session, club, title="6", starts_at=datetime(2026, 10, 31, tzinfo=UTC))
     await make_membership(db_session, running, vk_id=VK_ID)
     await make_membership(db_session, following, vk_id=VK_ID)
     other = await make_user(db_session, vk_id=VK_ID + 1)
@@ -474,7 +471,7 @@ async def test_student_listed_for_the_next_block_is_told_so(service, db_session,
     [status] = await service.student_clubs(user.id)
     [other_status] = await service.student_clubs(other.id)
 
-    assert status.next_block_title == "Блок 6"
+    assert status.next_block_title == "6"
     assert other_status.next_block_title is None
 
 
@@ -487,7 +484,6 @@ async def test_upcoming_access_block_has_no_next_block(service, db_session, club
 
     [status] = await service.student_clubs(user.id)
 
-    assert status.access.is_upcoming
     assert status.next_block_title is None
 
 
