@@ -91,11 +91,11 @@ def _report(
 
 
 def test_club_with_current_block() -> None:
-    current_block = CurrentBlockStats(block=_block("Блок 5"), members=120, members_with_tg=80)
+    current_block = CurrentBlockStats(block=_block("5"), members=120, members_with_tg=80)
     report = StatusReport(clubs=[_status("Химия", current_block)])
 
     assert texts.status.status_report(report) == (
-        "<b>Химия</b>\nБлок: Блок 5 (01.09–01.11)\nУчастников: 120, из них в боте: 80\n"
+        "<b>Клуб Химия</b>\nБлок 5 (01.09–01.11)\nУчастников: 120, из них в боте: 80\n"
         f"{NO_SYNC_LINES}\n{NO_REMINDERS_LINES}\n{NO_CHAT_LINES}"
     )
 
@@ -104,7 +104,8 @@ def test_club_without_current_block_and_escaping() -> None:
     report = StatusReport(clubs=[_status("Био & <химия>")])
 
     assert texts.status.status_report(report) == (
-        f"<b>Био &amp; &lt;химия&gt;</b>\nТекущего блока нет.\n{NO_SYNC_LINES}\n{NO_REMINDERS_LINES}\n{NO_CHAT_LINES}"
+        "<b>Клуб Био &amp; &lt;химия&gt;</b>\nТекущего блока нет.\n"
+        f"{NO_SYNC_LINES}\n{NO_REMINDERS_LINES}\n{NO_CHAT_LINES}"
     )
 
 
@@ -116,7 +117,7 @@ def test_successful_sync_with_sheet_problems_and_pending_removals() -> None:
     sync = ClubSyncStatus(last_sync=_sync(SheetSyncStatus.OK, issues=issues), pending_removal_requests=3)
 
     assert texts.status.status_report(_report(sync)) == (
-        "<b>Химия</b>\nТекущего блока нет.\n"
+        "<b>Клуб Химия</b>\nТекущего блока нет.\n"
         "Синк: 01.10 12:30, успешно\nПроблем в таблице: 2\nЗапросов на удаление ждут решения: 3\n"
         f"{NO_REMINDERS_LINES}\n{NO_CHAT_LINES}"
     )
@@ -127,7 +128,7 @@ def test_failed_sync_shows_escaped_error_instead_of_problems() -> None:
     sync = ClubSyncStatus(last_sync=last_sync, pending_removal_requests=0)
 
     assert texts.status.status_report(_report(sync)) == (
-        "<b>Химия</b>\nТекущего блока нет.\n"
+        "<b>Клуб Химия</b>\nТекущего блока нет.\n"
         "Синк: 01.10 12:30, ошибка: Sheet &lt;Лист1&gt; not found\nЗапросов на удаление ждут решения: 0\n"
         f"{NO_REMINDERS_LINES}\n{NO_CHAT_LINES}"
     )
@@ -142,7 +143,7 @@ def test_clubs_are_separated_by_blank_line() -> None:
     )
 
     club_text = f"Текущего блока нет.\n{NO_SYNC_LINES}\n{NO_REMINDERS_LINES}\n{NO_CHAT_LINES}"
-    assert texts.status.status_report(report) == f"<b>А</b>\n{club_text}\n\n<b>Б</b>\n{club_text}"
+    assert texts.status.status_report(report) == f"<b>Клуб А</b>\n{club_text}\n\n<b>Клуб Б</b>\n{club_text}"
 
 
 def test_no_active_clubs() -> None:
@@ -203,7 +204,7 @@ def test_upcoming_and_failed_reminders() -> None:
     )
 
     assert texts.status.status_report(_report(reminders=reminders)) == (
-        "<b>Химия</b>\n"
+        "<b>Клуб Химия</b>\n"
         "Текущего блока нет.\n"
         f"{NO_SYNC_LINES}\n"
         "Ближайшие напоминания:\n"

@@ -1,15 +1,9 @@
-from datetime import datetime
-
 from pydantic import BaseModel
 
 
 class ClubAccess(BaseModel):
     club_title: str
     block_title: str
-    block_starts_at: datetime
-    block_ends_at: datetime
-    # Between blocks the access comes from the next one, which has not started yet.
-    is_upcoming: bool
     # None when the club has no chat or Telegram refused to make the link.
     invite_link: str | None
 
@@ -34,7 +28,6 @@ class VkLinkByProfile(BaseModel):
 
 class VkLinkByOAuth(BaseModel):
     authorize_url: str
-    expires_at: datetime
 
 
 class VkLinkUnavailable(BaseModel):

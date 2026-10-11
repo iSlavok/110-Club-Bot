@@ -17,7 +17,7 @@ _TEENS = range(11, 15)
 
 
 def removal_request(alert: RemovalRequestAlert) -> str:
-    header = f"<b>{escape(alert.club_title)} · {escape(alert.block_title)}</b>"
+    header = f"<b>Клуб {escape(alert.club_title)}, блок {escape(alert.block_title)}</b>"
     lines = [header, _removal_status(alert)]
     if alert.candidates:
         lines.append("")
@@ -28,25 +28,25 @@ def removal_request(alert: RemovalRequestAlert) -> str:
 
 def sync_failed(club_title: str, error: str) -> str:
     return (
-        f"⚠️ <b>{escape(club_title)}</b>: синк таблицы не работает, состав блоков не обновляется.\n"
+        f"⚠️ <b>Клуб {escape(club_title)}</b>: синк таблицы не работает, состав блоков не обновляется.\n"
         f"Ошибка: {escape(error)}\n"
         "Напишу, когда снова заработает."
     )
 
 
 def sync_recovered(club_title: str) -> str:
-    return f"✅ <b>{escape(club_title)}</b>: синк таблицы снова работает."
+    return f"✅ <b>Клуб {escape(club_title)}</b>: синк таблицы снова работает."
 
 
 def sheet_issues_appeared(club_title: str, issues: list[SheetIssue]) -> str:
-    lines = [f"⚠️ <b>{escape(club_title)}</b>: новые проблемы в таблице."]
+    lines = [f"⚠️ <b>Клуб {escape(club_title)}</b>: новые проблемы в таблице."]
     lines.extend(f"• {_issue(issue)}" for issue in issues[:MAX_LISTED])
     lines.extend(_more(len(issues)))
     return "\n".join(lines)
 
 
 def sheet_issues_resolved(club_title: str) -> str:
-    return f"✅ <b>{escape(club_title)}</b>: проблем в таблице больше нет."
+    return f"✅ <b>Клуб {escape(club_title)}</b>: проблем в таблице больше нет."
 
 
 def removal_decided(status: RemovalRequestStatus) -> str:
@@ -57,7 +57,7 @@ def removal_decided(status: RemovalRequestStatus) -> str:
 
 def reminder_failed(club_title: str, reminder: ReminderWithLessonDTO) -> str:
     return (
-        f"⚠️ <b>{escape(club_title)}</b>: напоминание не ушло в чат.\n"
+        f"⚠️ <b>Клуб {escape(club_title)}</b>: напоминание не ушло в чат.\n"
         f"«{escape(reminder.lesson.title)}» — {KIND_LABELS[reminder.kind]}, "
         f"должно было уйти {_moscow(reminder.send_at)}.\n"
         f"Ошибка: {escape(reminder.error or '—')}"
@@ -65,7 +65,7 @@ def reminder_failed(club_title: str, reminder: ReminderWithLessonDTO) -> str:
 
 
 def chat_kicked(club_title: str, kicked: list[KickedMember]) -> str:
-    lines = [f"<b>{escape(club_title)}</b>: бот убрал из чата {_people(len(kicked))} — их нет в текущем блоке."]
+    lines = [f"<b>Клуб {escape(club_title)}</b>: бот убрал из чата {_people(len(kicked))} — их нет в текущем блоке."]
     lines.extend(_candidate(member) for member in kicked[:MAX_LISTED])
     lines.extend(_more(len(kicked)))
     return "\n".join(lines)
@@ -78,25 +78,25 @@ def chat_kicks_on_hold(club_title: str, block_title: str | None, waiting: int) -
         else "у клуба нет текущего и следующего блока"
     )
     return (
-        f"⚠️ <b>{escape(club_title)}</b>: кик из чата ждёт таблицу: {reason}.\n"
+        f"⚠️ <b>Клуб {escape(club_title)}</b>: кик из чата ждёт таблицу: {reason}.\n"
         f"Впущенные ботом остаются в чате ({_people(waiting)}). Напишу, когда кик снова заработает."
     )
 
 
 def chat_kicks_resumed(club_title: str) -> str:
-    return f"✅ <b>{escape(club_title)}</b>: кик из чата снова работает."
+    return f"✅ <b>Клуб {escape(club_title)}</b>: кик из чата снова работает."
 
 
 def chat_failed(club_title: str, error: str) -> str:
     return (
-        f"⚠️ <b>{escape(club_title)}</b>: бот не может управлять чатом клуба.\n"
+        f"⚠️ <b>Клуб {escape(club_title)}</b>: бот не может управлять чатом клуба.\n"
         f"Ошибка: {escape(error)}\n"
         "Проверь, что бот — админ чата с правами приглашать по ссылке и блокировать. Напишу, когда заработает."
     )
 
 
 def chat_recovered(club_title: str) -> str:
-    return f"✅ <b>{escape(club_title)}</b>: бот снова управляет чатом клуба."
+    return f"✅ <b>Клуб {escape(club_title)}</b>: бот снова управляет чатом клуба."
 
 
 def _removal_status(alert: RemovalRequestAlert) -> str:
@@ -129,9 +129,9 @@ def _issue(issue: SheetIssue) -> str:
         case SheetIssueKind.DUPLICATE_COLUMN:
             return f"{column}: второй отмеченный столбец с тем же заголовком, пропущен"
         case SheetIssueKind.INVALID_VALUE:
-            return f"{cell}: «{value}» — не VK id, пропущено"
+            return f"{cell}: «{value}» — не VK ID, пропущено"
         case SheetIssueKind.DUPLICATE:
-            return f"{cell}: VK id {value} повторяется"
+            return f"{cell}: VK ID {value} повторяется"
 
 
 def _more(total: int) -> list[str]:

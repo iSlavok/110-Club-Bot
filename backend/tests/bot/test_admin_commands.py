@@ -81,13 +81,13 @@ async def test_adminka_without_configured_address() -> None:
 
 async def test_summary_replies_with_active_clubs(request_container, db_session) -> None:
     club = await make_club(db_session, title="Химия")
-    await make_block(db_session, club, title="Блок 5", starts_at=datetime(2026, 9, 1, tzinfo=UTC))
+    await make_block(db_session, club, title="5", starts_at=datetime(2026, 9, 1, tzinfo=UTC))
     message = _message(OWNER_TG_ID)
 
     await summary(message, await request_container.get(StatusService))
 
     text = message.answer.await_args.args[0]
-    assert "<b>Химия</b>" in text
-    assert "Блок 5" in text
+    assert "<b>Клуб Химия</b>" in text
+    assert "Блок 5 (" in text
     assert "Участников: 0, из них в боте: 0" in text
     assert "Синков ещё не было." in text

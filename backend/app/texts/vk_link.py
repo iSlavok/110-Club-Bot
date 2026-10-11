@@ -1,39 +1,30 @@
 from html import escape
 
-from app.schemas import ClubAccess, VkAlreadyLinked, VkCandidate, VkLinkByOAuth, VkLinkResult
+from app.schemas import ClubAccess, VkAlreadyLinked, VkCandidate, VkLinkResult
 from app.texts.chat_access import access_line
 from app.texts.student_status import NO_ACCESS
-from app.utils import BUSINESS_TZ
 
 ASK_PROFILE_LINK = (
-    "Пришли ссылку на свою страницу VK, например <code>vk.com/id123</code> или <code>vk.com/твой_ник</code>.\n"
-    "Привязку потом нельзя изменить, поэтому проверь, что страница твоя."
+    "Пришли ссылку на свою страницу ВК, например <code>vk.com/id123</code> или <code>vk.com/твой_ник</code>."
 )
-OAUTH_BUTTON = "Войти через VK"
+OAUTH_BUTTON = "Войти через ВК"
 CANCEL_BUTTON = "Отмена"
-UNAVAILABLE = "Привязка VK временно недоступна. Попробуй позже или напиши куратору."
-CANCELLED = "Хорошо, пришли ссылку на свою страницу VK."
+UNAVAILABLE = "Привязка ВК временно недоступна. Попробуй позже или напиши куратору."
+CANCELLED = "Хорошо, пришли ссылку на свою страницу ВК."
 STALE_CONFIRMATION = "Эта кнопка устарела. Нажми /vk, чтобы начать заново."
-LINKED = "Готово, VK привязан."
+LINKED = "Готово, ВК привязан."
 CALLBACK_EXPIRED_TITLE = "Ссылка устарела"
 CALLBACK_EXPIRED_TEXT = "Вернись в Telegram и запроси новую ссылку командой /vk в боте клуба."
 CALLBACK_DONE_TITLE = "Готово"
 CALLBACK_DONE_TEXT = "Вернись в Telegram: бот клуба написал тебе результат."
 
-JOIN_HINT = "Кнопка ниже — заявка в чат клуба, бот одобрит её сам."
+JOIN_HINT = "Вступи в чат по кнопке ниже."
 
-OAUTH_CANCELLED = "Вход через VK отменён. Нажми /vk, чтобы попробовать ещё раз."
-OAUTH_ALREADY_LINKED = "VK уже привязан. Изменить привязку нельзя — по вопросам пиши куратору."
-OAUTH_VK_TAKEN = "Этот VK уже привязан к другому Telegram. Напиши куратору."
-OAUTH_FAILED = "Не получилось подтвердить вход через VK. Нажми /vk и попробуй ещё раз."
-
-
-def oauth_offer(offer: VkLinkByOAuth) -> str:
-    expires_at = offer.expires_at.astimezone(BUSINESS_TZ).strftime("%H:%M")
-    return (
-        "Нажми кнопку ниже и войди в VK — так бот убедится, что страница твоя.\n"
-        f"Кнопка действует до {expires_at} по Москве. Привязку потом нельзя изменить."
-    )
+OAUTH_CANCELLED = "Вход через ВК отменён. Нажми /vk, чтобы попробовать ещё раз."
+OAUTH_ALREADY_LINKED = "ВК уже привязан. Изменить привязку нельзя — по вопросам пиши куратору."
+OAUTH_VK_TAKEN = "Этот ВК уже привязан к другому аккаунту. Если это ошибка — напиши куратору."
+OAUTH_FAILED = "Не получилось подтвердить вход через ВК. Нажми /vk и попробуй ещё раз."
+OAUTH_OFFER = "Нажми кнопку ниже и войди в ВК — так бот убедится, что страница твоя. Привязку потом нельзя изменить."
 
 
 def confirm_button(candidate: VkCandidate) -> str:
@@ -53,7 +44,7 @@ def linked(result: VkLinkResult) -> str:
 
 def already_linked(offer: VkAlreadyLinked) -> str:
     return (
-        f"VK уже привязан: vk.com/id{offer.vk_id}. Изменить привязку нельзя — по вопросам пиши куратору.\n"
+        f"ВК уже привязан: vk.com/id{offer.vk_id}. Изменить привязку нельзя — по вопросам пиши куратору.\n"
         "Клуб, блок и чат — /status."
     )
 

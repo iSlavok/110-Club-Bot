@@ -249,7 +249,7 @@ async def test_only_new_sheet_problems_are_alerted(service, db_session, club, sh
     await service.sync_club(club.id)
 
     first, second = _alerts(bot)
-    assert "«Блок 5», строка 3: «abc» — не VK id" in first
+    assert "«Блок 5», строка 3: «abc» — не VK ID" in first
     assert "abc" not in second
     assert "«Блок 9»: столбец отмечен, но блока с таким заголовком нет" in second
 

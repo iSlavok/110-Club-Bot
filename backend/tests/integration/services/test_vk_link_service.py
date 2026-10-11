@@ -20,7 +20,7 @@ from app.exceptions import (
     VkProfileNotFoundError,
     VkUnavailableError,
 )
-from app.models import Block, VkAuthRequest
+from app.models import VkAuthRequest
 from app.schemas import ClubAccess, VkAlreadyLinked, VkCandidate, VkLinkByOAuth, VkLinkByProfile, VkLinkUnavailable
 from app.services import VkLinkService
 from app.services.vk_link_service import VK_AUTH_REQUEST_TTL
@@ -36,15 +36,7 @@ CHAT_ID = -100500
 REDIRECT_URI = f"{PUBLIC_URL}/api/v1/vk/callback"
 
 
-def _access(block: Block) -> ClubAccess:
-    return ClubAccess(
-        club_title="Химия",
-        block_title="Блок 5",
-        block_starts_at=block.starts_at,
-        block_ends_at=block.ends_at,
-        is_upcoming=False,
-        invite_link=None,
-    )
+ACCESS = ClubAccess(club_title="Химия", block_title="5", invite_link=None)
 
 
 @pytest.fixture
@@ -200,13 +192,13 @@ async def test_profile_link_needs_service_token(service, db_session, container, 
 @pytest.mark.usefixtures("link_mode")
 async def test_confirmation_links_vk_and_reports_access(service, db_session, kate) -> None:
     user = await make_user(db_session)
-    block = await make_block(db_session, await make_club(db_session, title="Химия"), title="Блок 5")
+    block = await make_block(db_session, await make_club(db_session, title="Химия"), title="5")
     await make_membership(db_session, block, vk_id=kate.id)
 
     result = await service.confirm_candidate(user.tg_id, kate.id)
 
     assert result.vk_id == kate.id
-    assert result.access == [_access(block)]
+    assert result.access == [ACCESS]
     assert user.vk_id == kate.id
     assert user.vk_linked_at == DEFAULT_NOW
 
@@ -268,8 +260,8 @@ async def test_offer_builds_vk_id_authorize_url_with_pkce(service, db_session) -
     assert query["redirect_uri"] == REDIRECT_URI
     assert query["code_challenge_method"] == "S256"
     assert query["scope"] == "vkid.personal_info"
-    assert offer.expires_at == DEFAULT_NOW + VK_AUTH_REQUEST_TTL
     request = await db_session.scalar(select(VkAuthRequest).where(VkAuthRequest.user_id == user.id))
+    assert request.expires_at == DEFAULT_NOW + VK_AUTH_REQUEST_TTL
     assert request.state_hash == hash_secret(query["state"])
     assert query["code_challenge"] == pkce_code_challenge(request.code_verifier)
 
@@ -283,7 +275,7 @@ async def test_oauth_needs_app_id(service, db_session, container) -> None:
 
 async def test_callback_links_vk_and_writes_to_the_student(service, db_session, vk, bot) -> None:
     user = await make_user(db_session)
-    block = await make_block(db_session, await make_club(db_session, title="Химия"), title="Блок 5")
+    block = await make_block(db_session, await make_club(db_session, title="Химия"), title="5")
     await make_membership(db_session, block, vk_id=VK_ID)
     state = _query(await _offer(service, user.tg_id))["state"]
     vk.codes["code-1"] = VK_ID
@@ -301,7 +293,7 @@ async def test_callback_links_vk_and_writes_to_the_student(service, db_session, 
     assert bot.send_message.await_args.args[0] == user.tg_id
     text = _sent_text(bot)
     assert text.startswith(texts.vk_link.LINKED)
-    assert "Ты в клубе Химия, блок Блок 5." in text
+    assert "Ты в клубе Химия, блок 5." in text
 
 
 async def test_callback_message_has_the_chat_join_button(service, db_session, vk, bot) -> None:
@@ -314,7 +306,7 @@ async def test_callback_message_has_the_chat_join_button(service, db_session, vk
     await service.complete_oauth(state=state, code="code-1", device_id="device-1", error=None)
 
     keyboard = bot.send_message.await_args.kwargs["reply_markup"]
-    assert keyboard.inline_keyboard[0][0].text == "Вступить в чат: Химия"
+    assert keyboard.inline_keyboard[0][0].text == "Вступить в чат клуба Химия"
     assert keyboard.inline_keyboard[0][0].url.startswith(INVITE_LINK_PREFIX)
 
 
@@ -378,7 +370,7 @@ async def test_rejected_code_is_reported(service, db_session, bot) -> None:
     await service.complete_oauth(state=state, code="unknown", device_id="device-1", error=None)
 
     assert user.vk_id is None
-    assert "Не получилось подтвердить вход через VK" in _sent_text(bot)
+    assert "Не получилось подтвердить вход через ВК" in _sent_text(bot)
 
 
 async def test_vk_taken_by_another_telegram_is_refused(service, db_session, vk, bot) -> None:
@@ -390,7 +382,7 @@ async def test_vk_taken_by_another_telegram_is_refused(service, db_session, vk, 
     await service.complete_oauth(state=state, code="code-1", device_id="device-1", error=None)
 
     assert user.vk_id is None
-    assert _sent_text(bot) == "Этот VK уже привязан к другому Telegram. Напиши куратору."
+    assert _sent_text(bot) == texts.vk_link.OAUTH_VK_TAKEN
 
 
 async def test_link_made_meanwhile_is_kept(service, db_session, vk, bot) -> None:
