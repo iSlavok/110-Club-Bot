@@ -9,6 +9,7 @@ import { ClubSwitcher } from '@/features/club';
 import { useGetClub } from '@/shared/api';
 import { routes } from '@/shared/config/routes';
 import { useRouteClubId } from '@/shared/lib/club-id';
+import { Logo } from '@/shared/ui/Logo';
 
 import { clubNav, GLOBAL_NAV, type NavItem } from './navigation';
 
@@ -52,6 +53,7 @@ export function AppLayout() {
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap">
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" aria-label="Меню" />
+            <Logo size={32} />
             {club && canSwitch ? (
               <ClubSwitcher title={club.title} currentId={club.id} clubs={choice.clubs} />
             ) : (
