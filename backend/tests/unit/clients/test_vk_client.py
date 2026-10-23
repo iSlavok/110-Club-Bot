@@ -82,6 +82,21 @@ async def test_deleted_profile_is_marked_deactivated(client, recorder) -> None:
     assert user.is_deactivated
 
 
+async def test_profile_without_names_is_a_user(client, recorder) -> None:
+    recorder.responder = lambda _: httpx.Response(200, json={"response": [{"id": 42}]})
+
+    user = await client.get_user(42)
+
+    assert user == VkUser(id=42, first_name="", last_name="", is_deactivated=False)
+
+
+async def test_user_without_id_is_a_client_error(client, recorder) -> None:
+    recorder.responder = lambda _: httpx.Response(200, json={"response": [{"first_name": "Катя"}]})
+
+    with pytest.raises(VkClientError):
+        await client.get_user(42)
+
+
 async def test_invalid_user_id_is_none(client, recorder) -> None:
     recorder.responder = lambda _: httpx.Response(
         200,

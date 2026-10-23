@@ -52,12 +52,13 @@ class HttpxVkClient:
             raise
         if not users:
             return None
+        # Some existing profiles come back with the id alone, without names.
         try:
             user = users[0]
             return VkUser(
                 id=int(user["id"]),
-                first_name=str(user["first_name"]),
-                last_name=str(user["last_name"]),
+                first_name=str(user.get("first_name", "")),
+                last_name=str(user.get("last_name", "")),
                 is_deactivated="deactivated" in user,
             )
         except (KeyError, TypeError, ValueError, IndexError) as error:
