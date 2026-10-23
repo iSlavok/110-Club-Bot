@@ -98,6 +98,16 @@ async def test_finds_candidate_by_link_or_id(service, db_session, kate, text) ->
 
 
 @pytest.mark.usefixtures("link_mode")
+async def test_profile_without_names_is_a_candidate(service, db_session, vk) -> None:
+    vk.add_user(VK_ID, "", "")
+    user = await make_user(db_session)
+
+    candidate = await service.find_candidate(user.tg_id, f"vk.com/id{VK_ID}")
+
+    assert candidate == VkCandidate(vk_id=VK_ID, full_name="")
+
+
+@pytest.mark.usefixtures("link_mode")
 async def test_candidate_is_not_linked_until_confirmed(service, db_session, kate) -> None:
     user = await make_user(db_session)
 

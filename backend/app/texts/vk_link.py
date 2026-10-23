@@ -28,14 +28,14 @@ OAUTH_OFFER = "Нажми кнопку ниже и войди в ВК — так
 
 
 def confirm_button(candidate: VkCandidate) -> str:
-    return f"Это я: {candidate.full_name}"
+    return f"Это я: {candidate.full_name}" if candidate.full_name else "Это я"
 
 
 def confirm_candidate(candidate: VkCandidate) -> str:
-    return (
-        f"Это твоя страница?\n<b>{escape(candidate.full_name)}</b> — vk.com/id{candidate.vk_id}\n\n"
-        "После подтверждения привязку нельзя будет изменить."
-    )
+    page = f"vk.com/id{candidate.vk_id}"
+    if candidate.full_name:
+        page = f"<b>{escape(candidate.full_name)}</b> — {page}"
+    return f"Это твоя страница?\n{page}\n\nПосле подтверждения привязку нельзя будет изменить."
 
 
 def linked(result: VkLinkResult) -> str:
