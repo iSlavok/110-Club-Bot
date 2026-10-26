@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from app.enums import ChatAccessStatus
+from app.enums import BlockMemberSort, ChatAccessStatus, SortOrder
 from app.exceptions import (
     BlockColumnTakenError,
     BlockHasMembersError,
@@ -141,3 +141,29 @@ async def test_members_show_their_state_in_the_club_chat(service, db_session) ->
 async def test_members_of_unknown_block(service) -> None:
     with pytest.raises(BlockNotFoundError):
         await service.list_members(999_999, PageParams())
+
+
+@pytest.mark.parametrize(
+    ("sort", "order", "expected"),
+    [
+        (BlockMemberSort.BOT, SortOrder.ASC, [503, 501, 504, 502]),
+        (BlockMemberSort.BOT, SortOrder.DESC, [502, 504, 501, 503]),
+        (BlockMemberSort.VK, SortOrder.DESC, [504, 503, 502, 501]),
+        (BlockMemberSort.CHAT, SortOrder.ASC, [501, 503, 504, 502]),
+    ],
+    ids=["bot-users-first", "bot-users-last", "vk-desc", "in-chat-first"],
+)
+async def test_members_sort(service, db_session, sort, order, expected) -> None:
+    club = await make_club(db_session, chat_id=-100500)
+    block = await make_block(db_session, club)
+    for vk_id in (501, 502, 503, 504):
+        await make_membership(db_session, block, vk_id=vk_id)
+    boris = await make_user(db_session, vk_id=501, full_name="Борис")
+    anna = await make_user(db_session, vk_id=503, full_name="анна")
+    await make_user(db_session, vk_id=504, full_name="Вера")
+    await make_chat_access(db_session, club, boris, status=ChatAccessStatus.JOINED)
+    await make_chat_access(db_session, club, anna, status=ChatAccessStatus.INVITED)
+
+    page = await service.list_members(block.id, PageParams(), sort=sort, order=order)
+
+    assert [member.vk_id for member in page.items] == expected

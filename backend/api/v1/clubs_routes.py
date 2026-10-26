@@ -7,7 +7,13 @@ from api.core.auth import require
 from api.core.params import IdPath
 from api.core.routing import UnitOfWorkRoute
 from api.schemas import Page
-from api.schemas.club_schemas import BlockListItemResponse, BlockMemberResponse, BlockResponse, ClubResponse
+from api.schemas.club_schemas import (
+    BlockListItemResponse,
+    BlockMemberListParams,
+    BlockMemberResponse,
+    BlockResponse,
+    ClubResponse,
+)
 from api.schemas.club_stats_schemas import ClubStatsResponse
 from app.enums import Permission
 from app.schemas import BlockCreate, BlockUpdate, ClubCreate, ClubUpdate, PageParams
@@ -62,11 +68,11 @@ async def list_blocks(
 @router.get("/blocks/{block_id}/members", dependencies=[require(Permission.USERS_VIEW)])
 async def list_block_members(
     block_id: IdPath,
-    page: Annotated[PageParams, Query()],
+    params: Annotated[BlockMemberListParams, Query()],
     block_service: FromDishka[BlockService],
 ) -> Page[BlockMemberResponse]:
-    members = await block_service.list_members(block_id, page)
-    return Page.from_paginated(members, page, BlockMemberResponse.from_dto)
+    members = await block_service.list_members(block_id, params, sort=params.sort, order=params.order)
+    return Page.from_paginated(members, params, BlockMemberResponse.from_dto)
 
 
 @router.post(

@@ -1225,6 +1225,28 @@
               "title": "Per Page"
             },
             "description": "Items per page"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/BlockMemberSort",
+              "description": "vk: by VK id; bot: linked the bot first, by name; chat: in the chat first, then invited, left, removed",
+              "default": "bot"
+            },
+            "description": "vk: by VK id; bot: linked the bot first, by name; chat: in the chat first, then invited, left, removed"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SortOrder",
+              "description": "desc reverses the sort",
+              "default": "asc"
+            },
+            "description": "desc reverses the sort"
           }
         ],
         "responses": {
@@ -2802,6 +2824,15 @@
           "user"
         ],
         "title": "BlockMemberResponse"
+      },
+      "BlockMemberSort": {
+        "type": "string",
+        "enum": [
+          "vk",
+          "bot",
+          "chat"
+        ],
+        "title": "BlockMemberSort"
       },
       "BlockMemberUserResponse": {
         "properties": {
@@ -4518,6 +4549,14 @@
           "failed"
         ],
         "title": "SheetSyncStatus"
+      },
+      "SortOrder": {
+        "type": "string",
+        "enum": [
+          "asc",
+          "desc"
+        ],
+        "title": "SortOrder"
       },
       "TelegramWidgetPayload": {
         "properties": {

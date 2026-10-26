@@ -5,9 +5,11 @@ from app.enums.membership_removal import RemovalDecision, RemovalRequestStatus
 from app.enums.permission import Permission, PermissionGroup, known_permissions
 from app.enums.reminder import ReminderKind, ReminderStatus, ReminderTarget, ReminderView
 from app.enums.sheet_sync import SheetIssueKind, SheetSyncStatus
+from app.enums.sort import BlockMemberSort, SortOrder
 from app.enums.vk_link_mode import VkLinkMode
 
 __all__ = [
+    "BlockMemberSort",
     "ChatAccessStatus",
     "CheckStatus",
     "HealthStatus",
@@ -23,6 +25,7 @@ __all__ = [
     "RemovalRequestStatus",
     "SheetIssueKind",
     "SheetSyncStatus",
+    "SortOrder",
     "VkLinkMode",
     "known_permissions",
 ]

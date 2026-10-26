@@ -4,6 +4,8 @@
  * 110 Club Admin API
  * OpenAPI spec version: 0.1.0
  */
+import type { BlockMemberSort } from './blockMemberSort';
+import type { SortOrder } from './sortOrder';
 
 export type ListBlockMembersParams = {
   /**
@@ -18,4 +20,12 @@ export type ListBlockMembersParams = {
    * @maximum 200
    */
   per_page?: number;
+  /**
+   * vk: by VK id; bot: linked the bot first, by name; chat: in the chat first, then invited, left, removed
+   */
+  sort?: BlockMemberSort;
+  /**
+   * desc reverses the sort
+   */
+  order?: SortOrder;
 };
