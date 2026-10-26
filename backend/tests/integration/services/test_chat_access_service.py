@@ -19,8 +19,16 @@ from app.enums import ChatAccessStatus
 from app.models import ChatAccess, User
 from app.schemas import KickedMember
 from app.services import ChatAccessService
-from tests.factories import make_block, make_chat_access, make_club, make_membership, make_user
-from tests.providers import ALERTS_CHAT_ID, DEFAULT_NOW, INVITE_LINK_PREFIX
+from tests.factories import (
+    make_admin_user,
+    make_block,
+    make_chat_access,
+    make_club,
+    make_membership,
+    make_role,
+    make_user,
+)
+from tests.providers import ALERTS_CHAT_ID, DEFAULT_NOW, INVITE_LINK_PREFIX, OWNER_TG_ID
 
 CHAT_ID = -100500
 VK_ID = 4242
@@ -34,6 +42,12 @@ async def service(request_container) -> ChatAccessService:
 @pytest.fixture
 async def club(db_session):
     return await make_club(db_session, title="Химия", chat_id=CHAT_ID)
+
+
+async def _admin(db_session, **user_fields) -> User:
+    user = await make_user(db_session, **user_fields)
+    await make_admin_user(db_session, await make_role(db_session), tg_id=user.tg_id)
+    return user
 
 
 async def _access_row(db_session, user) -> ChatAccess | None:
@@ -529,3 +543,56 @@ async def test_unlinked_student_or_one_without_access_has_no_clubs(service, db_s
 
     assert await service.student_clubs(unlinked.id) == []
     assert await service.student_clubs(outsider.id) == []
+
+
+async def test_admin_is_let_in_without_vk_or_a_place_in_the_block(service, db_session, club, bot) -> None:
+    await make_block(db_session, club)
+    admin = await _admin(db_session)
+
+    await service.handle_join_request(chat_id=CHAT_ID, tg_id=admin.tg_id)
+
+    bot.approve_chat_join_request.assert_awaited_once_with(chat_id=CHAT_ID, user_id=admin.tg_id)
+    row = await _access_row(db_session, admin)
+    assert row is not None
+    assert row.status is ChatAccessStatus.JOINED
+
+
+async def test_owner_who_never_started_the_bot_is_let_in(service, db_session, club, bot) -> None:
+    await service.handle_join_request(chat_id=CHAT_ID, tg_id=OWNER_TG_ID)
+
+    bot.approve_chat_join_request.assert_awaited_once_with(chat_id=CHAT_ID, user_id=OWNER_TG_ID)
+    assert await db_session.scalar(select(ChatAccess)) is None
+
+
+async def test_former_admin_is_left_to_admins(service, db_session, club, bot) -> None:
+    user = await make_user(db_session)
+    await make_admin_user(db_session, await make_role(db_session), tg_id=user.tg_id, is_active=False)
+
+    await service.handle_join_request(chat_id=CHAT_ID, tg_id=user.tg_id)
+
+    bot.approve_chat_join_request.assert_not_awaited()
+
+
+@pytest.mark.usefixtures("filled_block")
+async def test_admin_out_of_the_block_is_not_kicked(service, db_session, club, bot) -> None:
+    admin = await _admin(db_session, vk_id=VK_ID)
+    access = await make_chat_access(db_session, club, admin)
+    _in_chat(bot)
+
+    await service.reconcile_club(club.id)
+
+    bot.ban_chat_member.assert_not_awaited()
+    assert access.status is ChatAccessStatus.JOINED
+
+
+async def test_admin_has_access_to_every_active_club_with_a_block(service, db_session, club) -> None:
+    await make_block(db_session, club, title="6")
+    other = await make_club(db_session, title="Биология")
+    await make_block(db_session, other, title="2")
+    await make_block(db_session, await make_club(db_session, title="Архив", is_active=False))
+    await make_club(db_session, title="Без блока")
+    admin = await _admin(db_session)
+
+    club_blocks = await service.access_blocks(admin)
+
+    assert [(club_.title, block_.title) for club_, block_ in club_blocks] == [("Биология", "2"), ("Химия", "6")]

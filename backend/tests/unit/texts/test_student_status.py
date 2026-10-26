@@ -17,6 +17,12 @@ def test_unlinked_user_is_sent_to_vk() -> None:
     assert texts.student_status.student_status(StudentStatus(vk_id=None, clubs=[])) == texts.student_status.NOT_LINKED
 
 
+def test_admin_without_vk_sees_the_clubs() -> None:
+    text = texts.student_status.student_status(StudentStatus(vk_id=None, clubs=[_club()]))
+
+    assert text == "<b>Клуб Химия, блок 6</b>\nТы в чате клуба."
+
+
 def test_linked_user_without_access() -> None:
     text = texts.student_status.student_status(StudentStatus(vk_id=4242, clubs=[]))
 

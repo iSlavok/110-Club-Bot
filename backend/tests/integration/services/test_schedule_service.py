@@ -6,7 +6,7 @@ from app.enums import LessonKind
 from app.exceptions import UserNotRegisteredError
 from app.schemas import ScheduleItem
 from app.services import ScheduleService
-from tests.factories import make_block, make_club, make_lesson, make_membership, make_user
+from tests.factories import make_admin_user, make_block, make_club, make_lesson, make_membership, make_role, make_user
 from tests.providers import DEFAULT_NOW
 
 TG_ID = 42
@@ -70,3 +70,14 @@ async def test_schedule_runs_to_the_end_of_the_access_block(service, db_session)
             is_homework_deadline=False,
         ),
     ]
+
+
+async def test_admin_sees_every_club_without_vk(service, db_session) -> None:
+    await make_user(db_session, tg_id=TG_ID)
+    await make_admin_user(db_session, await make_role(db_session), tg_id=TG_ID)
+    club = await make_club(db_session, title="Химия")
+    block = await make_block(db_session, club, title="Блок 5", starts_at=BLOCK_STARTS_AT, ends_at=BLOCK_ENDS_AT)
+
+    schedules = await service.build(TG_ID)
+
+    assert [(schedule.club_title, schedule.block_title) for schedule in schedules] == [("Химия", block.title)]
