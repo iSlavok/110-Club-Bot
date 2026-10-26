@@ -1,0 +1,5 @@
+/* Today gets an outline in the primary color; the selected day stays filled, so the two are not confused. */
+.today:where([data-today][data-highlight-today]:not([data-selected], [data-in-range])) {
+  border: 1px solid var(--mantine-primary-color-filled);
+  font-weight: 700;
+}
