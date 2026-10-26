@@ -9,13 +9,16 @@ import { useClubId } from '@/shared/lib/club-id';
 import { PageHeader } from '@/shared/ui/PageHeader';
 import { QueryState } from '@/shared/ui/QueryState';
 
+// A grid cell shrinks below its content only with min-width 0; long ids are cut, the full value is in the tooltip.
 function Field({ label, value }: { label: string; value: string | number | null }) {
   return (
-    <div>
-      <Text size="xs" c="dimmed">
+    <div style={{ minWidth: 0 }}>
+      <Text size="xs" c="dimmed" truncate="end" title={label}>
         {label}
       </Text>
-      <Text>{value ?? '—'}</Text>
+      <Text truncate="end" title={value === null ? undefined : String(value)}>
+        {value ?? '—'}
+      </Text>
     </div>
   );
 }
