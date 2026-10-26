@@ -1,5 +1,5 @@
 import {
-  Button,
+  ActionIcon,
   Checkbox,
   Group,
   SegmentedControl,
@@ -7,7 +7,9 @@ import {
   Stack,
   Table,
   Text,
+  Tooltip,
 } from '@mantine/core';
+import { IconEye, IconX } from '@tabler/icons-react';
 import { useState } from 'react';
 
 import { LESSON_KIND_LABELS } from '@/entities/lesson';
@@ -170,14 +172,18 @@ function ReminderRow({ reminder, showLesson, onPreview, onCancel }: ReminderRowP
       </Table.Td>
       <Table.Td>
         <Group gap={4} justify="flex-end" wrap="nowrap">
-          <Button size="compact-sm" variant="subtle" onClick={onPreview}>
-            Текст
-          </Button>
+          <Tooltip label="Текст напоминания">
+            <ActionIcon variant="subtle" color="gray" aria-label="Текст" onClick={onPreview}>
+              <IconEye size={16} />
+            </ActionIcon>
+          </Tooltip>
           {reminder.status === 'pending' && (
             <Can permission="lessons.edit">
-              <Button size="compact-sm" variant="subtle" color="red" onClick={onCancel}>
-                Отменить
-              </Button>
+              <Tooltip label="Отменить напоминание">
+                <ActionIcon variant="subtle" color="red" aria-label="Отменить" onClick={onCancel}>
+                  <IconX size={16} />
+                </ActionIcon>
+              </Tooltip>
             </Can>
           )}
         </Group>
