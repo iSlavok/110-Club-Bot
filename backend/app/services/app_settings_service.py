@@ -32,6 +32,8 @@ class AppSettingsService:
         settings.vk_link_mode = vk_link_mode
         settings.default_lesson_offsets = patch.default_lesson_offsets.apply(settings.default_lesson_offsets)
         settings.default_homework_offsets = patch.default_homework_offsets.apply(settings.default_homework_offsets)
+        settings.default_lesson_time = patch.default_lesson_time.apply(settings.default_lesson_time)
+        settings.default_homework_time = patch.default_homework_time.apply(settings.default_homework_time)
         await self._app_settings_repository.flush()
         return self._overview(settings)
 

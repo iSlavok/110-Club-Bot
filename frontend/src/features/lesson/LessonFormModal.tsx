@@ -59,7 +59,7 @@ const KINDS: { value: LessonKind; label: string }[] = [
 ];
 
 export function LessonFormModal({ onClose, clubId, lesson }: LessonFormModalProps) {
-  const settings = useGetSettings({ query: { enabled: !lesson } });
+  const settings = useGetSettings();
   return (
     <Modal opened onClose={onClose} title={lesson ? 'Урок' : 'Новый урок'} size="lg">
       {lesson || settings.data ? (
@@ -73,6 +73,10 @@ export function LessonFormModal({ onClose, clubId, lesson }: LessonFormModalProp
             homework_reminder_offsets:
               lesson?.homework_reminder_offsets ?? settings.data?.default_homework_offsets ?? [],
           }}
+          times={{
+            lesson: settings.data?.default_lesson_time,
+            homework: settings.data?.default_homework_time,
+          }}
         />
       ) : (
         <Alert color={settings.error ? 'red' : 'gray'}>
@@ -85,9 +89,11 @@ export function LessonFormModal({ onClose, clubId, lesson }: LessonFormModalProp
 
 interface LessonFormProps extends LessonFormModalProps {
   defaults: { reminder_offsets: number[]; homework_reminder_offsets: number[] };
+  /** Time set when a day is picked in an empty picker; an edited lesson may render before settings load. */
+  times: { lesson?: string; homework?: string };
 }
 
-function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
+function LessonForm({ onClose, clubId, lesson, defaults, times }: LessonFormProps) {
   const form = useForm<LessonFormValues>({
     initialValues: {
       kind: lesson?.kind ?? 'lesson',
@@ -203,6 +209,7 @@ function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
         <DateTimePicker
           label="Начало"
           valueFormat="DD.MM.YYYY HH:mm"
+          defaultTimeValue={times.lesson}
           withAsterisk
           {...form.getInputProps('starts_at')}
         />
@@ -238,6 +245,7 @@ function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
             <DateTimePicker
               label="Дедлайн ДЗ"
               valueFormat="DD.MM.YYYY HH:mm"
+              defaultTimeValue={times.homework}
               withAsterisk
               {...form.getInputProps('homework_deadline_at')}
             />

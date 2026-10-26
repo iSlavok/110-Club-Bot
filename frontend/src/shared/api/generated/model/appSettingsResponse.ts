@@ -15,6 +15,10 @@ export interface AppSettingsResponse {
   default_lesson_offsets: number[];
   /** Minutes before the homework deadline prefilled in a new lesson, latest first */
   default_homework_offsets: number[];
+  /** Moscow time prefilled when a start date is picked in a new lesson */
+  default_lesson_time: string;
+  /** Moscow time prefilled when a homework deadline date is picked */
+  default_homework_time: string;
   /** Last change, UTC */
   updated_at: string;
 }

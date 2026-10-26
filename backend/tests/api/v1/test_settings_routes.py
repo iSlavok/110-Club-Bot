@@ -91,3 +91,23 @@ async def test_invalid_default_offsets_fail_validation(api_client, login_as, db_
 
     assert response.status_code == 422
     assert response.json()["code"] == "VALIDATION_FAILED"
+
+
+async def test_settings_include_default_times(api_client, login_as, db_session) -> None:
+    await login_as(await make_admin_user(db_session, await make_role(db_session)))
+
+    response = await api_client.get("/api/v1/settings")
+
+    body = response.json()
+    assert body["default_lesson_time"] == "16:00:00"
+    assert body["default_homework_time"] == "23:59:00"
+
+
+@pytest.mark.parametrize("value", ["16:00:30", "16:00+03:00", "25:00"], ids=["seconds", "timezone", "out-of-range"])
+async def test_invalid_default_time_fails_validation(api_client, login_as, db_session, value) -> None:
+    await login_as(await make_admin_user(db_session, await make_role(db_session, Permission.SETTINGS_EDIT)))
+
+    response = await api_client.patch("/api/v1/settings", json={"default_lesson_time": value})
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "VALIDATION_FAILED"

@@ -1,3 +1,4 @@
+from app.types.clock_time import ClockTime
 from app.types.integers import INT32_MAX, INT64_MAX, INT64_MIN, BigInt, PositiveBigInt, PositiveInt32
 from app.types.reminder_offsets import (
     MAX_REMINDER_OFFSET_MINUTES,
@@ -13,6 +14,7 @@ __all__ = [
     "MAX_REMINDER_OFFSETS",
     "MAX_REMINDER_OFFSET_MINUTES",
     "BigInt",
+    "ClockTime",
     "PositiveBigInt",
     "PositiveInt32",
     "ReminderOffset",

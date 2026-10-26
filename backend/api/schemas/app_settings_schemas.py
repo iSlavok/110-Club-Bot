@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 from typing import Self
 
 from pydantic import BaseModel, Field
@@ -18,6 +18,8 @@ class AppSettingsResponse(BaseModel):
     default_homework_offsets: list[int] = Field(
         description="Minutes before the homework deadline prefilled in a new lesson, latest first",
     )
+    default_lesson_time: time = Field(description="Moscow time prefilled when a start date is picked in a new lesson")
+    default_homework_time: time = Field(description="Moscow time prefilled when a homework deadline date is picked")
     updated_at: datetime = Field(description="Last change, UTC")
 
     @classmethod
@@ -27,5 +29,7 @@ class AppSettingsResponse(BaseModel):
             configured_vk_link_modes=overview.configured_vk_link_modes,
             default_lesson_offsets=overview.settings.default_lesson_offsets,
             default_homework_offsets=overview.settings.default_homework_offsets,
+            default_lesson_time=overview.settings.default_lesson_time,
+            default_homework_time=overview.settings.default_homework_time,
             updated_at=overview.settings.updated_at,
         )

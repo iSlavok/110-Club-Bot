@@ -1,16 +1,20 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import dayjs from 'dayjs';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { LessonResponse } from '@/shared/api';
-import { makeLesson } from '@/test/fixtures';
+import { makeLesson, makeSettings, settingsHandler } from '@/test/fixtures';
 import { renderWithProviders } from '@/test/render';
 import { server } from '@/test/server';
 
 import { LessonFormModal } from './LessonFormModal';
 
 const HOUR_MS = 3_600_000;
+
+// Accessible name of a day in the open month of a picker.
+const dayLabel = (day: number) => dayjs().date(day).locale('ru').format('D MMMM YYYY');
 
 interface Patch {
   body: Record<string, unknown>;
@@ -32,16 +36,14 @@ function servePatch(lesson: LessonResponse): Patch[] {
 }
 
 describe('LessonFormModal', () => {
+  beforeEach(() => {
+    server.use(settingsHandler());
+  });
+
   it('prefills a new lesson with the default offsets from the bot settings', async () => {
     server.use(
-      http.get('/api/v1/settings', () =>
-        HttpResponse.json({
-          vk_link_mode: 'oauth',
-          configured_vk_link_modes: ['oauth'],
-          default_lesson_offsets: [1440, 0],
-          default_homework_offsets: [180],
-          updated_at: '2026-10-01T09:00:00Z',
-        }),
+      settingsHandler(
+        makeSettings({ default_lesson_offsets: [1440, 0], default_homework_offsets: [180] }),
       ),
     );
     renderWithProviders(<LessonFormModal clubId={1} onClose={vi.fn()} />);
@@ -53,6 +55,20 @@ describe('LessonFormModal', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
     expect(await screen.findByText('Укажите тему')).toBeInTheDocument();
     expect(screen.getByText('Укажите начало')).toBeInTheDocument();
+  });
+
+  it('sets the default time when a day is picked for the start and the deadline', async () => {
+    server.use(settingsHandler(makeSettings({ default_lesson_time: '15:30:00' })));
+    renderWithProviders(<LessonFormModal clubId={1} onClose={vi.fn()} />);
+
+    await userEvent.click(await screen.findByRole('button', { name: /Начало/ }));
+    await userEvent.click(await screen.findByRole('button', { name: dayLabel(10) }));
+    await userEvent.click(screen.getByRole('switch', { name: 'Есть ДЗ' }));
+    await userEvent.click(screen.getByRole('button', { name: /Дедлайн ДЗ/ }));
+    await userEvent.click(await screen.findByRole('button', { name: dayLabel(12) }));
+
+    expect(screen.getByRole('button', { name: /Начало/ })).toHaveTextContent(/15:30$/);
+    expect(screen.getByRole('button', { name: /Дедлайн ДЗ/ })).toHaveTextContent(/23:59$/);
   });
 
   it('saves a title change without asking about the chat', async () => {

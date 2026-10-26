@@ -21,6 +21,7 @@ export * from './blockResponse';
 export * from './blockUpdate';
 export * from './callUrl';
 export * from './chatAccessStatus';
+export * from './clockTime';
 export * from './clubCreate';
 export * from './clubResponse';
 export * from './clubStatsResponse';

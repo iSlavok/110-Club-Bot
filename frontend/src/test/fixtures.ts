@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw';
 
 import type {
+  AppSettingsResponse,
   ClubResponse,
   CurrentAdminResponse,
   LessonResponse,
@@ -24,6 +25,23 @@ export function makeClub(id: number, overrides: Partial<ClubResponse> = {}): Clu
     hide_service_messages: false,
     ...overrides,
   };
+}
+
+export function makeSettings(overrides: Partial<AppSettingsResponse> = {}): AppSettingsResponse {
+  return {
+    vk_link_mode: 'oauth',
+    configured_vk_link_modes: ['link', 'oauth'],
+    default_lesson_offsets: [1440, 60, 0],
+    default_homework_offsets: [2880, 1440, 180],
+    default_lesson_time: '16:00:00',
+    default_homework_time: '23:59:00',
+    updated_at: '2026-10-01T09:00:00Z',
+    ...overrides,
+  };
+}
+
+export function settingsHandler(settings: AppSettingsResponse = makeSettings()) {
+  return http.get('/api/v1/settings', () => HttpResponse.json(settings));
 }
 
 export function makeLesson(id: number, overrides: Partial<LessonResponse> = {}): LessonResponse {
