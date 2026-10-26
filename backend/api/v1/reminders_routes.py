@@ -9,6 +9,7 @@ from api.core.routing import UnitOfWorkRoute
 from api.schemas import Page
 from api.schemas.reminder_schemas import ReminderListParams, ReminderPreviewResponse, ReminderResponse
 from app.enums import Permission
+from app.schemas import ReminderDraftPreview
 from app.services import ReminderService
 
 router = APIRouter(tags=["reminders"], route_class=UnitOfWorkRoute)
@@ -36,6 +37,15 @@ async def preview_reminder(
     reminder_service: FromDishka[ReminderService],
 ) -> ReminderPreviewResponse:
     html = await reminder_service.preview(reminder_id)
+    return ReminderPreviewResponse(html=html)
+
+
+@router.post("/reminders/preview", dependencies=[require(Permission.LESSONS_VIEW)])
+async def preview_draft_reminder(
+    body: ReminderDraftPreview,
+    reminder_service: FromDishka[ReminderService],
+) -> ReminderPreviewResponse:
+    html = reminder_service.preview_draft(body)
     return ReminderPreviewResponse(html=html)
 
 

@@ -148,6 +148,72 @@ async def test_preview_of_a_reminder_about_removed_homework_is_refused(
     assert response.json()["code"] == "REMINDER_PREVIEW_UNAVAILABLE"
 
 
+def _draft(**lesson) -> dict:
+    return {
+        "kind": "lesson",
+        "title": "Кислоты",
+        "starts_at": (DEFAULT_NOW + timedelta(days=1, hours=1)).isoformat(),
+        **lesson,
+    }
+
+
+async def test_draft_preview_counts_from_the_send_time(api_client, login_as, editor) -> None:
+    await login_as(editor)
+
+    response = await api_client.post(
+        "/api/v1/reminders/preview",
+        json={
+            "lesson": _draft(kind="curator_call", call_url="https://meet.example.com/a"),
+            "kind": "lesson_upcoming",
+            "send_at": (DEFAULT_NOW + timedelta(days=1)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "html": (
+            "<b>Созвон с куратором «Кислоты»</b>\nЧерез час, в 13:00\n"
+            'Подключиться: <a href="https://meet.example.com/a">ссылка на созвон</a>'
+        ),
+    }
+
+
+@pytest.mark.parametrize("send_at", [None, (DEFAULT_NOW - timedelta(hours=1)).isoformat()], ids=["now", "past"])
+async def test_draft_preview_without_a_future_send_time_counts_from_now(api_client, login_as, editor, send_at) -> None:
+    await login_as(editor)
+    lesson = _draft(starts_at=(DEFAULT_NOW + timedelta(minutes=45)).isoformat())
+
+    response = await api_client.post(
+        "/api/v1/reminders/preview",
+        json={"lesson": lesson, "kind": "lesson_upcoming", "send_at": send_at},
+    )
+
+    assert response.json() == {"html": "<b>Урок «Кислоты»</b>\nЧерез 45 минут, в 12:45"}
+
+
+async def test_draft_preview_of_homework_without_a_deadline_is_refused(api_client, login_as, editor) -> None:
+    await login_as(editor)
+
+    response = await api_client.post(
+        "/api/v1/reminders/preview", json={"lesson": _draft(), "kind": "homework_deadline"}
+    )
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "REMINDER_PREVIEW_UNAVAILABLE"
+
+
+async def test_draft_preview_validates_the_lesson(api_client, login_as, editor) -> None:
+    await login_as(editor)
+
+    response = await api_client.post(
+        "/api/v1/reminders/preview",
+        json={"lesson": _draft(title=" "), "kind": "lesson_upcoming"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "VALIDATION_FAILED"
+
+
 async def test_cancel_only_pending(api_client, login_as, db_session, editor) -> None:
     club = await make_club(db_session)
     lesson = await make_lesson(db_session, club)

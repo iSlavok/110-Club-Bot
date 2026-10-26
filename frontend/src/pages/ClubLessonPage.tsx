@@ -1,12 +1,12 @@
 import { Anchor, Badge, Button, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
-import { IconArrowLeft, IconPencil } from '@tabler/icons-react';
+import { IconArrowLeft, IconBell, IconPencil } from '@tabler/icons-react';
 import { useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { LESSON_KIND_LABELS } from '@/entities/lesson';
 import { formatOffset } from '@/entities/reminder';
 import { Can } from '@/entities/session';
-import { LessonFormModal, useCancelLessonConfirm } from '@/features/lesson';
+import { LessonFormModal, RemindNowModal, useCancelLessonConfirm } from '@/features/lesson';
 import { ReminderFeed } from '@/features/reminder';
 import { useGetLesson, type LessonResponse } from '@/shared/api';
 import { routes } from '@/shared/config/routes';
@@ -50,6 +50,7 @@ export function ClubLessonPage() {
 
 function LessonCard({ clubId, lesson }: { clubId: number; lesson: LessonResponse }) {
   const [editing, setEditing] = useState(false);
+  const [reminding, setReminding] = useState(false);
   const confirmCancel = useCancelLessonConfirm();
   return (
     <>
@@ -68,6 +69,15 @@ function LessonCard({ clubId, lesson }: { clubId: number; lesson: LessonResponse
           !lesson.is_cancelled && (
             <Can permission="lessons.edit">
               <Group gap="xs">
+                <Button
+                  variant="default"
+                  leftSection={<IconBell size={16} />}
+                  onClick={() => {
+                    setReminding(true);
+                  }}
+                >
+                  Напомнить сейчас
+                </Button>
                 <Button
                   variant="default"
                   leftSection={<IconPencil size={16} />}
@@ -132,6 +142,14 @@ function LessonCard({ clubId, lesson }: { clubId: number; lesson: LessonResponse
         Напоминания
       </Title>
       <ReminderFeed clubId={clubId} lessonId={lesson.id} />
+      {reminding && (
+        <RemindNowModal
+          lesson={lesson}
+          onClose={() => {
+            setReminding(false);
+          }}
+        />
+      )}
       {editing && (
         <LessonFormModal
           clubId={clubId}

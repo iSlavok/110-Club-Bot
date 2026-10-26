@@ -18,9 +18,24 @@ class ReminderNotPendingError(ConflictError):
 
 class ReminderPreviewUnavailableError(ConflictError):
     def __init__(self) -> None:
-        super().__init__("The lesson no longer has homework, so this reminder cannot be shown")
+        super().__init__("The lesson has no homework, so a homework reminder cannot be shown")
 
 
 class LessonCancelledError(ConflictError):
     def __init__(self) -> None:
         super().__init__("Lesson is cancelled and can no longer be changed")
+
+
+class LessonAlreadyStartedError(ConflictError):
+    def __init__(self) -> None:
+        super().__init__("The lesson has already started, a reminder about it is too late")
+
+
+class LessonHasNoHomeworkError(ConflictError):
+    def __init__(self) -> None:
+        super().__init__("The lesson has no homework")
+
+
+class HomeworkDeadlinePassedError(ConflictError):
+    def __init__(self) -> None:
+        super().__init__("The homework deadline has passed")

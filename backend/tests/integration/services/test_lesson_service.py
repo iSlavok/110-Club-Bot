@@ -3,8 +3,16 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from sqlalchemy import select
 
-from app.enums import LessonKind, LessonView, ReminderKind, ReminderStatus
-from app.exceptions import ClubNotFoundError, EmptyUpdateError, LessonCancelledError, LessonNotFoundError
+from app.enums import LessonKind, LessonView, ReminderKind, ReminderStatus, ReminderTarget
+from app.exceptions import (
+    ClubNotFoundError,
+    EmptyUpdateError,
+    HomeworkDeadlinePassedError,
+    LessonAlreadyStartedError,
+    LessonCancelledError,
+    LessonHasNoHomeworkError,
+    LessonNotFoundError,
+)
 from app.models import Reminder
 from app.schemas import LessonCreate, LessonUpdate, PageParams
 from app.services import LessonService
@@ -311,3 +319,56 @@ async def test_get_returns_lesson_fields(service, db_session) -> None:
         "https://meet.example.com/x",
         club.id,
     )
+
+
+@pytest.mark.parametrize(
+    ("starts_in", "kind"),
+    [(timedelta(hours=2), ReminderKind.LESSON_UPCOMING), (-timedelta(minutes=3), ReminderKind.LESSON_STARTING)],
+    ids=["ahead", "just-started"],
+)
+async def test_remind_now_about_the_lesson(service, db_session, starts_in, kind) -> None:
+    lesson = await make_lesson(db_session, await make_club(db_session), starts_at=DEFAULT_NOW + starts_in)
+
+    reminder = await service.remind_now(lesson.id, ReminderTarget.LESSON)
+
+    assert (reminder.kind, reminder.send_at, reminder.lesson.id) == (kind, DEFAULT_NOW, lesson.id)
+    assert await _reminders(db_session, lesson.id) == [(kind, DEFAULT_NOW, ReminderStatus.PENDING)]
+
+
+async def test_remind_now_about_the_homework(service, db_session) -> None:
+    lesson = await make_lesson(
+        db_session,
+        await make_club(db_session),
+        starts_at=DEFAULT_NOW - timedelta(days=1),
+        homework_deadline_at=DEFAULT_NOW + timedelta(hours=5),
+    )
+
+    reminder = await service.remind_now(lesson.id, ReminderTarget.HOMEWORK)
+
+    assert (reminder.kind, reminder.status) == (ReminderKind.HOMEWORK_DEADLINE, ReminderStatus.PENDING)
+
+
+@pytest.mark.parametrize(
+    ("target", "lesson_fields", "error"),
+    [
+        (ReminderTarget.LESSON, {"starts_at": DEFAULT_NOW - timedelta(minutes=6)}, LessonAlreadyStartedError),
+        (ReminderTarget.HOMEWORK, {"homework_deadline_at": None}, LessonHasNoHomeworkError),
+        (
+            ReminderTarget.HOMEWORK,
+            {"homework_deadline_at": DEFAULT_NOW - timedelta(minutes=1)},
+            HomeworkDeadlinePassedError,
+        ),
+        (ReminderTarget.LESSON, {"is_cancelled": True}, LessonCancelledError),
+    ],
+    ids=["lesson-started", "no-homework", "deadline-passed", "cancelled"],
+)
+async def test_remind_now_refuses_a_reminder_that_would_be_skipped(
+    service, db_session, target, lesson_fields, error
+) -> None:
+    fields = {"starts_at": DEFAULT_NOW + timedelta(hours=2), **lesson_fields}
+    lesson = await make_lesson(db_session, await make_club(db_session), **fields)
+
+    with pytest.raises(error):
+        await service.remind_now(lesson.id, target)
+
+    assert await _reminders(db_session, lesson.id) == []

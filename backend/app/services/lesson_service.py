@@ -2,12 +2,29 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Self
 
-from app.enums import LessonView, ReminderKind
-from app.exceptions import ClubNotFoundError, EmptyUpdateError, LessonCancelledError, LessonNotFoundError
+from app.enums import LessonView, ReminderKind, ReminderTarget
+from app.exceptions import (
+    ClubNotFoundError,
+    EmptyUpdateError,
+    HomeworkDeadlinePassedError,
+    LessonAlreadyStartedError,
+    LessonCancelledError,
+    LessonHasNoHomeworkError,
+    LessonNotFoundError,
+)
 from app.models import Lesson
 from app.repositories import ClubRepository, LessonRepository
-from app.schemas import LessonCreate, LessonDTO, LessonUpdate, PageParams, Paginated
+from app.schemas import (
+    LessonCreate,
+    LessonDTO,
+    LessonUpdate,
+    PageParams,
+    Paginated,
+    ReminderDTO,
+    ReminderWithLessonDTO,
+)
 from app.services.app_settings_service import AppSettingsService
+from app.services.reminder_dispatch_service import LESSON_LATENESS
 from app.services.reminder_planner import ReminderPlanner
 from app.utils import Clock
 
@@ -142,6 +159,26 @@ class LessonService:
             self._reminder_planner.notify_now(lesson, ReminderKind.LESSON_CANCELLED)
         await self._lesson_repository.flush()
         return LessonDTO.from_orm_obj(lesson)
+
+    # Refused when the dispatcher would skip it anyway: the admin learns now, not from a "skipped" status.
+    async def remind_now(self, lesson_id: int, target: ReminderTarget) -> ReminderWithLessonDTO:
+        lesson = await self._get_editable(lesson_id)
+        now = self._clock.now()
+        match target:
+            case ReminderTarget.LESSON:
+                if now > lesson.starts_at + LESSON_LATENESS:
+                    raise LessonAlreadyStartedError
+                kind = ReminderKind.LESSON_STARTING if now >= lesson.starts_at else ReminderKind.LESSON_UPCOMING
+            case ReminderTarget.HOMEWORK:
+                if lesson.homework_deadline_at is None:
+                    raise LessonHasNoHomeworkError
+                if now > lesson.homework_deadline_at:
+                    raise HomeworkDeadlinePassedError
+                kind = ReminderKind.HOMEWORK_DEADLINE
+        reminder = self._reminder_planner.notify_now(lesson, kind)
+        await self._lesson_repository.flush()
+        dto = ReminderDTO.from_orm_obj(reminder)
+        return ReminderWithLessonDTO(**dto.model_dump(), lesson=LessonDTO.from_orm_obj(lesson))
 
     async def _get(self, lesson_id: int) -> Lesson:
         lesson = await self._lesson_repository.get_by_id(lesson_id)

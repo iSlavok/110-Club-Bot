@@ -71,6 +71,73 @@ describe('LessonFormModal', () => {
     expect(screen.getByRole('button', { name: /Дедлайн ДЗ/ })).toHaveTextContent(/23:59$/);
   });
 
+  it('previews a reminder of the unsaved lesson from its offset', async () => {
+    const lesson = makeLesson(9, { title: 'Кислоты', starts_at: '2026-10-03T16:00:00Z' });
+    const previews: unknown[] = [];
+    server.use(
+      http.post('/api/v1/reminders/preview', async ({ request }) => {
+        previews.push(await request.json());
+        return HttpResponse.json({ html: '<b>Урок «Основания»</b>' });
+      }),
+    );
+    renderWithProviders(<LessonFormModal clubId={1} lesson={lesson} onClose={vi.fn()} />);
+
+    const title = await screen.findByLabelText(/Тема/);
+    await userEvent.clear(title);
+    await userEvent.type(title, 'Основания');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Напоминания об уроке: текст «за 1 час»' }),
+    );
+
+    expect(await screen.findByText('Урок «Основания»')).toBeInTheDocument();
+    expect(previews).toEqual([
+      {
+        kind: 'lesson_upcoming',
+        send_at: '2026-10-03T15:00:00.000Z',
+        lesson: {
+          kind: 'lesson',
+          title: 'Основания',
+          starts_at: '2026-10-03T16:00:00.000Z',
+          call_url: null,
+          description: null,
+          homework_deadline_at: null,
+        },
+      },
+    ]);
+  });
+
+  it('previews the «now» reminder without a send time', async () => {
+    const previews: { send_at: unknown }[] = [];
+    server.use(
+      http.post('/api/v1/reminders/preview', async ({ request }) => {
+        previews.push((await request.json()) as { send_at: unknown });
+        return HttpResponse.json({ html: 'Урок' });
+      }),
+    );
+    renderWithProviders(<LessonFormModal clubId={1} lesson={makeLesson(10)} onClose={vi.fn()} />);
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Текст напоминания «сейчас»' }),
+    );
+
+    await waitFor(() => {
+      expect(previews).toHaveLength(1);
+    });
+    expect(previews[0]?.send_at).toBeNull();
+  });
+
+  it('asks for the topic and start before previewing a new lesson', async () => {
+    renderWithProviders(<LessonFormModal clubId={1} onClose={vi.fn()} />);
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Текст напоминания «сейчас»' }),
+    );
+
+    expect(await screen.findByText('Укажите тему')).toBeInTheDocument();
+    expect(screen.getByText('Укажите начало')).toBeInTheDocument();
+    expect(screen.queryByTestId('reminder-preview')).not.toBeInTheDocument();
+  });
+
   it('saves a title change without asking about the chat', async () => {
     const lesson = makeLesson(3, { title: 'Кислоты' });
     const patches = servePatch(lesson);

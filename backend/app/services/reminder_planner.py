@@ -40,13 +40,14 @@ class ReminderPlanner:
     async def cancel_all(self, lesson: Lesson) -> None:
         await self._reminder_repository.cancel_pending(lesson_id=lesson.id)
 
-    def notify_now(self, lesson: Lesson, kind: ReminderKind) -> None:
-        self._add(lesson, kind, self._clock.now())
+    def notify_now(self, lesson: Lesson, kind: ReminderKind) -> Reminder:
+        return self._add(lesson, kind, self._clock.now())
 
     def _add_if_ahead(self, lesson: Lesson, kind: ReminderKind, send_at: datetime, now: datetime) -> None:
         if send_at > now:
             self._add(lesson, kind, send_at)
 
-    def _add(self, lesson: Lesson, kind: ReminderKind, send_at: datetime) -> None:
+    def _add(self, lesson: Lesson, kind: ReminderKind, send_at: datetime) -> Reminder:
         reminder = Reminder(club_id=lesson.club_id, lesson_id=lesson.id, kind=kind, send_at=send_at)
         self._reminder_repository.add(reminder)
+        return reminder

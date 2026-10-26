@@ -86,4 +86,48 @@ describe('ClubLessonPage', () => {
     expect(await screen.findByText('Отменён')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Изменить' })).not.toBeInTheDocument();
   });
+
+  it('sends a homework reminder now after showing its text', async () => {
+    const lesson = makeLesson(7, {
+      title: 'Кислоты',
+      homework_deadline_at: '2099-10-06T20:59:00Z',
+    });
+    const previews: unknown[] = [];
+    const reminds: unknown[] = [];
+    renderCard(lesson, 'lessons.edit');
+    server.use(
+      http.post('/api/v1/reminders/preview', async ({ request }) => {
+        previews.push(await request.json());
+        return HttpResponse.json({ html: '<b>ДЗ к уроку «Кислоты»</b>' });
+      }),
+      http.post('/api/v1/lessons/7/remind', async ({ request }) => {
+        reminds.push(await request.json());
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Напомнить сейчас' }));
+    await userEvent.click(await screen.findByText('О дедлайне ДЗ'));
+
+    expect(await screen.findByText('ДЗ к уроку «Кислоты»')).toBeInTheDocument();
+    expect(previews.at(-1)).toMatchObject({
+      kind: 'homework_deadline',
+      lesson: { title: 'Кислоты', homework_deadline_at: '2099-10-06T20:59:00Z' },
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+
+    await waitFor(() => {
+      expect(reminds).toEqual([{ target: 'homework' }]);
+    });
+  });
+
+  it('offers no homework reminder for a lesson without homework', async () => {
+    renderCard(makeLesson(8), 'lessons.edit');
+    server.use(http.post('/api/v1/reminders/preview', () => HttpResponse.json({ html: 'Урок' })));
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Напомнить сейчас' }));
+
+    expect(await screen.findByTestId('reminder-preview')).toBeInTheDocument();
+    expect(screen.queryByText('О дедлайне ДЗ')).not.toBeInTheDocument();
+  });
 });

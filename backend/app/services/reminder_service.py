@@ -7,7 +7,7 @@ from app.exceptions import (
     ReminderPreviewUnavailableError,
 )
 from app.repositories import ClubRepository, ReminderRepository
-from app.schemas import PageParams, Paginated, ReminderWithLessonDTO
+from app.schemas import PageParams, Paginated, ReminderDraftPreview, ReminderWithLessonDTO
 from app.utils import Clock
 
 HOMEWORK_DEADLINE_KINDS = frozenset({ReminderKind.HOMEWORK_DEADLINE, ReminderKind.HOMEWORK_DEADLINE_CHANGED})
@@ -61,6 +61,13 @@ class ReminderService:
         else:
             moment = reminder.send_at
         return texts.reminders.render(ReminderWithLessonDTO.from_orm_obj_with_lesson(reminder), moment)
+
+    def preview_draft(self, draft: ReminderDraftPreview) -> str:
+        if draft.kind in HOMEWORK_DEADLINE_KINDS and draft.lesson.homework_deadline_at is None:
+            raise ReminderPreviewUnavailableError
+        now = self._clock.now()
+        moment = now if draft.send_at is None else max(draft.send_at, now)
+        return texts.reminders.render_message(draft.kind, draft.lesson, moment)
 
     async def cancel(self, reminder_id: int) -> ReminderWithLessonDTO:
         reminder = await self._reminder_repository.get_with_lesson_for_update(reminder_id)

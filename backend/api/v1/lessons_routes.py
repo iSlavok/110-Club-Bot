@@ -7,7 +7,8 @@ from api.core.auth import require
 from api.core.params import IdPath
 from api.core.routing import UnitOfWorkRoute
 from api.schemas import Page
-from api.schemas.lesson_schemas import LessonCancelRequest, LessonListParams, LessonResponse
+from api.schemas.lesson_schemas import LessonCancelRequest, LessonListParams, LessonRemindRequest, LessonResponse
+from api.schemas.reminder_schemas import ReminderResponse
 from app.enums import Permission
 from app.schemas import LessonCreate, LessonUpdate
 from app.services import LessonService
@@ -71,3 +72,17 @@ async def cancel_lesson(
 ) -> LessonResponse:
     lesson = await lesson_service.cancel(lesson_id, notify_chat=body.notify_chat)
     return LessonResponse.from_dto(lesson)
+
+
+@router.post(
+    "/lessons/{lesson_id}/remind",
+    dependencies=[require(Permission.LESSONS_EDIT)],
+    status_code=status.HTTP_201_CREATED,
+)
+async def remind_now(
+    lesson_id: IdPath,
+    body: LessonRemindRequest,
+    lesson_service: FromDishka[LessonService],
+) -> ReminderResponse:
+    reminder = await lesson_service.remind_now(lesson_id, body.target)
+    return ReminderResponse.from_dto(reminder)

@@ -1,11 +1,12 @@
 from datetime import datetime
 from typing import Self
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.enums import ReminderKind, ReminderStatus
 from app.models import Reminder
-from app.schemas.lesson_schemas import LessonDTO
+from app.schemas.club_schemas import Moment
+from app.schemas.lesson_schemas import LessonDraft, LessonDTO
 
 
 class ReminderDTO(BaseModel):
@@ -48,3 +49,12 @@ class ReminderWithLessonDTO(ReminderDTO):
     def from_orm_obj_with_lesson(cls, reminder: Reminder) -> Self:
         dto = ReminderDTO.from_orm_obj(reminder)
         return cls(**dto.model_dump(), lesson=LessonDTO.from_orm_obj(reminder.lesson))
+
+
+class ReminderDraftPreview(BaseModel):
+    lesson: LessonDraft = Field(description="The lesson as it is in the form, not necessarily saved")
+    kind: ReminderKind = Field(description="Which message to show")
+    send_at: Moment | None = Field(
+        default=None,
+        description="When it would go out; relative times are counted from it. Null or past: now",
+    )

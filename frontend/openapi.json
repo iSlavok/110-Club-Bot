@@ -1910,6 +1910,75 @@
         }
       }
     },
+    "/api/v1/lessons/{lesson_id}/remind": {
+      "post": {
+        "tags": [
+          "lessons"
+        ],
+        "summary": "Remind Now",
+        "operationId": "remind_now",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "lesson_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Lesson Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LessonRemindRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/clubs/{club_id}/reminders": {
       "get": {
         "tags": [
@@ -2095,6 +2164,62 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/reminders/preview": {
+      "post": {
+        "tags": [
+          "reminders"
+        ],
+        "summary": "Preview Draft Reminder",
+        "operationId": "preview_draft_reminder",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderDraftPreview"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderPreviewResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ]
       }
     },
     "/api/v1/reminders/{reminder_id}/cancel": {
@@ -3280,6 +3405,62 @@
         "maxLength": 2000,
         "minLength": 1
       },
+      "LessonDraft": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/LessonKind",
+            "description": "Teacher's lesson or a call with the curator"
+          },
+          "title": {
+            "$ref": "#/components/schemas/LessonTitle",
+            "description": "Lesson topic"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LessonDescription"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Shown in the reminders"
+          },
+          "starts_at": {
+            "$ref": "#/components/schemas/Moment",
+            "description": "Start time"
+          },
+          "call_url": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CallUrl"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Link to the video call, http(s)"
+          },
+          "homework_deadline_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Moment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Homework deadline; null: no homework"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "title",
+          "starts_at"
+        ],
+        "title": "LessonDraft"
+      },
       "LessonKind": {
         "type": "string",
         "enum": [
@@ -3287,6 +3468,19 @@
           "curator_call"
         ],
         "title": "LessonKind"
+      },
+      "LessonRemindRequest": {
+        "properties": {
+          "target": {
+            "$ref": "#/components/schemas/ReminderTarget",
+            "description": "lesson: a reminder about the lesson; homework: about the homework deadline"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target"
+        ],
+        "title": "LessonRemindRequest"
       },
       "LessonResponse": {
         "properties": {
@@ -3889,6 +4083,35 @@
         "maximum": 2147483647.0,
         "minimum": 1.0
       },
+      "ReminderDraftPreview": {
+        "properties": {
+          "lesson": {
+            "$ref": "#/components/schemas/LessonDraft",
+            "description": "The lesson as it is in the form, not necessarily saved"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ReminderKind",
+            "description": "Which message to show"
+          },
+          "send_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Moment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When it would go out; relative times are counted from it. Null or past: now"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lesson",
+          "kind"
+        ],
+        "title": "ReminderDraftPreview"
+      },
       "ReminderKind": {
         "type": "string",
         "enum": [
@@ -4045,6 +4268,14 @@
           "cancelled"
         ],
         "title": "ReminderStatus"
+      },
+      "ReminderTarget": {
+        "type": "string",
+        "enum": [
+          "lesson",
+          "homework"
+        ],
+        "title": "ReminderTarget"
       },
       "ReminderView": {
         "type": "string",

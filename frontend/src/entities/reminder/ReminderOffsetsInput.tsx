@@ -1,4 +1,14 @@
-import { Button, Group, MultiSelect, NumberInput, Select, Stack } from '@mantine/core';
+import {
+  ActionIcon,
+  Button,
+  Group,
+  MultiSelect,
+  NumberInput,
+  Pill,
+  Select,
+  Stack,
+} from '@mantine/core';
+import { IconEye } from '@tabler/icons-react';
 import { useState, type ReactNode } from 'react';
 
 import {
@@ -19,6 +29,8 @@ interface ReminderOffsetsInputProps {
   zeroLabel?: string;
   disabled?: boolean;
   error?: ReactNode;
+  /** Adds an eye button to every chosen offset. */
+  onPreview?: (offset: number) => void;
 }
 
 export function ReminderOffsetsInput({
@@ -28,6 +40,7 @@ export function ReminderOffsetsInput({
   zeroLabel,
   disabled = false,
   error,
+  onPreview,
 }: ReminderOffsetsInputProps) {
   const [amount, setAmount] = useState<number | string>('');
   const [unit, setUnit] = useState<OffsetUnit>('hours');
@@ -57,6 +70,32 @@ export function ReminderOffsetsInput({
         disabled={disabled}
         error={error}
         clearable
+        renderPill={
+          onPreview &&
+          (({ option, value: offset, onRemove }) => (
+            <Pill withRemoveButton={!disabled} onRemove={onRemove}>
+              <Group gap={4} wrap="nowrap" component="span">
+                <ActionIcon
+                  size={16}
+                  variant="transparent"
+                  aria-label={`${label}: текст «${option.label}»`}
+                  // The pill sits inside the select: without this the press also opens its dropdown.
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onPreview(Number(offset));
+                  }}
+                >
+                  <IconEye size={14} />
+                </ActionIcon>
+                {option.label}
+              </Group>
+            </Pill>
+          ))
+        }
       />
       {!disabled && (
         <Group gap="xs" align="flex-end">
