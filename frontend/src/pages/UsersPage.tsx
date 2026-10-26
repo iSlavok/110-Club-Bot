@@ -39,15 +39,16 @@ export function UsersPage() {
         }
       >
         {(items) => (
-          <Table.ScrollContainer minWidth={820}>
-            <Table verticalSpacing="sm">
+          // Fixed layout: columns keep their width as more pages load instead of following the longest name.
+          <Table.ScrollContainer minWidth={760}>
+            <Table verticalSpacing="sm" layout="fixed" style={{ overflowWrap: 'anywhere' }}>
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Имя</Table.Th>
-                  <Table.Th>Telegram</Table.Th>
-                  <Table.Th>ВК</Table.Th>
-                  <Table.Th>ВК привязан</Table.Th>
-                  <Table.Th>Первый /start</Table.Th>
+                  <Table.Th w={180}>Telegram</Table.Th>
+                  <Table.Th w={150}>ВК</Table.Th>
+                  <Table.Th w={140}>ВК привязан</Table.Th>
+                  <Table.Th w={140}>Первый /start</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
