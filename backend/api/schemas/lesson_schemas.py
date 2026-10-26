@@ -3,7 +3,7 @@ from typing import Self
 
 from pydantic import BaseModel, Field
 
-from app.enums import LessonKind, LessonView
+from app.enums import LessonKind, LessonView, ReminderTarget
 from app.schemas import LessonDTO, PageParams
 
 
@@ -49,3 +49,9 @@ class LessonResponse(BaseModel):
 
 class LessonCancelRequest(BaseModel):
     notify_chat: bool = Field(default=False, description="Tell the club chat that the lesson is cancelled")
+
+
+class LessonRemindRequest(BaseModel):
+    target: ReminderTarget = Field(
+        description="lesson: a reminder about the lesson; homework: about the homework deadline",
+    )

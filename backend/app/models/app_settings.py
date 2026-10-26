@@ -1,4 +1,6 @@
-from sqlalchemy import CheckConstraint, Integer
+from datetime import time
+
+from sqlalchemy import CheckConstraint, Integer, Time
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column
 
@@ -16,6 +18,9 @@ class AppSettings(Base):
     # Minutes before the lesson start / homework deadline, prefilled in a new lesson.
     default_lesson_offsets: Mapped[list[int]] = mapped_column(ARRAY(Integer), server_default="{1440,60,0}")
     default_homework_offsets: Mapped[list[int]] = mapped_column(ARRAY(Integer), server_default="{2880,1440,180}")
+    # Moscow time prefilled when a date is picked for a new lesson start / homework deadline.
+    default_lesson_time: Mapped[time] = mapped_column(Time, server_default="16:00")
+    default_homework_time: Mapped[time] = mapped_column(Time, server_default="23:59")
 
     # Base pluralizes the class name, which would give "app_settingss".
     @declared_attr.directive

@@ -4,6 +4,7 @@
  * 110 Club Admin API
  * OpenAPI spec version: 0.1.0
  */
+import type { ClockTime } from './clockTime';
 import type { ReminderOffsets } from './reminderOffsets';
 import type { VkLinkMode } from './vkLinkMode';
 
@@ -14,4 +15,8 @@ export interface AppSettingsUpdate {
   default_lesson_offsets?: ReminderOffsets;
   /** Minutes before the homework deadline prefilled in a new lesson, unique */
   default_homework_offsets?: ReminderOffsets;
+  /** Moscow time HH:MM prefilled when a start date is picked in a new lesson */
+  default_lesson_time?: ClockTime;
+  /** Moscow time HH:MM prefilled when a homework deadline date is picked */
+  default_homework_time?: ClockTime;
 }

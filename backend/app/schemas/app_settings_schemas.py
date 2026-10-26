@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 from typing import Self
 
 from pydantic import BaseModel, Field
@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from app.enums import VkLinkMode
 from app.models import AppSettings
 from app.schemas.patch_schemas import Maybe, PatchSchema
-from app.types import ReminderOffsets
+from app.types import ClockTime, ReminderOffsets
 
 
 class AppSettingsDTO(BaseModel):
@@ -14,6 +14,8 @@ class AppSettingsDTO(BaseModel):
     vk_link_mode: VkLinkMode
     default_lesson_offsets: list[int]
     default_homework_offsets: list[int]
+    default_lesson_time: time
+    default_homework_time: time
     created_at: datetime
     updated_at: datetime
 
@@ -24,6 +26,8 @@ class AppSettingsDTO(BaseModel):
             vk_link_mode=settings.vk_link_mode,
             default_lesson_offsets=list(settings.default_lesson_offsets),
             default_homework_offsets=list(settings.default_homework_offsets),
+            default_lesson_time=settings.default_lesson_time,
+            default_homework_time=settings.default_homework_time,
             created_at=settings.created_at,
             updated_at=settings.updated_at,
         )
@@ -42,4 +46,10 @@ class AppSettingsUpdate(PatchSchema):
     )
     default_homework_offsets: Maybe[ReminderOffsets] = Field(
         description="Minutes before the homework deadline prefilled in a new lesson, unique",
+    )
+    default_lesson_time: Maybe[ClockTime] = Field(
+        description="Moscow time HH:MM prefilled when a start date is picked in a new lesson",
+    )
+    default_homework_time: Maybe[ClockTime] = Field(
+        description="Moscow time HH:MM prefilled when a homework deadline date is picked",
     )

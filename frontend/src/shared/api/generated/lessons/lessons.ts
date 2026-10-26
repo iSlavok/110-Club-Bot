@@ -28,10 +28,12 @@ import type {
   ErrorResponse,
   LessonCancelRequest,
   LessonCreate,
+  LessonRemindRequest,
   LessonResponse,
   LessonUpdate,
   ListLessonsParams,
   PageLessonResponse,
+  ReminderResponse,
   UpdateLessonParams,
   ValidationErrorResponse,
 } from '../model';
@@ -829,4 +831,111 @@ export const useCancelLesson = <
   TContext
 > => {
   return useMutation(getCancelLessonMutationOptions(options), queryClient);
+};
+export const getRemindNowUrl = (lessonId: number) => {
+  return `/api/v1/lessons/${lessonId}/remind`;
+};
+
+/**
+ * @summary Remind Now
+ */
+export const remindNow = async (
+  lessonId: number,
+  lessonRemindRequest: LessonRemindRequest,
+  options?: Parameters<typeof apiFetch>[1],
+): Promise<ReminderResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return apiFetch<ReminderResponse>(getRemindNowUrl(lessonId), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(lessonRemindRequest),
+  });
+};
+
+export const getRemindNowMutationKey = () => ['remindNow'] as const;
+
+export const getRemindNowMutationOptions = <
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof remindNow>>,
+    TError,
+    RemindNowMutationVariables,
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof remindNow>>,
+  TError,
+  RemindNowMutationVariables,
+  TContext
+> => {
+  const mutationKey = getRemindNowMutationKey();
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof remindNow>>,
+    RemindNowMutationVariables
+  > = (props) => {
+    const { lessonId, data } = props ?? {};
+
+    return remindNow(lessonId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RemindNowMutationResult = NonNullable<Awaited<ReturnType<typeof remindNow>>>;
+export type RemindNowMutationBody = BodyType<LessonRemindRequest>;
+export type RemindNowMutationError = ErrorType<ValidationErrorResponse | ErrorResponse>;
+export type RemindNowMutationVariables = { lessonId: number; data: BodyType<LessonRemindRequest> };
+
+/**
+ * @summary Remind Now
+ */
+export const useRemindNow = <
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof remindNow>>,
+      TError,
+      RemindNowMutationVariables,
+      TContext
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof remindNow>>,
+  TError,
+  RemindNowMutationVariables,
+  TContext
+> => {
+  return useMutation(getRemindNowMutationOptions(options), queryClient);
 };

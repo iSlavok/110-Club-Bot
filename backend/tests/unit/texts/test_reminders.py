@@ -4,7 +4,7 @@ import pytest
 
 from app import texts
 from app.enums import LessonKind, ReminderKind, ReminderStatus
-from app.schemas import LessonDTO, ReminderWithLessonDTO
+from app.schemas import LessonDraft, LessonDTO, ReminderWithLessonDTO
 
 # 12:00 in Moscow, Thursday.
 NOW = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
@@ -144,3 +144,11 @@ def test_homework_removed() -> None:
 def test_deadline_reminder_without_homework_is_a_bug() -> None:
     with pytest.raises(ValueError, match="no homework"):
         _render(ReminderKind.HOMEWORK_DEADLINE)
+
+
+def test_renders_a_draft_lesson() -> None:
+    draft = LessonDraft(kind=LessonKind.LESSON, title="Кислоты", starts_at=NOW + timedelta(minutes=30))
+
+    text = texts.reminders.render_message(ReminderKind.LESSON_UPCOMING, draft, NOW)
+
+    assert text == "<b>Урок «Кислоты»</b>\nЧерез 30 минут, в 12:30"

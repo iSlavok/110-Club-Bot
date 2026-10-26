@@ -15,11 +15,11 @@ from app.schemas.club_schemas import (
 )
 from app.schemas.club_stats_schemas import ClubStats, CurrentBlockStats
 from app.schemas.health_schemas import ReadinessReport
-from app.schemas.lesson_schemas import LessonCreate, LessonDTO, LessonUpdate
+from app.schemas.lesson_schemas import LessonCreate, LessonDraft, LessonDTO, LessonUpdate
 from app.schemas.membership_removal_schemas import RemovalCandidate, RemovalRequestAlert
 from app.schemas.pagination_schemas import MAX_PER_PAGE, PageParams, Paginated
 from app.schemas.patch_schemas import Maybe, PatchSchema
-from app.schemas.reminder_schemas import ReminderDTO, ReminderWithLessonDTO
+from app.schemas.reminder_schemas import ReminderDraftPreview, ReminderDTO, ReminderWithLessonDTO
 from app.schemas.role_schemas import PermissionInfo, RoleCreate, RoleDTO, RoleUpdate
 from app.schemas.schedule_schemas import ClubSchedule, ScheduleItem
 from app.schemas.sheet_sync_schemas import SheetIssue, SheetSyncDTO
@@ -75,6 +75,7 @@ __all__ = [
     "KickedMember",
     "LessonCreate",
     "LessonDTO",
+    "LessonDraft",
     "LessonUpdate",
     "Maybe",
     "PageParams",
@@ -83,6 +84,7 @@ __all__ = [
     "PermissionInfo",
     "ReadinessReport",
     "ReminderDTO",
+    "ReminderDraftPreview",
     "ReminderStatusSection",
     "ReminderWithLessonDTO",
     "RemovalCandidate",

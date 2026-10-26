@@ -1,2 +1,2 @@
-export { ReminderDefaultsForm } from './ReminderDefaultsForm';
+export { LessonDefaultsForm } from './LessonDefaultsForm';
 export { VkLinkModeForm } from './VkLinkModeForm';

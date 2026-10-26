@@ -1,16 +1,20 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import dayjs from 'dayjs';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { LessonResponse } from '@/shared/api';
-import { makeLesson } from '@/test/fixtures';
+import { makeLesson, makeSettings, settingsHandler } from '@/test/fixtures';
 import { renderWithProviders } from '@/test/render';
 import { server } from '@/test/server';
 
 import { LessonFormModal } from './LessonFormModal';
 
 const HOUR_MS = 3_600_000;
+
+// Accessible name of a day in the open month of a picker.
+const dayLabel = (day: number) => dayjs().date(day).locale('ru').format('D MMMM YYYY');
 
 interface Patch {
   body: Record<string, unknown>;
@@ -32,16 +36,14 @@ function servePatch(lesson: LessonResponse): Patch[] {
 }
 
 describe('LessonFormModal', () => {
+  beforeEach(() => {
+    server.use(settingsHandler());
+  });
+
   it('prefills a new lesson with the default offsets from the bot settings', async () => {
     server.use(
-      http.get('/api/v1/settings', () =>
-        HttpResponse.json({
-          vk_link_mode: 'oauth',
-          configured_vk_link_modes: ['oauth'],
-          default_lesson_offsets: [1440, 0],
-          default_homework_offsets: [180],
-          updated_at: '2026-10-01T09:00:00Z',
-        }),
+      settingsHandler(
+        makeSettings({ default_lesson_offsets: [1440, 0], default_homework_offsets: [180] }),
       ),
     );
     renderWithProviders(<LessonFormModal clubId={1} onClose={vi.fn()} />);
@@ -53,6 +55,87 @@ describe('LessonFormModal', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
     expect(await screen.findByText('Укажите тему')).toBeInTheDocument();
     expect(screen.getByText('Укажите начало')).toBeInTheDocument();
+  });
+
+  it('sets the default time when a day is picked for the start and the deadline', async () => {
+    server.use(settingsHandler(makeSettings({ default_lesson_time: '15:30:00' })));
+    renderWithProviders(<LessonFormModal clubId={1} onClose={vi.fn()} />);
+
+    await userEvent.click(await screen.findByRole('button', { name: /Начало/ }));
+    await userEvent.click(await screen.findByRole('button', { name: dayLabel(10) }));
+    await userEvent.click(screen.getByRole('switch', { name: 'Есть ДЗ' }));
+    await userEvent.click(screen.getByRole('button', { name: /Дедлайн ДЗ/ }));
+    await userEvent.click(await screen.findByRole('button', { name: dayLabel(12) }));
+
+    expect(screen.getByRole('button', { name: /Начало/ })).toHaveTextContent(/15:30$/);
+    expect(screen.getByRole('button', { name: /Дедлайн ДЗ/ })).toHaveTextContent(/23:59$/);
+  });
+
+  it('previews a reminder of the unsaved lesson from its offset', async () => {
+    const lesson = makeLesson(9, { title: 'Кислоты', starts_at: '2026-10-03T16:00:00Z' });
+    const previews: unknown[] = [];
+    server.use(
+      http.post('/api/v1/reminders/preview', async ({ request }) => {
+        previews.push(await request.json());
+        return HttpResponse.json({ html: '<b>Урок «Основания»</b>' });
+      }),
+    );
+    renderWithProviders(<LessonFormModal clubId={1} lesson={lesson} onClose={vi.fn()} />);
+
+    const title = await screen.findByLabelText(/Тема/);
+    await userEvent.clear(title);
+    await userEvent.type(title, 'Основания');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Напоминания об уроке: текст «за 1 час»' }),
+    );
+
+    expect(await screen.findByText('Урок «Основания»')).toBeInTheDocument();
+    expect(previews).toEqual([
+      {
+        kind: 'lesson_upcoming',
+        send_at: '2026-10-03T15:00:00.000Z',
+        lesson: {
+          kind: 'lesson',
+          title: 'Основания',
+          starts_at: '2026-10-03T16:00:00.000Z',
+          call_url: null,
+          description: null,
+          homework_deadline_at: null,
+        },
+      },
+    ]);
+  });
+
+  it('previews the «now» reminder without a send time', async () => {
+    const previews: { send_at: unknown }[] = [];
+    server.use(
+      http.post('/api/v1/reminders/preview', async ({ request }) => {
+        previews.push((await request.json()) as { send_at: unknown });
+        return HttpResponse.json({ html: 'Урок' });
+      }),
+    );
+    renderWithProviders(<LessonFormModal clubId={1} lesson={makeLesson(10)} onClose={vi.fn()} />);
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Текст напоминания «сейчас»' }),
+    );
+
+    await waitFor(() => {
+      expect(previews).toHaveLength(1);
+    });
+    expect(previews[0]?.send_at).toBeNull();
+  });
+
+  it('asks for the topic and start before previewing a new lesson', async () => {
+    renderWithProviders(<LessonFormModal clubId={1} onClose={vi.fn()} />);
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Текст напоминания «сейчас»' }),
+    );
+
+    expect(await screen.findByText('Укажите тему')).toBeInTheDocument();
+    expect(screen.getByText('Укажите начало')).toBeInTheDocument();
+    expect(screen.queryByTestId('reminder-preview')).not.toBeInTheDocument();
   });
 
   it('saves a title change without asking about the chat', async () => {

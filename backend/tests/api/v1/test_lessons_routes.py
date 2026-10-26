@@ -77,9 +77,10 @@ async def test_viewer_reads_but_cannot_edit(api_client, login_as, db_session, vi
     created = await api_client.post(f"/api/v1/clubs/{club.id}/lessons", json=LESSON)
     patched = await api_client.patch(f"/api/v1/lessons/{lesson.id}", json={"title": "x"})
     cancelled = await api_client.post(f"/api/v1/lessons/{lesson.id}/cancel", json={})
+    reminded = await api_client.post(f"/api/v1/lessons/{lesson.id}/remind", json={"target": "lesson"})
 
     assert listed.status_code == 200
-    assert [response.status_code for response in (created, patched, cancelled)] == [403, 403, 403]
+    assert [response.status_code for response in (created, patched, cancelled, reminded)] == [403, 403, 403, 403]
     assert created.json()["code"] == "PERMISSION_DENIED"
 
 
@@ -160,3 +161,27 @@ async def test_unknown_lesson_and_club(api_client, login_as, editor) -> None:
 
     assert (lesson.status_code, lesson.json()["code"]) == (404, "LESSON_NOT_FOUND")
     assert (club.status_code, club.json()["code"]) == (404, "CLUB_NOT_FOUND")
+
+
+async def test_remind_now_queues_a_reminder_for_this_minute(api_client, login_as, db_session, editor) -> None:
+    club = await make_club(db_session)
+    lesson = await make_lesson(db_session, club, title="Кислоты", starts_at=DEFAULT_NOW + timedelta(hours=3))
+    await login_as(editor)
+
+    response = await api_client.post(f"/api/v1/lessons/{lesson.id}/remind", json={"target": "lesson"})
+
+    assert response.status_code == 201
+    body = response.json()
+    assert (body["kind"], body["status"], body["lesson"]["id"]) == ("lesson_upcoming", "pending", lesson.id)
+    assert body["send_at"] == DEFAULT_NOW.isoformat().replace("+00:00", "Z")
+
+
+async def test_remind_now_about_missing_homework_is_refused(api_client, login_as, db_session, editor) -> None:
+    club = await make_club(db_session)
+    lesson = await make_lesson(db_session, club, starts_at=DEFAULT_NOW + timedelta(hours=3))
+    await login_as(editor)
+
+    response = await api_client.post(f"/api/v1/lessons/{lesson.id}/remind", json={"target": "homework"})
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "LESSON_HAS_NO_HOMEWORK"

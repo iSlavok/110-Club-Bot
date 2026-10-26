@@ -1,3 +1,5 @@
+from datetime import time
+
 import pytest
 
 from app.config import VkSettings
@@ -63,3 +65,12 @@ async def test_changes_default_reminder_offsets_latest_first(service) -> None:
     assert overview.settings.default_lesson_offsets == [30, 0]
     assert overview.settings.default_homework_offsets == [60]
     assert overview.settings.vk_link_mode is VkLinkMode.OAUTH
+
+
+async def test_changes_default_times(service) -> None:
+    patch = AppSettingsUpdate.model_validate({"default_lesson_time": "15:30", "default_homework_time": "22:00"})
+
+    overview = await service.update(patch)
+
+    assert overview.settings.default_lesson_time == time(15, 30)
+    assert overview.settings.default_homework_time == time(22, 0)

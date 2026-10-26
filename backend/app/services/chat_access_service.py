@@ -10,6 +10,7 @@ from app.models import Block, ChatAccess, Club, User
 from app.queries import ChatAccessQueries
 from app.repositories import BlockRepository, ChatAccessRepository, ClubRepository, MembershipRepository, UserRepository
 from app.schemas import ClubAccess, KickedMember, StudentClubStatus
+from app.services.bot_admin_service import BotAdminService
 from app.telegram import AdminAlerts, chat_invite_keyboard
 from app.utils import Clock
 
@@ -20,7 +21,8 @@ ERROR_MAX_LEN = 1000
 JOIN_LINK_NAME = "club bot"
 
 
-# The bot lets in only students with access, and never declines a request: admins approve everyone else by hand.
+# The bot lets in only students with access and admins, and never declines a request: admins approve everyone else
+# by hand. Admins are members of every active club: they join any chat, see its schedule and are never removed.
 class ChatAccessService:
     def __init__(
         self,
@@ -31,6 +33,7 @@ class ChatAccessService:
         block_repository: BlockRepository,
         membership_repository: MembershipRepository,
         user_repository: UserRepository,
+        bot_admin_service: BotAdminService,
         bot: Bot,
         admin_alerts: AdminAlerts,
         clock: Clock,
@@ -41,6 +44,7 @@ class ChatAccessService:
         self._block_repository = block_repository
         self._membership_repository = membership_repository
         self._user_repository = user_repository
+        self._bot_admin_service = bot_admin_service
         self._bot = bot
         self._admin_alerts = admin_alerts
         self._clock = clock
@@ -94,11 +98,19 @@ class ChatAccessService:
             error=errors[0] if errors else None,
         )
 
-    async def access_blocks(self, vk_id: int) -> list[tuple[Club, Block]]:
+    async def access_blocks(self, user: User) -> list[tuple[Club, Block]]:
+        is_admin = await self._bot_admin_service.is_admin(user.tg_id)
+        if not is_admin and user.vk_id is None:
+            return []
         club_blocks: list[tuple[Club, Block]] = []
         clubs = await self._club_repository.list_active()
         for club in clubs:
-            block = await self._access_block(club, vk_id)
+            if is_admin:
+                block = await self._block_repository.get_access_block(club_id=club.id, now=self._clock.now())
+            elif user.vk_id is not None:
+                block = await self._access_block(club, user.vk_id)
+            else:
+                block = None
             if block is not None:
                 club_blocks.append((club, block))
         return club_blocks
@@ -106,10 +118,10 @@ class ChatAccessService:
     # Every access comes with the student's join link: showing the status is the moment they need it.
     async def access_for_user(self, user_id: int) -> list[ClubAccess]:
         user = await self._user_repository.get_by_id(user_id)
-        if user is None or user.vk_id is None:
+        if user is None:
             return []
         access: list[ClubAccess] = []
-        club_blocks = await self.access_blocks(user.vk_id)
+        club_blocks = await self.access_blocks(user)
         for club, block in club_blocks:
             invite_link = await self._try_invite_link(club, user)
             access.append(self._club_access(club, block, invite_link))
@@ -118,14 +130,16 @@ class ChatAccessService:
     # Telegram is asked directly: a student an admin let in by hand is in the chat too.
     async def student_clubs(self, user_id: int) -> list[StudentClubStatus]:
         user = await self._user_repository.get_by_id(user_id)
-        if user is None or user.vk_id is None:
+        if user is None:
             return []
         statuses: list[StudentClubStatus] = []
-        club_blocks = await self.access_blocks(user.vk_id)
+        club_blocks = await self.access_blocks(user)
         for club, block in club_blocks:
             in_chat = await self._is_in_chat(club, user)
             invite_link = await self._try_invite_link(club, user) if in_chat is False else None
-            next_block_title = await self._next_block_title(club, block, user.vk_id)
+            next_block_title = None
+            if user.vk_id is not None:
+                next_block_title = await self._next_block_title(club, block, user.vk_id)
             statuses.append(
                 StudentClubStatus(
                     access=self._club_access(club, block, invite_link),
@@ -141,16 +155,21 @@ class ChatAccessService:
         if club is None:
             return
         user = await self._user_repository.get_by_tg_id(tg_id)
-        if user is None or user.vk_id is None:
-            logger.info("Join request of {} to club {} without a linked VK, left to admins", tg_id, club.id)
-            return
-        if await self._access_block(club, user.vk_id) is None:
-            logger.info("Join request of user {} to club {} without access, left to admins", user.id, club.id)
-            return
+        if not await self._bot_admin_service.is_admin(tg_id):
+            if user is None or user.vk_id is None:
+                logger.info("Join request of {} to club {} without a linked VK, left to admins", tg_id, club.id)
+                return
+            if await self._access_block(club, user.vk_id) is None:
+                logger.info("Join request of user {} to club {} without access, left to admins", user.id, club.id)
+                return
         try:
             await self._bot.approve_chat_join_request(chat_id=chat_id, user_id=tg_id)
         except TelegramAPIError as error:
-            logger.warning("Cannot approve the join request of user {} to club {}: {}", user.id, club.id, error)
+            logger.warning("Cannot approve the join request of {} to club {}: {}", tg_id, club.id, error)
+            return
+        # An admin who never started the bot has no user row to keep the access in.
+        if user is None:
+            logger.info("Admin {} joined the chat of club {}", tg_id, club.id)
             return
         now = self._clock.now()
         access = await self._chat_access_repository.get_for_user(club_id=club.id, user_id=user.id)
@@ -209,6 +228,8 @@ class ChatAccessService:
     async def _kick(self, club: Club, access_id: int) -> KickedMember | None:
         access = await self._chat_access_repository.get_with_user(access_id)
         if access is None or access.user.vk_id is None:
+            return None
+        if await self._bot_admin_service.is_admin(access.user.tg_id):
             return None
         user, vk_id = access.user, access.user.vk_id
         member = await self._bot.get_chat_member(chat_id=access.chat_id, user_id=user.tg_id)

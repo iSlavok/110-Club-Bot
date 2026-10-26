@@ -28,13 +28,14 @@ import type {
   ErrorResponse,
   ListRemindersParams,
   PageReminderResponse,
+  ReminderDraftPreview,
   ReminderPreviewResponse,
   ReminderResponse,
   ValidationErrorResponse,
 } from '../model';
 
 import { apiFetch } from '../../http';
-import type { ErrorType } from '../../http';
+import type { ErrorType, BodyType } from '../../http';
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
@@ -488,6 +489,114 @@ export function usePreviewReminder<
   return withQueryKey(query, queryOptions.queryKey);
 }
 
+export const getPreviewDraftReminderUrl = () => {
+  return `/api/v1/reminders/preview`;
+};
+
+/**
+ * @summary Preview Draft Reminder
+ */
+export const previewDraftReminder = async (
+  reminderDraftPreview: ReminderDraftPreview,
+  options?: Parameters<typeof apiFetch>[1],
+): Promise<ReminderPreviewResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return apiFetch<ReminderPreviewResponse>(getPreviewDraftReminderUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(reminderDraftPreview),
+  });
+};
+
+export const getPreviewDraftReminderMutationKey = () => ['previewDraftReminder'] as const;
+
+export const getPreviewDraftReminderMutationOptions = <
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof previewDraftReminder>>,
+    TError,
+    PreviewDraftReminderMutationVariables,
+    TContext
+  >;
+  request?: SecondParameter<typeof apiFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof previewDraftReminder>>,
+  TError,
+  PreviewDraftReminderMutationVariables,
+  TContext
+> => {
+  const mutationKey = getPreviewDraftReminderMutationKey();
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof previewDraftReminder>>,
+    PreviewDraftReminderMutationVariables
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return previewDraftReminder(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PreviewDraftReminderMutationResult = NonNullable<
+  Awaited<ReturnType<typeof previewDraftReminder>>
+>;
+export type PreviewDraftReminderMutationBody = BodyType<ReminderDraftPreview>;
+export type PreviewDraftReminderMutationError = ErrorType<ValidationErrorResponse | ErrorResponse>;
+export type PreviewDraftReminderMutationVariables = { data: BodyType<ReminderDraftPreview> };
+
+/**
+ * @summary Preview Draft Reminder
+ */
+export const usePreviewDraftReminder = <
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof previewDraftReminder>>,
+      TError,
+      PreviewDraftReminderMutationVariables,
+      TContext
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof previewDraftReminder>>,
+  TError,
+  PreviewDraftReminderMutationVariables,
+  TContext
+> => {
+  return useMutation(getPreviewDraftReminderMutationOptions(options), queryClient);
+};
 export const getCancelReminderUrl = (reminderId: number) => {
   return `/api/v1/reminders/${reminderId}/cancel`;
 };

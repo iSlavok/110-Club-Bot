@@ -1,7 +1,7 @@
 import { Paper, Stack } from '@mantine/core';
 
 import { usePermission } from '@/entities/session';
-import { ReminderDefaultsForm, VkLinkModeForm } from '@/features/settings';
+import { LessonDefaultsForm, VkLinkModeForm } from '@/features/settings';
 import { useGetSettings } from '@/shared/api';
 import { PageHeader } from '@/shared/ui/PageHeader';
 import { QueryState } from '@/shared/ui/QueryState';
@@ -20,7 +20,7 @@ export function SettingsPage() {
               <VkLinkModeForm key={data.updated_at} settings={data} canEdit={canEdit} />
             </Paper>
             <Paper withBorder radius="md" p="lg">
-              <ReminderDefaultsForm key={data.updated_at} settings={data} canEdit={canEdit} />
+              <LessonDefaultsForm key={data.updated_at} settings={data} canEdit={canEdit} />
             </Paper>
           </Stack>
         )}

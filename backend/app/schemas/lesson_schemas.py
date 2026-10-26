@@ -92,3 +92,13 @@ class LessonUpdate(PatchSchema):
     homework_reminder_offsets: Maybe[ReminderOffsets] = Field(
         description="Minutes before the homework deadline to remind at, unique",
     )
+
+
+# The lesson as typed in the form, saved or not: enough to show what its reminders will say.
+class LessonDraft(BaseModel):
+    kind: LessonKind = Field(description="Teacher's lesson or a call with the curator")
+    title: LessonTitle = Field(description="Lesson topic")
+    description: LessonDescription | None = Field(default=None, description="Shown in the reminders")
+    starts_at: Moment = Field(description="Start time")
+    call_url: CallUrl | None = Field(default=None, description="Link to the video call, http(s)")
+    homework_deadline_at: Moment | None = Field(default=None, description="Homework deadline; null: no homework")

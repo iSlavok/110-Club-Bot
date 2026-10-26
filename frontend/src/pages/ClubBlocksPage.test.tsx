@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -30,14 +30,19 @@ const MEMBERS: BlockMemberResponse[] = [
 ];
 
 function renderBlocks(...permissions: Permission[]) {
+  const memberRequests: URLSearchParams[] = [];
   server.use(
     meHandler(makeAdmin('clubs.view', ...permissions)),
     http.get('/api/v1/clubs/7/blocks', ({ request }) => pageOf([BLOCK], request)),
-    http.get('/api/v1/blocks/3/members', ({ request }) => pageOf(MEMBERS, request)),
+    http.get('/api/v1/blocks/3/members', ({ request }) => {
+      memberRequests.push(new URL(request.url).searchParams);
+      return pageOf(MEMBERS, request);
+    }),
   );
-  return renderRoutes([{ path: '/clubs/:clubId/blocks', element: <ClubBlocksPage /> }], {
+  renderRoutes([{ path: '/clubs/:clubId/blocks', element: <ClubBlocksPage /> }], {
     route: '/clubs/7/blocks',
   });
+  return memberRequests;
 }
 
 describe('ClubBlocksPage', () => {
@@ -56,6 +61,32 @@ describe('ClubBlocksPage', () => {
     );
     expect(modal.getByText('не подключил бота')).toBeInTheDocument();
     expect(modal.getByText('в чате')).toBeInTheDocument();
+  });
+
+  it('sorts the members by the pressed column, bot users first by default', async () => {
+    const requests = renderBlocks('users.view');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Участники блока 5' }));
+    const modal = within(await screen.findByRole('dialog'));
+    await modal.findByText('Анна Белова');
+    const sortOf = () => {
+      const last = requests.at(-1);
+      return [last?.get('sort'), last?.get('order')];
+    };
+    expect(sortOf()).toEqual(['bot', 'asc']);
+    expect(modal.getByRole('columnheader', { name: /Пользователь бота/ })).toHaveAttribute(
+      'aria-sort',
+      'ascending',
+    );
+
+    await userEvent.click(modal.getByRole('button', { name: /Чат/ }));
+    await waitFor(() => {
+      expect(sortOf()).toEqual(['chat', 'asc']);
+    });
+    await userEvent.click(modal.getByRole('button', { name: /Чат/ }));
+    await waitFor(() => {
+      expect(sortOf()).toEqual(['chat', 'desc']);
+    });
   });
 
   it('shows only the member count without users.view', async () => {

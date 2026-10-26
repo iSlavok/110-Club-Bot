@@ -39,7 +39,10 @@ from app.exceptions.clubs import (
 )
 from app.exceptions.common import EmptyUpdateError
 from app.exceptions.lessons import (
+    HomeworkDeadlinePassedError,
+    LessonAlreadyStartedError,
     LessonCancelledError,
+    LessonHasNoHomeworkError,
     LessonNotFoundError,
     ReminderNotFoundError,
     ReminderNotPendingError,
@@ -76,12 +79,15 @@ __all__ = [
     "ConflictError",
     "EmptyUpdateError",
     "ExternalServiceError",
+    "HomeworkDeadlinePassedError",
     "InvalidBlockPeriodError",
     "InvalidInputError",
     "InvalidLoginCodeError",
     "InvalidVkLinkError",
     "InvalidWidgetDataError",
+    "LessonAlreadyStartedError",
     "LessonCancelledError",
+    "LessonHasNoHomeworkError",
     "LessonNotFoundError",
     "LoginUnavailableError",
     "NotAuthenticatedError",

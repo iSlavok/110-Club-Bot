@@ -7,9 +7,10 @@ NO_ACCESS = "В текущем блоке тебя нет в списках. Е�
 
 
 def student_status(status: StudentStatus) -> str:
-    if status.vk_id is None:
+    if status.vk_id is None and not status.clubs:
         return NOT_LINKED
-    parts = [f"ВК: vk.com/id{status.vk_id}"]
+    # An admin is in every club even without a linked VK.
+    parts = [] if status.vk_id is None else [f"ВК: vk.com/id{status.vk_id}"]
     if not status.clubs:
         parts.append(NO_ACCESS)
     parts.extend(_club(club) for club in status.clubs)

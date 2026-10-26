@@ -23,3 +23,8 @@ class ReminderView(StrEnum):
     PENDING = "pending"
     SENT = "sent"
     ALL = "all"
+
+
+class ReminderTarget(StrEnum):
+    LESSON = "lesson"
+    HOMEWORK = "homework"

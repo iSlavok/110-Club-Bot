@@ -1,5 +1,6 @@
-import { Modal, Paper } from '@mantine/core';
+import { Modal } from '@mantine/core';
 
+import { ReminderMessage } from '@/entities/reminder';
 import { usePreviewReminder } from '@/shared/api';
 import { QueryState } from '@/shared/ui/QueryState';
 
@@ -13,16 +14,7 @@ export function ReminderPreviewModal({ reminderId, onClose }: ReminderPreviewMod
   return (
     <Modal opened onClose={onClose} title="Текст напоминания" size="lg">
       <QueryState data={preview.data} error={preview.error} isPending={preview.isPending}>
-        {(data) => (
-          <Paper withBorder p="md" radius="md" bg="var(--mantine-color-default-hover)">
-            {/* Safe to inject: the backend escapes every admin-entered field, the only tags are its own. */}
-            <div
-              data-testid="reminder-preview"
-              style={{ whiteSpace: 'pre-wrap' }}
-              dangerouslySetInnerHTML={{ __html: data.html }}
-            />
-          </Paper>
-        )}
+        {(data) => <ReminderMessage html={data.html} />}
       </QueryState>
     </Modal>
   );

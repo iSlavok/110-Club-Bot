@@ -30,6 +30,11 @@ export function minutesUntil(iso: string, nowMs = Date.now()): number {
   return Math.floor((Date.parse(iso) - nowMs) / MINUTE_MS);
 }
 
+/** When a reminder set `offset` minutes before the moment goes out. */
+export function minutesBefore(iso: string, offset: number): string {
+  return new Date(Date.parse(iso) - offset * MINUTE_MS).toISOString();
+}
+
 /** Homework offsets whose reminder would reach the chat before the lesson has even started. */
 export function homeworkRemindersBeforeStart(
   startsAt: string,

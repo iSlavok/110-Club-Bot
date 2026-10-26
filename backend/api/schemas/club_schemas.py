@@ -3,8 +3,8 @@ from typing import Self
 
 from pydantic import BaseModel, Field
 
-from app.enums import ChatAccessStatus
-from app.schemas import BlockDTO, BlockMember, BlockMemberUser, BlockSummary, ClubDTO
+from app.enums import BlockMemberSort, ChatAccessStatus, SortOrder
+from app.schemas import BlockDTO, BlockMember, BlockMemberUser, BlockSummary, ClubDTO, PageParams
 
 
 class ClubResponse(BaseModel):
@@ -66,6 +66,16 @@ class BlockListItemResponse(BlockResponse):
             ends_at=block.ends_at,
             members_count=summary.members_count,
         )
+
+
+class BlockMemberListParams(PageParams):
+    sort: BlockMemberSort = Field(
+        default=BlockMemberSort.BOT,
+        description=(
+            "vk: by VK id; bot: linked the bot first, by name; chat: in the chat first, then invited, left, removed"
+        ),
+    )
+    order: SortOrder = Field(default=SortOrder.ASC, description="desc reverses the sort")
 
 
 class BlockMemberUserResponse(BaseModel):

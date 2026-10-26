@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Alert,
   Button,
   Checkbox,
@@ -12,9 +13,12 @@ import {
 } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { useForm } from '@mantine/form';
+import { IconEye } from '@tabler/icons-react';
+import { useState } from 'react';
 
 import { LESSON_KIND_LABELS } from '@/entities/lesson';
 import {
+  DraftReminderPreviewModal,
   formatOffset,
   latestFirst,
   MAX_OFFSET_MINUTES,
@@ -24,15 +28,17 @@ import {
   useCreateLesson,
   useGetSettings,
   useUpdateLesson,
+  type LessonDraft,
   type LessonKind,
   type LessonResponse,
+  type ReminderDraftPreview,
 } from '@/shared/api';
 import { fromPickerValue, toPickerValue } from '@/shared/lib/dates';
 import { fieldErrors } from '@/shared/lib/errors';
 import { notifyError, notifySuccess } from '@/shared/lib/notify';
 
 import { askNotifyChat } from './askNotifyChat';
-import { chatNotices, homeworkRemindersBeforeStart, minutesUntil } from './model';
+import { chatNotices, homeworkRemindersBeforeStart, minutesBefore, minutesUntil } from './model';
 
 interface LessonFormValues {
   kind: LessonKind;
@@ -59,7 +65,7 @@ const KINDS: { value: LessonKind; label: string }[] = [
 ];
 
 export function LessonFormModal({ onClose, clubId, lesson }: LessonFormModalProps) {
-  const settings = useGetSettings({ query: { enabled: !lesson } });
+  const settings = useGetSettings();
   return (
     <Modal opened onClose={onClose} title={lesson ? 'Урок' : 'Новый урок'} size="lg">
       {lesson || settings.data ? (
@@ -73,6 +79,10 @@ export function LessonFormModal({ onClose, clubId, lesson }: LessonFormModalProp
             homework_reminder_offsets:
               lesson?.homework_reminder_offsets ?? settings.data?.default_homework_offsets ?? [],
           }}
+          times={{
+            lesson: settings.data?.default_lesson_time,
+            homework: settings.data?.default_homework_time,
+          }}
         />
       ) : (
         <Alert color={settings.error ? 'red' : 'gray'}>
@@ -85,9 +95,17 @@ export function LessonFormModal({ onClose, clubId, lesson }: LessonFormModalProp
 
 interface LessonFormProps extends LessonFormModalProps {
   defaults: { reminder_offsets: number[]; homework_reminder_offsets: number[] };
+  /** Time set when a day is picked in an empty picker; an edited lesson may render before settings load. */
+  times: { lesson?: string; homework?: string };
 }
 
-function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
+interface Preview {
+  title: string;
+  request: ReminderDraftPreview;
+}
+
+function LessonForm({ onClose, clubId, lesson, defaults, times }: LessonFormProps) {
+  const [preview, setPreview] = useState<Preview | null>(null);
   const form = useForm<LessonFormValues>({
     initialValues: {
       kind: lesson?.kind ?? 'lesson',
@@ -138,6 +156,57 @@ function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
           values.homework_reminder_offsets,
         )
       : [];
+
+  // The lesson as typed, unsaved; null after showing what is missing to render a message.
+  const draft = (): LessonDraft | null => {
+    const missing = ['title', 'starts_at'].map((field) => form.validateField(field).hasError);
+    if (missing.some(Boolean) || !values.starts_at) {
+      return null;
+    }
+    return {
+      kind: values.kind,
+      title: values.title.trim(),
+      starts_at: fromPickerValue(values.starts_at),
+      call_url: values.kind === 'curator_call' ? values.call_url.trim() || null : null,
+      description: values.description.trim() || null,
+      homework_deadline_at:
+        values.has_homework && values.homework_deadline_at
+          ? fromPickerValue(values.homework_deadline_at)
+          : null,
+    };
+  };
+  const previewLesson = (offset: number | null) => {
+    const lessonDraft = draft();
+    if (!lessonDraft) {
+      return;
+    }
+    const started = minutesUntil(lessonDraft.starts_at) < 0;
+    setPreview({
+      title: offset === null ? 'Напоминание сейчас' : `Напоминание ${formatOffset(offset)}`,
+      request: {
+        lesson: lessonDraft,
+        kind: offset === 0 || (offset === null && started) ? 'lesson_starting' : 'lesson_upcoming',
+        send_at: offset === null ? null : minutesBefore(lessonDraft.starts_at, offset),
+      },
+    });
+  };
+  const previewHomework = (offset: number) => {
+    const lessonDraft = draft();
+    if (!lessonDraft || form.validateField('homework_deadline_at').hasError) {
+      return;
+    }
+    const deadline = lessonDraft.homework_deadline_at;
+    if (deadline) {
+      setPreview({
+        title: `Напоминание о ДЗ ${formatOffset(offset, 'в момент дедлайна')}`,
+        request: {
+          lesson: lessonDraft,
+          kind: 'homework_deadline',
+          send_at: minutesBefore(deadline, offset),
+        },
+      });
+    }
+  };
 
   const submit = form.onSubmit(async (submitted) => {
     if (!submitted.starts_at) {
@@ -203,6 +272,7 @@ function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
         <DateTimePicker
           label="Начало"
           valueFormat="DD.MM.YYYY HH:mm"
+          defaultTimeValue={times.lesson}
           withAsterisk
           {...form.getInputProps('starts_at')}
         />
@@ -227,17 +297,31 @@ function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
             form.setFieldValue('reminder_offsets', value);
           }}
           error={form.errors.reminder_offsets}
+          onPreview={previewLesson}
         />
-        <Checkbox
-          label="Ещё напомнить сейчас — сразу после сохранения"
-          {...form.getInputProps('remind_now', { type: 'checkbox' })}
-        />
+        <Group gap="xs" wrap="nowrap">
+          <Checkbox
+            label="Ещё напомнить сейчас — сразу после сохранения"
+            {...form.getInputProps('remind_now', { type: 'checkbox' })}
+          />
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            aria-label="Текст напоминания «сейчас»"
+            onClick={() => {
+              previewLesson(null);
+            }}
+          >
+            <IconEye size={16} />
+          </ActionIcon>
+        </Group>
         <Switch label="Есть ДЗ" {...form.getInputProps('has_homework', { type: 'checkbox' })} />
         {values.has_homework && (
           <>
             <DateTimePicker
               label="Дедлайн ДЗ"
               valueFormat="DD.MM.YYYY HH:mm"
+              defaultTimeValue={times.homework}
               withAsterisk
               {...form.getInputProps('homework_deadline_at')}
             />
@@ -249,6 +333,7 @@ function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
                 form.setFieldValue('homework_reminder_offsets', value);
               }}
               error={form.errors.homework_reminder_offsets}
+              onPreview={previewHomework}
             />
             {earlyHomework.length > 0 && (
               <Alert color="yellow" title="Напоминание о ДЗ раньше урока">
@@ -259,6 +344,15 @@ function LessonForm({ onClose, clubId, lesson, defaults }: LessonFormProps) {
               </Alert>
             )}
           </>
+        )}
+        {preview && (
+          <DraftReminderPreviewModal
+            title={preview.title}
+            request={preview.request}
+            onClose={() => {
+              setPreview(null);
+            }}
+          />
         )}
         <Group justify="flex-end">
           <Button variant="default" onClick={onClose}>

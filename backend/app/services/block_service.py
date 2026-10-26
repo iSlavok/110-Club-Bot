@@ -1,3 +1,4 @@
+from app.enums import BlockMemberSort, SortOrder
 from app.exceptions import (
     BlockColumnTakenError,
     BlockHasMembersError,
@@ -49,11 +50,20 @@ class BlockService:
         ]
         return Paginated(items=summaries, total=blocks.total)
 
-    async def list_members(self, block_id: int, page: PageParams) -> Paginated[BlockMember]:
+    async def list_members(
+        self,
+        block_id: int,
+        page: PageParams,
+        *,
+        sort: BlockMemberSort = BlockMemberSort.BOT,
+        order: SortOrder = SortOrder.ASC,
+    ) -> Paginated[BlockMember]:
         block = await self._get(block_id)
         members = await self._membership_queries.list_block_members_page(
             block_id=block_id,
             club_id=block.club_id,
+            sort=sort,
+            order=order,
             limit=page.per_page,
             offset=page.offset,
         )

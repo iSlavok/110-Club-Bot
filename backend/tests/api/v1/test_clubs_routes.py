@@ -176,3 +176,17 @@ async def test_members_of_unknown_block_is_404(api_client, login_as, db_session)
 
     assert response.status_code == 404
     assert response.json()["code"] == "BLOCK_NOT_FOUND"
+
+
+async def test_block_members_sort_by_query(api_client, login_as, db_session) -> None:
+    block = await make_block(db_session, await make_club(db_session))
+    await make_membership(db_session, block, vk_id=501)
+    await make_membership(db_session, block, vk_id=502)
+    await login_as(await make_admin_user(db_session, await make_role(db_session, P.USERS_VIEW)))
+
+    sorted_ = await api_client.get(f"/api/v1/blocks/{block.id}/members", params={"sort": "vk", "order": "desc"})
+    invalid = await api_client.get(f"/api/v1/blocks/{block.id}/members", params={"sort": "name"})
+
+    assert [item["vk_id"] for item in sorted_.json()["items"]] == [502, 501]
+    assert invalid.status_code == 422
+    assert invalid.json()["code"] == "VALIDATION_FAILED"
