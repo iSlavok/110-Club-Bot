@@ -62,12 +62,13 @@ describe('ReminderFeed', () => {
     });
   });
 
-  it('inside a lesson card asks only for that lesson and hides the lesson column', async () => {
+  it('inside a lesson card asks for all reminders of that lesson and hides the lesson column', async () => {
     const requests = serve([makeReminder(1)]);
     renderWithProviders(<ReminderFeed clubId={1} lessonId={5} />);
 
     expect(await screen.findByText('Напоминание об уроке')).toBeInTheDocument();
     expect(requests.at(-1)?.get('lesson_id')).toBe('5');
+    expect(requests.at(-1)?.get('view')).toBe('all');
     expect(screen.queryByRole('columnheader', { name: 'Урок' })).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: 'Урок' })).not.toBeInTheDocument();
   });

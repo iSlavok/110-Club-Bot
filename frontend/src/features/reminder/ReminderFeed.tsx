@@ -42,7 +42,8 @@ interface ReminderFeedProps {
 }
 
 export function ReminderFeed({ clubId, lessonId }: ReminderFeedProps) {
-  const [view, setView] = useState<ReminderView>('pending');
+  // A lesson has few reminders: its card shows them all, sent ones included.
+  const [view, setView] = useState<ReminderView>(lessonId === undefined ? 'pending' : 'all');
   const [includeCancelled, setIncludeCancelled] = useState(false);
   const [lessonFilter, setLessonFilter] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<number | null>(null);
