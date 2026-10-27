@@ -1,4 +1,4 @@
-from app.exceptions.base import ConflictError, NotFoundError
+from app.exceptions.base import ConflictError, InvalidInputError, NotFoundError
 
 
 class LessonNotFoundError(NotFoundError):
@@ -39,3 +39,18 @@ class LessonHasNoHomeworkError(ConflictError):
 class HomeworkDeadlinePassedError(ConflictError):
     def __init__(self) -> None:
         super().__init__("The homework deadline has passed")
+
+
+class ClubMessageNotFoundError(NotFoundError):
+    def __init__(self, message_id: int) -> None:
+        super().__init__(f"Message {message_id} not found")
+
+
+class ClubMessageNotPendingError(ConflictError):
+    def __init__(self) -> None:
+        super().__init__("Only a message that has not been sent yet can be changed or cancelled")
+
+
+class ClubMessageSendTimePassedError(InvalidInputError):
+    def __init__(self) -> None:
+        super().__init__("The send time has already passed: pick a later one or send right away")

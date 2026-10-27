@@ -16,6 +16,7 @@ PERMISSION_CATALOG = (
         title="Управление уроками и напоминаниями",
         group=PermissionGroup.LESSONS,
     ),
+    PermissionInfo(code=Permission.MESSAGES_SEND, title="Сообщения в чат клуба", group=PermissionGroup.LESSONS),
     PermissionInfo(code=Permission.USERS_VIEW, title="Просмотр пользователей бота", group=PermissionGroup.USERS),
     PermissionInfo(code=Permission.ADMINS_VIEW, title="Просмотр админов и ролей", group=PermissionGroup.ADMINS),
     PermissionInfo(code=Permission.ADMINS_EDIT, title="Добавление и изменение админов", group=PermissionGroup.ADMINS),

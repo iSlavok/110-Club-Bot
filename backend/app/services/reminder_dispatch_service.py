@@ -7,7 +7,7 @@ from loguru import logger
 
 from app import texts
 from app.enums import ReminderKind, ReminderStatus
-from app.models import Reminder
+from app.models import Lesson, Reminder
 from app.repositories import ReminderRepository
 from app.schemas import ReminderWithLessonDTO
 from app.telegram import AdminAlerts
@@ -111,6 +111,12 @@ def _skip_reason(reminder: Reminder, now: datetime) -> str | None:
     lesson = reminder.lesson
     if not reminder.club.is_active:
         return "Club is inactive"
+    if lesson is None:
+        return "Message is over an hour late" if now > reminder.send_at + NOTICE_LATENESS else None
+    return _lesson_skip_reason(reminder, lesson, now)
+
+
+def _lesson_skip_reason(reminder: Reminder, lesson: Lesson, now: datetime) -> str | None:
     if reminder.kind is ReminderKind.HOMEWORK_DEADLINE_CHANGED and lesson.homework_deadline_at is None:
         return "Homework was removed"
     if reminder.kind in NOTICE_KINDS:

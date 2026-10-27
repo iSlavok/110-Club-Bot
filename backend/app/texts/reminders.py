@@ -5,6 +5,7 @@ from typing import Protocol
 
 from app.enums import LessonKind, ReminderKind
 from app.schemas import ReminderWithLessonDTO
+from app.types import telegram_html_to_text
 from app.utils import BUSINESS_TZ
 
 MONTHS = (
@@ -30,6 +31,7 @@ KIND_LABELS = {
     ReminderKind.LESSON_CANCELLED: "отмена урока",
     ReminderKind.HOMEWORK_DEADLINE_CHANGED: "новый дедлайн ДЗ",
     ReminderKind.HOMEWORK_REMOVED: "отмена ДЗ",
+    ReminderKind.MESSAGE: "сообщение",
 }
 _SUBJECTS = {LessonKind.LESSON: "Урок", LessonKind.CURATOR_CALL: "Созвон с куратором"}
 _HOMEWORK_TO = {LessonKind.LESSON: "к уроку", LessonKind.CURATOR_CALL: "к созвону"}
@@ -43,6 +45,7 @@ _FEW_EXCEPTIONS = frozenset({12, 13, 14})
 # The dispatch run lags behind send_at by seconds: counted from the moment itself, "через час" would read
 # "через 59 минут". A longer delay (downtime) is counted from the real moment, so the text stays true.
 _ON_TIME_LAG = timedelta(minutes=5)
+_SUBJECT_MAX_LEN = 40
 
 
 # What a message needs from a lesson: a saved LessonDTO or a draft from the lesson form.
@@ -62,9 +65,23 @@ class ReminderLesson(Protocol):
 
 
 def render(reminder: ReminderWithLessonDTO, sent_at: datetime) -> str:
+    if reminder.lesson is None:
+        if reminder.text is None:
+            raise ValueError("Reminder has neither a lesson nor a text")
+        return reminder.text
     send_at = reminder.send_at
     now = send_at if send_at <= sent_at <= send_at + _ON_TIME_LAG else sent_at
     return render_message(reminder.kind, reminder.lesson, now)
+
+
+# What a reminder is about, for admin lists and alerts: the lesson or the start of the message.
+def subject(reminder: ReminderWithLessonDTO) -> str:
+    if reminder.lesson is not None:
+        return f"«{escape(reminder.lesson.title)}»"
+    text = " ".join(telegram_html_to_text(reminder.text or "").split())
+    if len(text) > _SUBJECT_MAX_LEN:
+        text = text[:_SUBJECT_MAX_LEN] + "…"
+    return f"«{escape(text)}»"
 
 
 def render_message(kind: ReminderKind, lesson: ReminderLesson, now: datetime) -> str:

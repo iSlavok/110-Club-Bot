@@ -12,6 +12,7 @@ class Permission(StrEnum):
     ROLES_EDIT = "roles.edit"
     LESSONS_VIEW = "lessons.view"
     LESSONS_EDIT = "lessons.edit"
+    MESSAGES_SEND = "messages.send"
     SETTINGS_EDIT = "settings.edit"
 
 

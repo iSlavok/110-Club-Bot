@@ -3,7 +3,7 @@ from html import escape
 
 from app.enums import RemovalRequestStatus, SheetIssueKind
 from app.schemas import KickedMember, ReminderWithLessonDTO, RemovalCandidate, RemovalRequestAlert, SheetIssue
-from app.texts.reminders import KIND_LABELS
+from app.texts.reminders import KIND_LABELS, subject
 from app.utils import BUSINESS_TZ
 
 # Keeps an alert far below Telegram's 4096-character message limit.
@@ -58,7 +58,7 @@ def removal_decided(status: RemovalRequestStatus) -> str:
 def reminder_failed(club_title: str, reminder: ReminderWithLessonDTO) -> str:
     return (
         f"⚠️ <b>Клуб {escape(club_title)}</b>: напоминание не ушло в чат.\n"
-        f"«{escape(reminder.lesson.title)}» — {KIND_LABELS[reminder.kind]}, "
+        f"{subject(reminder)} — {KIND_LABELS[reminder.kind]}, "
         f"должно было уйти {_moscow(reminder.send_at)}.\n"
         f"Ошибка: {escape(reminder.error or '—')}"
     )

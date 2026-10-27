@@ -52,7 +52,8 @@ class ReminderService:
         reminder = await self._reminder_repository.get_with_lesson(reminder_id)
         if reminder is None:
             raise ReminderNotFoundError(reminder_id)
-        if reminder.kind in HOMEWORK_DEADLINE_KINDS and reminder.lesson.homework_deadline_at is None:
+        lesson = reminder.lesson
+        if reminder.kind in HOMEWORK_DEADLINE_KINDS and lesson is not None and lesson.homework_deadline_at is None:
             raise ReminderPreviewUnavailableError
         if reminder.sent_at is not None:
             moment = reminder.sent_at
@@ -69,9 +70,10 @@ class ReminderService:
         moment = now if draft.send_at is None else max(draft.send_at, now)
         return texts.reminders.render_message(draft.kind, draft.lesson, moment)
 
+    # Messages written by admins are cancelled through ClubMessageService, under their own permission.
     async def cancel(self, reminder_id: int) -> ReminderWithLessonDTO:
         reminder = await self._reminder_repository.get_with_lesson_for_update(reminder_id)
-        if reminder is None:
+        if reminder is None or reminder.kind is ReminderKind.MESSAGE:
             raise ReminderNotFoundError(reminder_id)
         if reminder.status != ReminderStatus.PENDING:
             raise ReminderNotPendingError

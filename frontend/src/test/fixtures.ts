@@ -75,6 +75,7 @@ export function makeReminder(
       is_cancelled: false,
     },
     kind: 'lesson_upcoming',
+    text: null,
     send_at: '2026-10-02T16:00:00Z',
     status: 'pending',
     attempts: 0,
@@ -82,6 +83,19 @@ export function makeReminder(
     error: null,
     ...overrides,
   };
+}
+
+/** A message written by an admin: no lesson, its own text. */
+export function makeMessage(
+  id: number,
+  overrides: Partial<ReminderResponse> = {},
+): ReminderResponse {
+  return makeReminder(id, {
+    lesson: null,
+    kind: 'message',
+    text: '<b>Привет!</b>\nЗапись урока уже на платформе',
+    ...overrides,
+  });
 }
 
 /** The club list and each club by id, as the API serves them. */

@@ -6,6 +6,7 @@ from app.services.auth_cleanup_service import AuthCleanupService
 from app.services.block_service import BlockService
 from app.services.bot_admin_service import BotAdminService
 from app.services.chat_access_service import ChatAccessService
+from app.services.club_message_service import ClubMessageService
 from app.services.club_service import ClubService
 from app.services.club_stats_service import ClubStatsService
 from app.services.health_service import HealthService
@@ -33,6 +34,7 @@ __all__ = [
     "BlockService",
     "BotAdminService",
     "ChatAccessService",
+    "ClubMessageService",
     "ClubService",
     "ClubStatsService",
     "HealthService",

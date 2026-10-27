@@ -22,6 +22,7 @@ import {
   type ReminderView,
 } from '@/shared/api';
 import { formatDateTime } from '@/shared/lib/dates';
+import { telegramToPlainText } from '@/shared/lib/telegram-html';
 import { infinitePage, PER_PAGE, useInfinitePage } from '@/shared/lib/infinite-page';
 import { InfiniteList } from '@/shared/ui/InfiniteList';
 
@@ -145,18 +146,28 @@ interface ReminderRowProps {
 
 function ReminderRow({ reminder, showLesson, onPreview, onCancel }: ReminderRowProps) {
   const { lesson } = reminder;
+  const isMessage = reminder.kind === 'message';
+  const pending = reminder.status === 'pending';
   return (
     <Table.Tr>
       <Table.Td>{formatDateTime(reminder.sent_at ?? reminder.send_at)}</Table.Td>
       {showLesson && (
         <Table.Td>
-          <Text size="sm" fw={500}>
-            {lesson.title}
-          </Text>
-          <Text size="xs" c="dimmed">
-            {LESSON_KIND_LABELS[lesson.kind]}, {formatDateTime(lesson.starts_at)}
-            {lesson.is_cancelled && ' · отменён'}
-          </Text>
+          {lesson ? (
+            <>
+              <Text size="sm" fw={500}>
+                {lesson.title}
+              </Text>
+              <Text size="xs" c="dimmed">
+                {LESSON_KIND_LABELS[lesson.kind]}, {formatDateTime(lesson.starts_at)}
+                {lesson.is_cancelled && ' · отменён'}
+              </Text>
+            </>
+          ) : (
+            <Text size="sm" lineClamp={2}>
+              {telegramToPlainText(reminder.text ?? '')}
+            </Text>
+          )}
         </Table.Td>
       )}
       <Table.Td>{REMINDER_KIND_LABELS[reminder.kind]}</Table.Td>
@@ -172,12 +183,12 @@ function ReminderRow({ reminder, showLesson, onPreview, onCancel }: ReminderRowP
       </Table.Td>
       <Table.Td>
         <Group gap={4} justify="flex-end" wrap="nowrap">
-          <Tooltip label="Текст напоминания">
+          <Tooltip label={isMessage ? 'Текст сообщения' : 'Текст напоминания'}>
             <ActionIcon variant="subtle" color="gray" aria-label="Текст" onClick={onPreview}>
               <IconEye size={16} />
             </ActionIcon>
           </Tooltip>
-          {reminder.status === 'pending' && (
+          {pending && !isMessage && (
             <Can permission="lessons.edit">
               <Tooltip label="Отменить напоминание">
                 <ActionIcon variant="subtle" color="red" aria-label="Отменить" onClick={onCancel}>
