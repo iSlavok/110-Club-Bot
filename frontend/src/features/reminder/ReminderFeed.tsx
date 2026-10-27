@@ -9,7 +9,7 @@ import {
   Text,
   Tooltip,
 } from '@mantine/core';
-import { IconEye, IconX } from '@tabler/icons-react';
+import { IconEye, IconPencil, IconX } from '@tabler/icons-react';
 import { useState } from 'react';
 
 import { LESSON_KIND_LABELS } from '@/entities/lesson';
@@ -26,6 +26,7 @@ import { telegramToPlainText } from '@/shared/lib/telegram-html';
 import { infinitePage, PER_PAGE, useInfinitePage } from '@/shared/lib/infinite-page';
 import { InfiniteList } from '@/shared/ui/InfiniteList';
 
+import { MessageFormModal } from './MessageFormModal';
 import { ReminderPreviewModal } from './ReminderPreviewModal';
 import { useCancelReminderConfirm } from './useCancelReminderConfirm';
 
@@ -50,6 +51,7 @@ export function ReminderFeed({ clubId, lessonId }: ReminderFeedProps) {
   const [includeCancelled, setIncludeCancelled] = useState(false);
   const [lessonFilter, setLessonFilter] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<number | null>(null);
+  const [editing, setEditing] = useState<ReminderResponse | null>(null);
   const confirmCancel = useCancelReminderConfirm();
   const selectedLesson = lessonId ?? (lessonFilter ? Number(lessonFilter) : undefined);
   const query = useListRemindersInfinite(
@@ -115,6 +117,9 @@ export function ReminderFeed({ clubId, lessonId }: ReminderFeedProps) {
                     onPreview={() => {
                       setPreviewId(reminder.id);
                     }}
+                    onEdit={() => {
+                      setEditing(reminder);
+                    }}
                     onCancel={() => {
                       confirmCancel(reminder);
                     }}
@@ -125,6 +130,16 @@ export function ReminderFeed({ clubId, lessonId }: ReminderFeedProps) {
           </Table.ScrollContainer>
         )}
       </InfiniteList>
+      {editing && (
+        <MessageFormModal
+          key={editing.id}
+          clubId={clubId}
+          message={editing}
+          onClose={() => {
+            setEditing(null);
+          }}
+        />
+      )}
       {previewId !== null && (
         <ReminderPreviewModal
           reminderId={previewId}
@@ -141,10 +156,11 @@ interface ReminderRowProps {
   reminder: ReminderResponse;
   showLesson: boolean;
   onPreview: () => void;
+  onEdit: () => void;
   onCancel: () => void;
 }
 
-function ReminderRow({ reminder, showLesson, onPreview, onCancel }: ReminderRowProps) {
+function ReminderRow({ reminder, showLesson, onPreview, onEdit, onCancel }: ReminderRowProps) {
   const { lesson } = reminder;
   const isMessage = reminder.kind === 'message';
   const pending = reminder.status === 'pending';
@@ -188,9 +204,18 @@ function ReminderRow({ reminder, showLesson, onPreview, onCancel }: ReminderRowP
               <IconEye size={16} />
             </ActionIcon>
           </Tooltip>
-          {pending && !isMessage && (
-            <Can permission="lessons.edit">
-              <Tooltip label="Отменить напоминание">
+          {pending && isMessage && (
+            <Can permission="messages.send">
+              <Tooltip label="Изменить сообщение">
+                <ActionIcon variant="subtle" color="gray" aria-label="Изменить" onClick={onEdit}>
+                  <IconPencil size={16} />
+                </ActionIcon>
+              </Tooltip>
+            </Can>
+          )}
+          {pending && (
+            <Can permission={isMessage ? 'messages.send' : 'lessons.edit'}>
+              <Tooltip label={isMessage ? 'Отменить сообщение' : 'Отменить напоминание'}>
                 <ActionIcon variant="subtle" color="red" aria-label="Отменить" onClick={onCancel}>
                   <IconX size={16} />
                 </ActionIcon>
