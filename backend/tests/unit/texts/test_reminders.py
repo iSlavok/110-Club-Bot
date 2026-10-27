@@ -35,6 +35,7 @@ def _render(reminder_kind: ReminderKind, /, *, sent_at: datetime = NOW, **lesson
         club_id=1,
         lesson_id=1,
         kind=reminder_kind,
+        text=None,
         send_at=NOW,
         status=ReminderStatus.PENDING,
         attempts=0,
@@ -152,3 +153,40 @@ def test_renders_a_draft_lesson() -> None:
     text = texts.reminders.render_message(ReminderKind.LESSON_UPCOMING, draft, NOW)
 
     assert text == "<b>Урок «Кислоты»</b>\nЧерез 30 минут, в 12:30"
+
+
+def _message(text: str) -> ReminderWithLessonDTO:
+    return ReminderWithLessonDTO(
+        id=1,
+        club_id=1,
+        lesson_id=None,
+        kind=ReminderKind.MESSAGE,
+        text=text,
+        send_at=NOW,
+        status=ReminderStatus.PENDING,
+        attempts=0,
+        sent_at=None,
+        message_id=None,
+        error=None,
+        created_at=NOW,
+        updated_at=NOW,
+        lesson=None,
+    )
+
+
+def test_message_goes_out_as_written() -> None:
+    text = '<b>Привет!!</b>\nЗапись уже на платформе: <a href="https://lk.example/1">урок</a>'
+
+    assert texts.reminders.render(_message(text), NOW + timedelta(hours=3)) == text
+
+
+def test_subject_of_a_message_is_its_start_as_plain_text() -> None:
+    message = _message("<b>Привет!!</b>\nЗапись созвона &amp; ДЗ уже на платформе, дедлайн в пятницу")
+
+    assert texts.reminders.subject(message) == "«Привет!! Запись созвона &amp; ДЗ уже на плат…»"
+
+
+def test_subject_of_a_lesson_reminder_is_its_title() -> None:
+    reminder = _message("x").model_copy(update={"lesson": _lesson(title="Кислоты <1>"), "text": None})
+
+    assert texts.reminders.subject(reminder) == "«Кислоты &lt;1&gt;»"

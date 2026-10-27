@@ -8,6 +8,7 @@ export const REMINDER_KIND_LABELS: Record<ReminderKind, string> = {
   lesson_cancelled: 'Урок отменён',
   homework_deadline_changed: 'Дедлайн ДЗ изменён',
   homework_removed: 'ДЗ отменено',
+  message: 'Сообщение',
 };
 
 export const REMINDER_STATUSES: Record<ReminderStatus, { label: string; color: string }> = {

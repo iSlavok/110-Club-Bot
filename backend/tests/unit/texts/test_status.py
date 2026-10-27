@@ -183,6 +183,7 @@ def _reminder(kind: ReminderKind, send_at: datetime, title: str) -> ReminderWith
         club_id=1,
         lesson_id=1,
         kind=kind,
+        text=None,
         send_at=send_at,
         status=ReminderStatus.PENDING,
         attempts=0,
@@ -200,6 +201,9 @@ def test_upcoming_and_failed_reminders() -> None:
         upcoming=[
             _reminder(ReminderKind.LESSON_UPCOMING, datetime(2026, 10, 1, 15, 0, tzinfo=UTC), "Кислоты <1>"),
             _reminder(ReminderKind.HOMEWORK_DEADLINE, datetime(2026, 10, 2, 17, 30, tzinfo=UTC), "Оксиды"),
+            _reminder(ReminderKind.LESSON_UPCOMING, datetime(2026, 10, 2, 18, 0, tzinfo=UTC), "").model_copy(
+                update={"kind": ReminderKind.MESSAGE, "lesson": None, "text": "<b>Запись</b> готова"},
+            ),
         ],
         failed_last_day=2,
     )
@@ -211,6 +215,7 @@ def test_upcoming_and_failed_reminders() -> None:
         "Ближайшие напоминания:\n"
         "• 01.10 18:00 — напоминание об уроке, «Кислоты &lt;1&gt;»\n"
         "• 02.10 20:30 — дедлайн ДЗ, «Оксиды»\n"
+        "• 02.10 21:00 — сообщение, «Запись готова»\n"
         "Не ушло в чат за сутки: 2\n"
         f"{NO_CHAT_LINES}"
     )

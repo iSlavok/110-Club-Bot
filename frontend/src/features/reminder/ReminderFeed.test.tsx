@@ -4,7 +4,14 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
 import type { Permission, ReminderResponse } from '@/shared/api';
-import { makeAdmin, makeLesson, makeReminder, meHandler, pageOf } from '@/test/fixtures';
+import {
+  makeAdmin,
+  makeLesson,
+  makeMessage,
+  makeReminder,
+  meHandler,
+  pageOf,
+} from '@/test/fixtures';
 import { renderWithProviders } from '@/test/render';
 import { server } from '@/test/server';
 
@@ -115,6 +122,23 @@ describe('ReminderFeed', () => {
     renderWithProviders(<ReminderFeed clubId={1} />);
 
     expect(await screen.findByRole('button', { name: 'Текст' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Отменить' })).not.toBeInTheDocument();
+  });
+
+  it('lists a message by its text, with no lesson', async () => {
+    serve([makeMessage(5, { text: '<b>Привет!</b> Запись &amp; ДЗ' })]);
+    renderWithProviders(<ReminderFeed clubId={1} />);
+
+    expect(await screen.findByText('Привет! Запись & ДЗ')).toBeInTheDocument();
+    expect(screen.getByText('Сообщение')).toBeInTheDocument();
+  });
+
+  it('does not let lesson editors touch a message', async () => {
+    serve([makeMessage(5)], 'lessons.edit');
+    renderWithProviders(<ReminderFeed clubId={1} />);
+
+    expect(await screen.findByRole('button', { name: 'Текст' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Изменить' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Отменить' })).not.toBeInTheDocument();
   });
 });

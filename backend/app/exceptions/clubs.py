@@ -29,3 +29,8 @@ class InvalidBlockPeriodError(InvalidInputError):
 class BlockHasMembersError(ConflictError):
     def __init__(self) -> None:
         super().__init__("Block has members from the sheet and cannot be deleted")
+
+
+class ClubNotReachableError(ConflictError):
+    def __init__(self) -> None:
+        super().__init__("The club is inactive or has no chat and reminders topic to send to")

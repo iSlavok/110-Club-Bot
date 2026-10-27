@@ -2303,6 +2303,203 @@
         }
       }
     },
+    "/api/v1/clubs/{club_id}/messages": {
+      "post": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Create Message",
+        "operationId": "create_message",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "club_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Club Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClubMessageCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/messages/{message_id}": {
+      "patch": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Update Message",
+        "operationId": "update_message",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Message Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClubMessageUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/messages/{message_id}/cancel": {
+      "post": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Cancel Message",
+        "operationId": "cancel_message",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Message Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users": {
       "get": {
         "tags": [
@@ -3033,6 +3230,54 @@
           "title"
         ],
         "title": "ClubCreate"
+      },
+      "ClubMessageCreate": {
+        "properties": {
+          "text": {
+            "$ref": "#/components/schemas/TelegramHtml",
+            "description": "Message in Telegram HTML; tags Telegram does not accept are refused"
+          },
+          "send_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Moment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When to send it, in the future; null: right away"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "ClubMessageCreate"
+      },
+      "ClubMessageUpdate": {
+        "properties": {
+          "text": {
+            "$ref": "#/components/schemas/TelegramHtml",
+            "title": "Text",
+            "description": "Message in Telegram HTML"
+          },
+          "send_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Moment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Send At",
+            "description": "When to send it, in the future; null: right away"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ClubMessageUpdate"
       },
       "ClubResponse": {
         "properties": {
@@ -4065,6 +4310,7 @@
           "roles.edit",
           "lessons.view",
           "lessons.edit",
+          "messages.send",
           "settings.edit"
         ],
         "title": "Permission"
@@ -4122,7 +4368,7 @@
           },
           "kind": {
             "$ref": "#/components/schemas/ReminderKind",
-            "description": "Which message to show"
+            "description": "Which lesson message to show"
           },
           "send_at": {
             "anyOf": [
@@ -4152,7 +4398,8 @@
           "lesson_rescheduled",
           "lesson_cancelled",
           "homework_deadline_changed",
-          "homework_removed"
+          "homework_removed",
+          "message"
         ],
         "title": "ReminderKind"
       },
@@ -4228,12 +4475,31 @@
             "description": "Reminder id"
           },
           "lesson": {
-            "$ref": "#/components/schemas/ReminderLessonResponse",
-            "description": "Lesson the reminder is about"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReminderLessonResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Lesson the reminder is about; null for a message"
           },
           "kind": {
             "$ref": "#/components/schemas/ReminderKind",
-            "description": "What the message says"
+            "description": "What the message says; message: written by an admin"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "Text of a message written by an admin, Telegram HTML; null otherwise"
           },
           "send_at": {
             "type": "string",
@@ -4281,6 +4547,7 @@
           "id",
           "lesson",
           "kind",
+          "text",
           "send_at",
           "status",
           "attempts",
@@ -4557,6 +4824,9 @@
           "desc"
         ],
         "title": "SortOrder"
+      },
+      "TelegramHtml": {
+        "type": "string"
       },
       "TelegramWidgetPayload": {
         "properties": {

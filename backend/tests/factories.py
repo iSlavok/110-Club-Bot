@@ -208,6 +208,22 @@ async def make_reminder(session: AsyncSession, lesson: Lesson, **overrides: Any)
     return reminder
 
 
+async def make_message(session: AsyncSession, club: Club, **overrides: Any) -> Reminder:
+    reminder = Reminder(
+        **{
+            "club_id": club.id,
+            "lesson_id": None,
+            "kind": ReminderKind.MESSAGE,
+            "text": "<b>Привет!</b> Запись урока уже на платформе",
+            "send_at": datetime.now(UTC) + timedelta(hours=1),
+            **overrides,
+        },
+    )
+    session.add(reminder)
+    await session.flush()
+    return reminder
+
+
 async def make_chat_access(session: AsyncSession, club: Club, user: User, **overrides: Any) -> ChatAccess:
     access = ChatAccess(
         **{

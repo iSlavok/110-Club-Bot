@@ -40,8 +40,9 @@ class ReminderLessonResponse(BaseModel):
 
 class ReminderResponse(BaseModel):
     id: int = Field(description="Reminder id")
-    lesson: ReminderLessonResponse = Field(description="Lesson the reminder is about")
-    kind: ReminderKind = Field(description="What the message says")
+    lesson: ReminderLessonResponse | None = Field(description="Lesson the reminder is about; null for a message")
+    kind: ReminderKind = Field(description="What the message says; message: written by an admin")
+    text: str | None = Field(description="Text of a message written by an admin, Telegram HTML; null otherwise")
     send_at: datetime = Field(description="When it goes or went out, UTC")
     status: ReminderStatus = Field(description="Delivery status")
     attempts: int = Field(description="Send attempts made")
@@ -52,8 +53,9 @@ class ReminderResponse(BaseModel):
     def from_dto(cls, reminder: ReminderWithLessonDTO) -> Self:
         return cls(
             id=reminder.id,
-            lesson=ReminderLessonResponse.from_dto(reminder.lesson),
+            lesson=None if reminder.lesson is None else ReminderLessonResponse.from_dto(reminder.lesson),
             kind=reminder.kind,
+            text=reminder.text,
             send_at=reminder.send_at,
             status=reminder.status,
             attempts=reminder.attempts,

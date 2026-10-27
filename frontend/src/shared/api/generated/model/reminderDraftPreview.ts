@@ -11,7 +11,7 @@ import type { ReminderKind } from './reminderKind';
 export interface ReminderDraftPreview {
   /** The lesson as it is in the form, not necessarily saved */
   lesson: LessonDraft;
-  /** Which message to show */
+  /** Which lesson message to show */
   kind: ReminderKind;
   /** When it would go out; relative times are counted from it. Null or past: now */
   send_at?: Moment | null;

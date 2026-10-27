@@ -19,7 +19,13 @@ from app.schemas.lesson_schemas import LessonCreate, LessonDraft, LessonDTO, Les
 from app.schemas.membership_removal_schemas import RemovalCandidate, RemovalRequestAlert
 from app.schemas.pagination_schemas import MAX_PER_PAGE, PageParams, Paginated
 from app.schemas.patch_schemas import Maybe, PatchSchema
-from app.schemas.reminder_schemas import ReminderDraftPreview, ReminderDTO, ReminderWithLessonDTO
+from app.schemas.reminder_schemas import (
+    ClubMessageCreate,
+    ClubMessageUpdate,
+    ReminderDraftPreview,
+    ReminderDTO,
+    ReminderWithLessonDTO,
+)
 from app.schemas.role_schemas import PermissionInfo, RoleCreate, RoleDTO, RoleUpdate
 from app.schemas.schedule_schemas import ClubSchedule, ScheduleItem
 from app.schemas.sheet_sync_schemas import SheetIssue, SheetSyncDTO
@@ -65,6 +71,8 @@ __all__ = [
     "ClubAccess",
     "ClubCreate",
     "ClubDTO",
+    "ClubMessageCreate",
+    "ClubMessageUpdate",
     "ClubSchedule",
     "ClubStats",
     "ClubStatus",
