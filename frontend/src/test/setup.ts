@@ -35,6 +35,10 @@ window.HTMLElement.prototype.scrollIntoView = () => undefined;
 Object.defineProperty(document, 'fonts', {
   value: { addEventListener: () => undefined, removeEventListener: () => undefined },
 });
+// ProseMirror (the message editor) measures the selection; jsdom has no layout, so every range is empty.
+window.Range.prototype.getClientRects = () => document.createElement('div').getClientRects();
+window.Range.prototype.getBoundingClientRect = () => new DOMRect();
+document.elementFromPoint = () => null;
 Object.defineProperty(window, 'IntersectionObserver', {
   writable: true,
   value: FakeIntersectionObserver,
