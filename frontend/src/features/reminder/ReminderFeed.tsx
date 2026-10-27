@@ -9,7 +9,7 @@ import {
   Text,
   Tooltip,
 } from '@mantine/core';
-import { IconEye, IconX } from '@tabler/icons-react';
+import { IconEye, IconPencil, IconX } from '@tabler/icons-react';
 import { useState } from 'react';
 
 import { LESSON_KIND_LABELS } from '@/entities/lesson';
@@ -22,9 +22,11 @@ import {
   type ReminderView,
 } from '@/shared/api';
 import { formatDateTime } from '@/shared/lib/dates';
+import { telegramToPlainText } from '@/shared/lib/telegram-html';
 import { infinitePage, PER_PAGE, useInfinitePage } from '@/shared/lib/infinite-page';
 import { InfiniteList } from '@/shared/ui/InfiniteList';
 
+import { MessageFormModal } from './MessageFormModal';
 import { ReminderPreviewModal } from './ReminderPreviewModal';
 import { useCancelReminderConfirm } from './useCancelReminderConfirm';
 
@@ -49,6 +51,7 @@ export function ReminderFeed({ clubId, lessonId }: ReminderFeedProps) {
   const [includeCancelled, setIncludeCancelled] = useState(false);
   const [lessonFilter, setLessonFilter] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<number | null>(null);
+  const [editing, setEditing] = useState<ReminderResponse | null>(null);
   const confirmCancel = useCancelReminderConfirm();
   const selectedLesson = lessonId ?? (lessonFilter ? Number(lessonFilter) : undefined);
   const query = useListRemindersInfinite(
@@ -114,6 +117,9 @@ export function ReminderFeed({ clubId, lessonId }: ReminderFeedProps) {
                     onPreview={() => {
                       setPreviewId(reminder.id);
                     }}
+                    onEdit={() => {
+                      setEditing(reminder);
+                    }}
                     onCancel={() => {
                       confirmCancel(reminder);
                     }}
@@ -124,6 +130,16 @@ export function ReminderFeed({ clubId, lessonId }: ReminderFeedProps) {
           </Table.ScrollContainer>
         )}
       </InfiniteList>
+      {editing && (
+        <MessageFormModal
+          key={editing.id}
+          clubId={clubId}
+          message={editing}
+          onClose={() => {
+            setEditing(null);
+          }}
+        />
+      )}
       {previewId !== null && (
         <ReminderPreviewModal
           reminderId={previewId}
@@ -140,23 +156,34 @@ interface ReminderRowProps {
   reminder: ReminderResponse;
   showLesson: boolean;
   onPreview: () => void;
+  onEdit: () => void;
   onCancel: () => void;
 }
 
-function ReminderRow({ reminder, showLesson, onPreview, onCancel }: ReminderRowProps) {
+function ReminderRow({ reminder, showLesson, onPreview, onEdit, onCancel }: ReminderRowProps) {
   const { lesson } = reminder;
+  const isMessage = reminder.kind === 'message';
+  const pending = reminder.status === 'pending';
   return (
     <Table.Tr>
       <Table.Td>{formatDateTime(reminder.sent_at ?? reminder.send_at)}</Table.Td>
       {showLesson && (
         <Table.Td>
-          <Text size="sm" fw={500}>
-            {lesson.title}
-          </Text>
-          <Text size="xs" c="dimmed">
-            {LESSON_KIND_LABELS[lesson.kind]}, {formatDateTime(lesson.starts_at)}
-            {lesson.is_cancelled && ' · отменён'}
-          </Text>
+          {lesson ? (
+            <>
+              <Text size="sm" fw={500}>
+                {lesson.title}
+              </Text>
+              <Text size="xs" c="dimmed">
+                {LESSON_KIND_LABELS[lesson.kind]}, {formatDateTime(lesson.starts_at)}
+                {lesson.is_cancelled && ' · отменён'}
+              </Text>
+            </>
+          ) : (
+            <Text size="sm" lineClamp={2}>
+              {telegramToPlainText(reminder.text ?? '')}
+            </Text>
+          )}
         </Table.Td>
       )}
       <Table.Td>{REMINDER_KIND_LABELS[reminder.kind]}</Table.Td>
@@ -172,14 +199,23 @@ function ReminderRow({ reminder, showLesson, onPreview, onCancel }: ReminderRowP
       </Table.Td>
       <Table.Td>
         <Group gap={4} justify="flex-end" wrap="nowrap">
-          <Tooltip label="Текст напоминания">
+          <Tooltip label={isMessage ? 'Текст сообщения' : 'Текст напоминания'}>
             <ActionIcon variant="subtle" color="gray" aria-label="Текст" onClick={onPreview}>
               <IconEye size={16} />
             </ActionIcon>
           </Tooltip>
-          {reminder.status === 'pending' && (
-            <Can permission="lessons.edit">
-              <Tooltip label="Отменить напоминание">
+          {pending && isMessage && (
+            <Can permission="messages.send">
+              <Tooltip label="Изменить сообщение">
+                <ActionIcon variant="subtle" color="gray" aria-label="Изменить" onClick={onEdit}>
+                  <IconPencil size={16} />
+                </ActionIcon>
+              </Tooltip>
+            </Can>
+          )}
+          {pending && (
+            <Can permission={isMessage ? 'messages.send' : 'lessons.edit'}>
+              <Tooltip label={isMessage ? 'Отменить сообщение' : 'Отменить напоминание'}>
                 <ActionIcon variant="subtle" color="red" aria-label="Отменить" onClick={onCancel}>
                   <IconX size={16} />
                 </ActionIcon>

@@ -34,11 +34,15 @@ from app.exceptions.clubs import (
     BlockHasMembersError,
     BlockNotFoundError,
     ClubNotFoundError,
+    ClubNotReachableError,
     ClubTitleTakenError,
     InvalidBlockPeriodError,
 )
 from app.exceptions.common import EmptyUpdateError
 from app.exceptions.lessons import (
+    ClubMessageNotFoundError,
+    ClubMessageNotPendingError,
+    ClubMessageSendTimePassedError,
     HomeworkDeadlinePassedError,
     LessonAlreadyStartedError,
     LessonCancelledError,
@@ -73,7 +77,11 @@ __all__ = [
     "BlockColumnTakenError",
     "BlockHasMembersError",
     "BlockNotFoundError",
+    "ClubMessageNotFoundError",
+    "ClubMessageNotPendingError",
+    "ClubMessageSendTimePassedError",
     "ClubNotFoundError",
+    "ClubNotReachableError",
     "ClubNotSyncableError",
     "ClubTitleTakenError",
     "ConflictError",

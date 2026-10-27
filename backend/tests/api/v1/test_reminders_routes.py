@@ -34,6 +34,7 @@ async def test_reminder_row_shape(api_client, login_as, db_session, editor) -> N
                 "is_cancelled": False,
             },
             "kind": "lesson_upcoming",
+            "text": None,
             "send_at": "2026-10-01T10:00:00Z",
             "status": "pending",
             "attempts": 0,

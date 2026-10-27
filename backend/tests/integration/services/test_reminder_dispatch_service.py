@@ -7,7 +7,7 @@ from aiogram.methods import SendMessage
 
 from app.enums import ReminderKind, ReminderStatus
 from app.services import ReminderDispatchService
-from tests.factories import make_club, make_lesson, make_reminder
+from tests.factories import make_club, make_lesson, make_message, make_reminder
 from tests.providers import ALERTS_CHAT_ID, DEFAULT_NOW
 
 CHAT_ID = -100_555
@@ -197,3 +197,46 @@ async def test_recorded_failure_ignores_reminders_no_longer_pending(service, db_
     await service.record_failure(reminder.id, "late crash")
 
     assert (reminder.status, reminder.attempts) == (ReminderStatus.SENT, 0)
+
+
+async def _due_message(db_session, *, club_overrides=None, **overrides):
+    club = await make_club(db_session, **{"chat_id": CHAT_ID, "reminders_topic_id": TOPIC_ID, **(club_overrides or {})})
+    return await make_message(db_session, club, **{"send_at": DEFAULT_NOW, **overrides})
+
+
+async def test_message_goes_out_as_written(service, db_session, sent_message) -> None:
+    message = await _due_message(db_session, text='<b>Привет!</b>\n<a href="https://lk.example/1">урок</a>')
+
+    await service.dispatch(message.id)
+
+    kwargs = sent_message.call_args.kwargs
+    assert (kwargs["chat_id"], kwargs["message_thread_id"]) == (CHAT_ID, TOPIC_ID)
+    assert kwargs["text"] == '<b>Привет!</b>\n<a href="https://lk.example/1">урок</a>'
+    assert (message.status, message.message_id) == (ReminderStatus.SENT, 321)
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        ({"is_active": False}, timedelta(0), "Club is inactive"),
+        ({}, timedelta(hours=1, minutes=1), "Message is over an hour late"),
+    ],
+    ids=["inactive-club", "over-an-hour-late"],
+)
+async def test_message_is_skipped_when_stale(service, db_session, bot, case) -> None:
+    club_overrides, late, reason = case
+    message = await _due_message(db_session, club_overrides=club_overrides, send_at=DEFAULT_NOW - late)
+
+    await service.dispatch(message.id)
+
+    assert (message.status, message.error) == (ReminderStatus.SKIPPED, reason)
+    bot.send_message.assert_not_called()
+
+
+async def test_failed_message_alert_quotes_its_start(service, db_session, bot) -> None:
+    message = await _due_message(db_session, club_overrides={"reminders_topic_id": None}, text="<b>Запись</b> готова")
+
+    await service.dispatch(message.id)
+
+    assert message.status is ReminderStatus.FAILED
+    assert "«Запись готова» — сообщение" in _alerts(bot)[0]

@@ -18,5 +18,6 @@ export const Permission = {
   rolesedit: 'roles.edit',
   lessonsview: 'lessons.view',
   lessonsedit: 'lessons.edit',
+  messagessend: 'messages.send',
   settingsedit: 'settings.edit',
 } as const;

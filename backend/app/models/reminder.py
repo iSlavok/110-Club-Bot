@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Text
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, Index, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base, str_enum
@@ -13,15 +13,19 @@ if TYPE_CHECKING:
 
 
 # Outbox of chat messages: the worker sends the due rows, so plans survive restarts and never go out twice.
+# A lesson reminder renders its text from the lesson; a message written by an admin carries its own.
 class Reminder(Base):
     __table_args__ = (
+        CheckConstraint(f"(kind = '{ReminderKind.MESSAGE.value}') = (lesson_id IS NULL)", name="message_has_no_lesson"),
+        CheckConstraint(f"(kind = '{ReminderKind.MESSAGE.value}') = (text IS NOT NULL)", name="only_message_has_text"),
         Index("ix_reminders_status_send_at", "status", "send_at"),
         Index("ix_reminders_club_id_send_at", "club_id", "send_at"),
     )
 
     club_id: Mapped[int] = mapped_column(ForeignKey("clubs.id", ondelete="RESTRICT"))
-    lesson_id: Mapped[int] = mapped_column(ForeignKey("lessons.id", ondelete="CASCADE"), index=True)
+    lesson_id: Mapped[int | None] = mapped_column(ForeignKey("lessons.id", ondelete="CASCADE"), index=True)
     kind: Mapped[ReminderKind] = mapped_column(str_enum(ReminderKind))
+    text: Mapped[str | None] = mapped_column(Text)
     send_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     status: Mapped[ReminderStatus] = mapped_column(
         str_enum(ReminderStatus),
@@ -33,4 +37,4 @@ class Reminder(Base):
     error: Mapped[str | None] = mapped_column(Text)
 
     club: Mapped["Club"] = relationship(lazy="raise")
-    lesson: Mapped["Lesson"] = relationship(lazy="raise")
+    lesson: Mapped["Lesson | None"] = relationship(lazy="raise")

@@ -151,6 +151,7 @@ def test_reminder_failed_alert() -> None:
         club_id=1,
         lesson_id=1,
         kind=ReminderKind.HOMEWORK_DEADLINE,
+        text=None,
         send_at=NOW,
         status=ReminderStatus.FAILED,
         attempts=3,

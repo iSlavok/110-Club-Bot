@@ -11,7 +11,7 @@ from app.schemas import (
     SheetSyncDTO,
     StatusReport,
 )
-from app.texts.reminders import KIND_LABELS, short_time
+from app.texts.reminders import KIND_LABELS, short_time, subject
 from app.utils import BUSINESS_TZ
 
 NO_ACTIVE_CLUBS = "Активных клубов нет."
@@ -71,7 +71,7 @@ def _shorten(text: str, limit: int) -> str:
 def _reminders(section: ReminderStatusSection) -> list[str]:
     lines = ["Ближайшие напоминания:" if section.upcoming else "Ближайших напоминаний нет."]
     lines.extend(
-        f"• {short_time(reminder.send_at)} — {KIND_LABELS[reminder.kind]}, «{escape(reminder.lesson.title)}»"
+        f"• {short_time(reminder.send_at)} — {KIND_LABELS[reminder.kind]}, {subject(reminder)}"
         for reminder in section.upcoming
     )
     if section.failed_last_day:

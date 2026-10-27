@@ -9,6 +9,7 @@ class ReminderKind(StrEnum):
     LESSON_CANCELLED = "lesson_cancelled"
     HOMEWORK_DEADLINE_CHANGED = "homework_deadline_changed"
     HOMEWORK_REMOVED = "homework_removed"
+    MESSAGE = "message"
 
 
 class ReminderStatus(StrEnum):

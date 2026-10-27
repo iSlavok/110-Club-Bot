@@ -4,7 +4,14 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
 import type { Permission, ReminderResponse } from '@/shared/api';
-import { makeAdmin, makeLesson, makeReminder, meHandler, pageOf } from '@/test/fixtures';
+import {
+  makeAdmin,
+  makeLesson,
+  makeMessage,
+  makeReminder,
+  meHandler,
+  pageOf,
+} from '@/test/fixtures';
 import { renderWithProviders } from '@/test/render';
 import { server } from '@/test/server';
 
@@ -116,5 +123,58 @@ describe('ReminderFeed', () => {
 
     expect(await screen.findByRole('button', { name: 'Текст' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Отменить' })).not.toBeInTheDocument();
+  });
+
+  it('lists a message by its text, with no lesson', async () => {
+    serve([makeMessage(5, { text: '<b>Привет!</b> Запись &amp; ДЗ' })]);
+    renderWithProviders(<ReminderFeed clubId={1} />);
+
+    expect(await screen.findByText('Привет! Запись & ДЗ')).toBeInTheDocument();
+    expect(screen.getByText('Сообщение')).toBeInTheDocument();
+  });
+
+  it('does not let lesson editors touch a message', async () => {
+    serve([makeMessage(5)], 'lessons.edit');
+    renderWithProviders(<ReminderFeed clubId={1} />);
+
+    expect(await screen.findByRole('button', { name: 'Текст' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Изменить' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Отменить' })).not.toBeInTheDocument();
+  });
+
+  it('cancels a message through its own endpoint', async () => {
+    let cancelled = false;
+    serve([makeMessage(5)], 'messages.send');
+    server.use(
+      http.post('/api/v1/messages/5/cancel', () => {
+        cancelled = true;
+        return HttpResponse.json(makeMessage(5, { status: 'cancelled' }));
+      }),
+    );
+    renderWithProviders(<ReminderFeed clubId={1} />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Отменить' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Отменить сообщение' }));
+
+    await waitFor(() => {
+      expect(cancelled).toBe(true);
+    });
+  });
+
+  it('opens a pending message for editing with its text', async () => {
+    serve(
+      [makeMessage(5, { text: '<i>Скоро созвон</i>' }), makeMessage(6, { status: 'sent' })],
+      'messages.send',
+    );
+    renderWithProviders(<ReminderFeed clubId={1} />);
+
+    const buttons = await screen.findAllByRole('button', { name: 'Изменить' });
+    expect(buttons).toHaveLength(1);
+    await userEvent.click(buttons[0] ?? document.body);
+
+    expect(await screen.findByRole('dialog', { name: 'Изменить сообщение' })).toBeInTheDocument();
+    expect(within(screen.getByTestId('reminder-preview')).getByText('Скоро созвон').tagName).toBe(
+      'I',
+    );
   });
 });

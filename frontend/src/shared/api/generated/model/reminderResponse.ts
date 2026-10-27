@@ -11,10 +11,12 @@ import type { ReminderStatus } from './reminderStatus';
 export interface ReminderResponse {
   /** Reminder id */
   id: number;
-  /** Lesson the reminder is about */
-  lesson: ReminderLessonResponse;
-  /** What the message says */
+  /** Lesson the reminder is about; null for a message */
+  lesson: ReminderLessonResponse | null;
+  /** What the message says; message: written by an admin */
   kind: ReminderKind;
+  /** Text of a message written by an admin, Telegram HTML; null otherwise */
+  text: string | null;
   /** When it goes or went out, UTC */
   send_at: string;
   /** Delivery status */

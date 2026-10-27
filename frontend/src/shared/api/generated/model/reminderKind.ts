@@ -15,4 +15,5 @@ export const ReminderKind = {
   lesson_cancelled: 'lesson_cancelled',
   homework_deadline_changed: 'homework_deadline_changed',
   homework_removed: 'homework_removed',
+  message: 'message',
 } as const;
