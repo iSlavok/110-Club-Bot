@@ -14,6 +14,10 @@ class UserService:
         )
         return UserDTO.from_orm_obj(user)
 
+    async def find_by_tg_id(self, tg_id: int) -> UserDTO | None:
+        user = await self._user_repository.get_by_tg_id(tg_id)
+        return None if user is None else UserDTO.from_orm_obj(user)
+
     async def search_page(self, query: str | None, page: PageParams) -> Paginated[UserDTO]:
         users = await self._user_repository.search_page(query=query, limit=page.per_page, offset=page.offset)
         return Paginated(items=[UserDTO.from_orm_obj(user) for user in users.items], total=users.total)

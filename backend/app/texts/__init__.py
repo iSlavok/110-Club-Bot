@@ -10,6 +10,7 @@ from app.texts import (
     status,
     student_status,
     vk_link,
+    vk_lookup,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "status",
     "student_status",
     "vk_link",
+    "vk_lookup",
 ]
