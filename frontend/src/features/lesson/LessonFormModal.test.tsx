@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
 import { http, HttpResponse } from 'msw';
@@ -15,6 +15,21 @@ const HOUR_MS = 3_600_000;
 
 // Accessible name of a day in the open month of a picker.
 const dayLabel = (day: number) => dayjs().date(day).locale('ru').format('D MMMM YYYY');
+
+// Looks the day up in the dropdown the picker opened: a role query over the whole modal is slow enough
+// to time out on a loaded CI runner, and a label query would also find the other picker's hidden days.
+async function pickDay(picker: RegExp, day: number) {
+  const target = screen.getByRole('button', { name: picker });
+  await userEvent.click(target);
+  const dropdown = await waitFor(() => {
+    const element = document.getElementById(target.getAttribute('aria-controls') ?? '');
+    if (!element) {
+      throw new Error('The picker dropdown is not open');
+    }
+    return element;
+  });
+  await userEvent.click(await within(dropdown).findByLabelText(dayLabel(day)));
+}
 
 interface Patch {
   body: Record<string, unknown>;
@@ -61,11 +76,10 @@ describe('LessonFormModal', () => {
     server.use(settingsHandler(makeSettings({ default_lesson_time: '15:30:00' })));
     renderWithProviders(<LessonFormModal clubId={1} onClose={vi.fn()} />);
 
-    await userEvent.click(await screen.findByRole('button', { name: /Начало/ }));
-    await userEvent.click(await screen.findByRole('button', { name: dayLabel(10) }));
+    await screen.findByRole('button', { name: /Начало/ });
+    await pickDay(/Начало/, 10);
     await userEvent.click(screen.getByRole('switch', { name: 'Есть ДЗ' }));
-    await userEvent.click(screen.getByRole('button', { name: /Дедлайн ДЗ/ }));
-    await userEvent.click(await screen.findByRole('button', { name: dayLabel(12) }));
+    await pickDay(/Дедлайн ДЗ/, 12);
 
     expect(screen.getByRole('button', { name: /Начало/ })).toHaveTextContent(/15:30$/);
     expect(screen.getByRole('button', { name: /Дедлайн ДЗ/ })).toHaveTextContent(/23:59$/);
