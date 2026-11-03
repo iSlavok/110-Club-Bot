@@ -1,7 +1,7 @@
 import pytest
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.methods import SetMyCommands
-from aiogram.types import BotCommandScopeChat
+from aiogram.types import BotCommandScopeChat, BotCommandScopeChatMember
 from sqlalchemy import select
 
 from app.enums import Permission
@@ -15,8 +15,8 @@ from app.exceptions import (
 from app.models import AdminSession, AdminUser
 from app.schemas import AdminPrincipal, AdminUserCreate, AdminUserUpdate, PageParams
 from app.services import AdminAccessResolver, AdminSessionService, AdminUserService
-from app.telegram import ADMIN_COMMANDS
-from tests.factories import make_admin_user, make_role
+from app.telegram import ADMIN_COMMANDS, CHAT_ADMIN_COMMANDS
+from tests.factories import make_admin_user, make_club, make_role
 from tests.providers import OWNER_TG_ID
 
 P = Permission
@@ -126,6 +126,18 @@ async def test_create_shows_the_admin_menu(service, bot, db_session) -> None:
     await service.create(EDITOR, AdminUserCreate(tg_id=58, name="Новый", role_id=role.id))
 
     bot.set_my_commands.assert_awaited_once_with(list(ADMIN_COMMANDS), scope=BotCommandScopeChat(chat_id=58))
+
+
+async def test_admin_menu_changes_reach_club_chats(service, bot, db_session) -> None:
+    await make_club(db_session, chat_id=-100)
+    role = await make_role(db_session, P.CLUBS_VIEW)
+
+    admin = await service.create(EDITOR, AdminUserCreate(tg_id=60, name="Новый", role_id=role.id))
+    await service.update(EDITOR, admin.id, AdminUserUpdate.model_validate({"is_active": False}))
+
+    scope = BotCommandScopeChatMember(chat_id=-100, user_id=60)
+    bot.set_my_commands.assert_any_await(list(CHAT_ADMIN_COMMANDS), scope=scope)
+    bot.delete_my_commands.assert_any_await(scope=scope)
 
 
 async def test_create_survives_a_telegram_error(service, bot, db_session) -> None:

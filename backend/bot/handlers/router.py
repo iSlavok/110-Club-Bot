@@ -9,6 +9,7 @@ from bot.handlers import (
     start,
     student_status,
     vk_link,
+    vk_lookup,
 )
 
 
@@ -18,6 +19,7 @@ def create_router() -> Router:
         start.router,
         admin_commands.router,
         vk_link.router,
+        vk_lookup.router,
         student_status.router,
         schedule.router,
         removal_requests.router,
