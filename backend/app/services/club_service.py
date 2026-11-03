@@ -2,11 +2,13 @@ from app.exceptions import ClubNotFoundError, ClubTitleTakenError, EmptyUpdateEr
 from app.models import Club
 from app.repositories import ClubRepository
 from app.schemas import ClubCreate, ClubDTO, ClubUpdate, PageParams, Paginated
+from app.services.bot_admin_service import BotAdminService
 
 
 class ClubService:
-    def __init__(self, club_repository: ClubRepository) -> None:
+    def __init__(self, club_repository: ClubRepository, bot_admin_service: BotAdminService) -> None:
         self._club_repository = club_repository
+        self._bot_admin_service = bot_admin_service
 
     async def list_page(self, page: PageParams) -> Paginated[ClubDTO]:
         clubs = await self._club_repository.list_page(limit=page.per_page, offset=page.offset)
@@ -28,6 +30,7 @@ class ClubService:
         )
         self._club_repository.add(club)
         await self._club_repository.flush()
+        await self._show_chat_menus(club)
         return ClubDTO.from_orm_obj(club)
 
     async def update(self, club_id: int, patch: ClubUpdate) -> ClubDTO:
@@ -36,9 +39,11 @@ class ClubService:
         club = await self._get(club_id)
         if patch.title.is_set and patch.title.value != club.title:
             await self._ensure_title_free(patch.title.apply(club.title))
+        was_reachable = club.is_active and club.chat_id is not None
         club.title = patch.title.apply(club.title)
         chat_id = patch.chat_id.apply(club.chat_id)
-        if chat_id != club.chat_id:
+        chat_changed = chat_id != club.chat_id
+        if chat_changed:
             club.chat_invite_link = None
         club.chat_id = chat_id
         club.reminders_topic_id = patch.reminders_topic_id.apply(club.reminders_topic_id)
@@ -47,7 +52,14 @@ class ClubService:
         club.is_active = patch.is_active.apply(club.is_active)
         club.hide_service_messages = patch.hide_service_messages.apply(club.hide_service_messages)
         await self._club_repository.flush()
+        if chat_changed or not was_reachable:
+            await self._show_chat_menus(club)
         return ClubDTO.from_orm_obj(club)
+
+    # A chat the club left keeps its menu: the command answers admins only, so a stale entry is harmless.
+    async def _show_chat_menus(self, club: Club) -> None:
+        if club.is_active and club.chat_id is not None:
+            await self._bot_admin_service.show_chat_menus(club.chat_id)
 
     async def _get(self, club_id: int) -> Club:
         club = await self._club_repository.get_by_id(club_id)

@@ -1,9 +1,12 @@
 import pytest
+from aiogram.types import BotCommandScopeChatMember
 
 from app.exceptions import ClubNotFoundError, ClubTitleTakenError
 from app.schemas import ClubCreate, ClubUpdate, PageParams
 from app.services import ClubService
+from app.telegram import CHAT_ADMIN_COMMANDS
 from tests.factories import make_club
+from tests.providers import OWNER_TG_ID
 
 
 @pytest.fixture
@@ -69,3 +72,42 @@ async def test_list_puts_active_first(service, db_session) -> None:
 
     assert [club.title for club in page.items] == ["Б текущий", "А архив"]
     assert page.total == 2
+
+
+def _chat_menu_scopes(bot) -> list[BotCommandScopeChatMember]:
+    calls = bot.set_my_commands.await_args_list
+    return [call.kwargs["scope"] for call in calls if call.args == (list(CHAT_ADMIN_COMMANDS),)]
+
+
+async def test_create_with_a_chat_shows_admins_the_chat_menu(service, bot) -> None:
+    await service.create(ClubCreate(title="Клуб 110", chat_id=-100))
+    await service.create(ClubCreate(title="Без чата"))
+
+    assert _chat_menu_scopes(bot) == [BotCommandScopeChatMember(chat_id=-100, user_id=OWNER_TG_ID)]
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        ({"chat_id": -1}, {"chat_id": -2}, -2),
+        ({"chat_id": -1, "is_active": False}, {"is_active": True}, -1),
+        ({}, {"chat_id": -3}, -3),
+    ],
+    ids=["chat changed", "club turned on", "chat set"],
+)
+async def test_update_shows_the_chat_menu_when_a_chat_becomes_reachable(service, bot, db_session, case) -> None:
+    club_fields, patch, chat_id = case
+    club = await make_club(db_session, **club_fields)
+
+    await service.update(club.id, ClubUpdate.model_validate(patch))
+
+    assert _chat_menu_scopes(bot) == [BotCommandScopeChatMember(chat_id=chat_id, user_id=OWNER_TG_ID)]
+
+
+@pytest.mark.parametrize("patch", [{"title": "Новое имя"}, {"is_active": False}, {"chat_id": None}])
+async def test_update_leaves_the_chat_menu_otherwise(service, bot, db_session, patch) -> None:
+    club = await make_club(db_session, chat_id=-1)
+
+    await service.update(club.id, ClubUpdate.model_validate(patch))
+
+    assert _chat_menu_scopes(bot) == []

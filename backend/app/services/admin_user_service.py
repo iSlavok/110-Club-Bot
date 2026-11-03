@@ -18,8 +18,8 @@ from app.schemas import (
     Paginated,
 )
 from app.services.admin_access_resolver import AdminAccessResolver
+from app.services.bot_admin_service import BotAdminService
 from app.services.permission_guard import ensure_within_own_permissions
-from app.telegram import CommandMenu
 
 
 class AdminUserService:
@@ -29,13 +29,13 @@ class AdminUserService:
         role_repository: RoleRepository,
         admin_session_repository: AdminSessionRepository,
         access_resolver: AdminAccessResolver,
-        command_menu: CommandMenu,
+        bot_admin_service: BotAdminService,
     ) -> None:
         self._admin_user_repository = admin_user_repository
         self._role_repository = role_repository
         self._admin_session_repository = admin_session_repository
         self._access_resolver = access_resolver
-        self._command_menu = command_menu
+        self._bot_admin_service = bot_admin_service
 
     async def list_page(self, page: PageParams) -> Paginated[AdminUserWithRoleDTO]:
         admins = await self._admin_user_repository.list_page(limit=page.per_page, offset=page.offset)
@@ -50,7 +50,7 @@ class AdminUserService:
         admin = AdminUser(tg_id=data.tg_id, name=data.name, role=role)
         self._admin_user_repository.add(admin)
         await self._admin_user_repository.flush()
-        await self._command_menu.show_admin(admin.tg_id)
+        await self._bot_admin_service.show_admin_menus(admin.tg_id)
         return self._to_dto(admin)
 
     async def update(self, actor: AdminPrincipal, admin_user_id: int, patch: AdminUserUpdate) -> AdminUserWithRoleDTO:
@@ -77,9 +77,9 @@ class AdminUserService:
         await self._admin_user_repository.flush()
         has_access = self._has_access(admin)
         if has_access and not had_access:
-            await self._command_menu.show_admin(admin.tg_id)
+            await self._bot_admin_service.show_admin_menus(admin.tg_id)
         elif had_access and not has_access:
-            await self._command_menu.hide_admin(admin.tg_id)
+            await self._bot_admin_service.hide_admin_menus(admin.tg_id)
         return self._to_dto(admin)
 
     async def _get_assignable_role(self, actor: AdminPrincipal, role_id: int) -> Role:

@@ -5,7 +5,7 @@ from aiogram import Router
 from aiogram.filters import Command
 
 import bot.handlers
-from app.telegram import ADMIN_COMMANDS
+from app.telegram import ADMIN_COMMANDS, CHAT_ADMIN_COMMANDS
 
 
 def _handler_routers() -> list[Router]:
@@ -26,6 +26,6 @@ def _handled_commands() -> set[str]:
 
 
 def test_every_menu_command_has_a_handler() -> None:
-    menu_commands = {command.command for command in ADMIN_COMMANDS}
+    menu_commands = {command.command for command in (*ADMIN_COMMANDS, *CHAT_ADMIN_COMMANDS)}
 
     assert menu_commands <= _handled_commands()
