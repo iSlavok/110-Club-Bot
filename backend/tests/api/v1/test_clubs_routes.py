@@ -12,6 +12,7 @@ from tests.factories import (
     make_sheet_sync,
     make_user,
 )
+from tests.xlsx import read_xlsx
 
 P = Permission
 
@@ -215,3 +216,15 @@ async def test_unknown_block_is_404(api_client, login_as, manager) -> None:
 
     assert response.status_code == 404
     assert response.json()["code"] == "BLOCK_NOT_FOUND"
+
+
+async def test_block_members_export_is_an_xlsx_file(api_client, login_as, db_session) -> None:
+    await login_as(await make_admin_user(db_session, await make_role(db_session, P.USERS_VIEW)))
+    block = await make_block(db_session, await make_club(db_session))
+    await make_membership(db_session, block, vk_id=501)
+
+    response = await api_client.get(f"/api/v1/blocks/{block.id}/members/export", params={"state": "no_bot"})
+
+    assert response.status_code == 200
+    assert response.headers["content-disposition"] == f'attachment; filename="block-{block.id}-no-bot.xlsx"'
+    assert [row[1] for row in read_xlsx(response.content)[1:]] == [501]

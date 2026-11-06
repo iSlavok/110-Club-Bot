@@ -10,6 +10,14 @@ import type { SortOrder } from './sortOrder';
 
 export type ListBlockMembersParams = {
   /**
+   * in_chat: joined the club chat; not_in_chat: everyone else; no_bot: never linked the bot; not_joined: linked the bot but not in the chat
+   */
+  state?: BlockMemberState | null;
+  /**
+   * Name, username, Telegram or VK id
+   */
+  q?: string | null;
+  /**
    * Page number, starting from 1
    * @minimum 1
    * @maximum 46116860184273880
@@ -21,14 +29,6 @@ export type ListBlockMembersParams = {
    * @maximum 200
    */
   per_page?: number;
-  /**
-   * in_chat: joined the club chat; not_in_chat: everyone else; no_bot: never linked the bot; not_joined: linked the bot but not in the chat
-   */
-  state?: BlockMemberState | null;
-  /**
-   * Name, username, Telegram or VK id
-   */
-  q?: string | null;
   /**
    * vk: by VK id; bot: linked the bot first, by name; chat: in the chat first, then invited, left, removed
    */

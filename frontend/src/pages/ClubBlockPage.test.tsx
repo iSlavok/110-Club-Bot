@@ -84,6 +84,10 @@ describe('ClubBlockPage', () => {
       expect(requests.at(-1)?.get('q')).toBe('анна');
     });
     expect(requests.at(-1)?.get('state')).toBe('no_bot');
+    expect(screen.getByRole('link', { name: 'Скачать .xlsx' })).toHaveAttribute(
+      'href',
+      '/api/v1/blocks/3/members/export?state=no_bot&q=%D0%B0%D0%BD%D0%BD%D0%B0',
+    );
   });
 
   it('sorts by the pressed column, bot users first by default', async () => {

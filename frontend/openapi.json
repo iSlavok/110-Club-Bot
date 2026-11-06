@@ -1199,34 +1199,6 @@
             }
           },
           {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 46116860184273879,
-              "minimum": 1,
-              "description": "Page number, starting from 1",
-              "default": 1,
-              "title": "Page"
-            },
-            "description": "Page number, starting from 1"
-          },
-          {
-            "name": "per_page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 200,
-              "minimum": 1,
-              "description": "Items per page",
-              "default": 50,
-              "title": "Per Page"
-            },
-            "description": "Items per page"
-          },
-          {
             "name": "state",
             "in": "query",
             "required": false,
@@ -1264,6 +1236,34 @@
             "description": "Name, username, Telegram or VK id"
           },
           {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 46116860184273879,
+              "minimum": 1,
+              "description": "Page number, starting from 1",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number, starting from 1"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 50,
+              "title": "Per Page"
+            },
+            "description": "Items per page"
+          },
+          {
             "name": "sort",
             "in": "query",
             "required": false,
@@ -1293,6 +1293,103 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Page_BlockMemberResponse_"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/blocks/{block_id}/members/export": {
+      "get": {
+        "tags": [
+          "clubs"
+        ],
+        "summary": "Export Block Members",
+        "operationId": "export_block_members",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Block Id"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BlockMemberState"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "in_chat: joined the club chat; not_in_chat: everyone else; no_bot: never linked the bot; not_joined: linked the bot but not in the chat",
+              "title": "State"
+            },
+            "description": "in_chat: joined the club chat; not_in_chat: everyone else; no_bot: never linked the bot; not_joined: linked the bot but not in the chat"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Name, username, Telegram or VK id",
+              "title": "Q"
+            },
+            "description": "Name, username, Telegram or VK id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "XLSX file",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }
@@ -2667,6 +2764,25 @@
         ],
         "parameters": [
           {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Name, username, Telegram or VK id",
+              "title": "Q"
+            },
+            "description": "Name, username, Telegram or VK id"
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -2693,7 +2809,55 @@
               "title": "Per Page"
             },
             "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_UserResponse_"
+                }
+              }
+            }
           },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/export": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Export Users",
+        "operationId": "export_users",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
           {
             "name": "q",
             "in": "query",
@@ -2716,11 +2880,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "XLSX file",
             "content": {
-              "application/json": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page_UserResponse_"
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }

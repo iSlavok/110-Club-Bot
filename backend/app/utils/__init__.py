@@ -11,15 +11,19 @@ from app.utils.security import (
     pkce_code_challenge,
 )
 from app.utils.vk_links import VkIdReference, VkReference, VkScreenNameReference, parse_vk_reference
+from app.utils.xlsx import XLSX_MEDIA_TYPE, XlsxCell, build_xlsx
 
 __all__ = [
     "BUSINESS_TZ",
     "LOGIN_CODE_DIGITS",
+    "XLSX_MEDIA_TYPE",
     "Clock",
     "SystemClock",
     "VkIdReference",
     "VkReference",
     "VkScreenNameReference",
+    "XlsxCell",
+    "build_xlsx",
     "generate_code_verifier",
     "generate_login_code",
     "generate_oauth_state",

@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 from app.enums import Permission
 from tests.factories import make_admin_user, make_role, make_user
+from tests.xlsx import read_xlsx
 
 
 async def test_list_users_with_search(api_client, login_as, db_session) -> None:
@@ -30,3 +31,23 @@ async def test_users_require_permission(api_client, login_as, db_session) -> Non
     response = await api_client.get("/api/v1/users")
 
     assert response.status_code == 403
+
+
+async def test_export_users(api_client, login_as, db_session) -> None:
+    await login_as(await make_admin_user(db_session, await make_role(db_session, Permission.USERS_VIEW)))
+    await make_user(db_session, full_name="Анна Белова")
+
+    response = await api_client.get("/api/v1/users/export", params={"q": "анна"})
+
+    assert response.status_code == 200
+    assert response.headers["content-disposition"] == 'attachment; filename="users.xlsx"'
+    assert [row[0] for row in read_xlsx(response.content)[1:]] == ["Анна Белова"]
+
+
+async def test_export_users_requires_permission(api_client, login_as, db_session) -> None:
+    await login_as(await make_admin_user(db_session, await make_role(db_session, Permission.CLUBS_VIEW)))
+
+    response = await api_client.get("/api/v1/users/export")
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "PERMISSION_DENIED"

@@ -35,6 +35,8 @@ export * from './clubUpdate';
 export * from './currentAdminResponse';
 export * from './currentBlockStatsResponse';
 export * from './errorResponse';
+export * from './exportBlockMembersParams';
+export * from './exportUsersParams';
 export * from './fieldError';
 export * from './lessonCancelRequest';
 export * from './lessonCreate';
