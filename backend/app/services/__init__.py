@@ -9,6 +9,7 @@ from app.services.chat_access_service import ChatAccessService
 from app.services.club_message_service import ClubMessageService
 from app.services.club_service import ClubService
 from app.services.club_stats_service import ClubStatsService
+from app.services.export_service import ExportService
 from app.services.health_service import HealthService
 from app.services.lesson_service import LessonService
 from app.services.login_service import LoginService
@@ -37,6 +38,7 @@ __all__ = [
     "ClubMessageService",
     "ClubService",
     "ClubStatsService",
+    "ExportService",
     "HealthService",
     "LessonService",
     "LoginService",

@@ -68,7 +68,7 @@ class BlockListItemResponse(BlockResponse):
         )
 
 
-class BlockMemberListParams(PageParams):
+class BlockMemberFilters(BaseModel):
     state: BlockMemberState | None = Field(
         default=None,
         description=(
@@ -77,6 +77,9 @@ class BlockMemberListParams(PageParams):
         ),
     )
     q: str | None = Field(default=None, max_length=100, description="Name, username, Telegram or VK id")
+
+
+class BlockMemberListParams(PageParams, BlockMemberFilters):
     sort: BlockMemberSort = Field(
         default=BlockMemberSort.BOT,
         description=(

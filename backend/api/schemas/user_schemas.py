@@ -6,8 +6,12 @@ from pydantic import BaseModel, Field
 from app.schemas import PageParams, UserDTO
 
 
-class UserListParams(PageParams):
+class UserFilters(BaseModel):
     q: str | None = Field(default=None, max_length=100, description="Name, username, Telegram or VK id")
+
+
+class UserListParams(PageParams, UserFilters):
+    pass
 
 
 class UserResponse(BaseModel):

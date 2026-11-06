@@ -15,6 +15,7 @@ from app.schemas.club_schemas import (
     ClubUpdate,
 )
 from app.schemas.club_stats_schemas import ClubStats, CurrentBlockStats
+from app.schemas.export_schemas import ExportFile
 from app.schemas.health_schemas import ReadinessReport
 from app.schemas.lesson_schemas import LessonCreate, LessonDraft, LessonDTO, LessonUpdate
 from app.schemas.membership_removal_schemas import RemovalCandidate, RemovalRequestAlert
@@ -81,6 +82,7 @@ __all__ = [
     "ClubSyncStatus",
     "ClubUpdate",
     "CurrentBlockStats",
+    "ExportFile",
     "IssuedLoginCode",
     "KickedMember",
     "LessonCreate",
