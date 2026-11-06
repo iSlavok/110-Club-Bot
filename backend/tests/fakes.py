@@ -1,5 +1,6 @@
 import asyncio
 from collections import Counter
+from collections.abc import Sequence
 from datetime import datetime
 
 from app.clients import (
@@ -9,6 +10,7 @@ from app.clients import (
     SheetsNotConfiguredError,
     VkClientError,
     VkUser,
+    WrittenCell,
 )
 from app.clients.login_throttle import MAX_FAILURES
 
@@ -119,6 +121,8 @@ class FakeSheetsClient:
         self.is_enabled = True
         self.sheets: dict[tuple[str, str], list[list[CellValue]]] = {}
         self.errors: dict[tuple[str, str], Exception] = {}
+        self.written: dict[tuple[str, str], list[list[WrittenCell]]] = {}
+        self.column_widths: dict[tuple[str, str], list[int]] = {}
 
     def set_sheet(self, spreadsheet_id: str, sheet_name: str, columns: list[list[CellValue]]) -> None:
         self.sheets[spreadsheet_id, sheet_name] = columns
@@ -134,3 +138,18 @@ class FakeSheetsClient:
         if (columns := self.sheets.get((spreadsheet_id, sheet_name))) is None:
             raise SheetsClientError("Google Sheets API error 404 NOT_FOUND: Requested entity was not found.")
         return columns
+
+    async def replace_sheet(
+        self,
+        spreadsheet_id: str,
+        sheet_name: str,
+        rows: list[list[WrittenCell]],
+        *,
+        column_widths: Sequence[int] = (),
+    ) -> None:
+        self.column_widths[spreadsheet_id, sheet_name] = list(column_widths)
+        if not self.is_enabled:
+            raise SheetsNotConfiguredError
+        if (error := self.errors.get((spreadsheet_id, sheet_name))) is not None:
+            raise error
+        self.written[spreadsheet_id, sheet_name] = rows

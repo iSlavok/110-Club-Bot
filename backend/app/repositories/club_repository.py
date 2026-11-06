@@ -66,6 +66,19 @@ class ClubRepository(BaseRepository[Club]):
         clubs = await self._session.scalars(statement)
         return list(clubs)
 
+    async def list_with_status_sheet(self) -> list[Club]:
+        statement = (
+            select(Club)
+            .where(
+                Club.is_active,
+                Club.spreadsheet_id.is_not(None),
+                Club.status_sheet_name.is_not(None),
+            )
+            .order_by(Club.id)
+        )
+        clubs = await self._session.scalars(statement)
+        return list(clubs)
+
     async def list_with_chat(self) -> list[Club]:
         statement = (
             select(Club)

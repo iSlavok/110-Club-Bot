@@ -54,7 +54,7 @@ from app.exceptions.lessons import (
 )
 from app.exceptions.membership_removals import RemovalRequestDecidedError, RemovalRequestNotFoundError
 from app.exceptions.settings import AppSettingsMissingError, VkLinkModeNotConfiguredError
-from app.exceptions.sheet_syncs import ClubNotSyncableError, SheetSyncDisabledError
+from app.exceptions.sheet_syncs import ClubNotSyncableError, SheetSyncDisabledError, StatusSheetWriteError
 from app.exceptions.vk import (
     InvalidVkLinkError,
     UserNotRegisteredError,
@@ -113,6 +113,7 @@ __all__ = [
     "RoleNotFoundError",
     "RoleTitleTakenError",
     "SheetSyncDisabledError",
+    "StatusSheetWriteError",
     "TelegramUnavailableError",
     "TooManyLoginAttemptsError",
     "TooManyRequestsError",

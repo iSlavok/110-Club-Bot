@@ -11,6 +11,7 @@ interface ClubFormValues {
   reminders_topic_id: number | string;
   spreadsheet_id: string;
   sheet_name: string;
+  status_sheet_name: string;
   is_active: boolean;
   hide_service_messages: boolean;
 }
@@ -28,6 +29,7 @@ function toValues(club?: ClubResponse): ClubFormValues {
     reminders_topic_id: club?.reminders_topic_id ?? '',
     spreadsheet_id: club?.spreadsheet_id ?? '',
     sheet_name: club?.sheet_name ?? '',
+    status_sheet_name: club?.status_sheet_name ?? '',
     is_active: club?.is_active ?? true,
     hide_service_messages: club?.hide_service_messages ?? false,
   };
@@ -41,6 +43,7 @@ function toBody(values: ClubFormValues): ClubCreate {
       typeof values.reminders_topic_id === 'number' ? values.reminders_topic_id : null,
     spreadsheet_id: values.spreadsheet_id.trim() || null,
     sheet_name: values.sheet_name.trim() || null,
+    status_sheet_name: values.status_sheet_name.trim() || null,
     hide_service_messages: values.hide_service_messages,
   };
 }
@@ -94,6 +97,11 @@ export function ClubFormModal({ opened, onClose, club }: ClubFormModalProps) {
           </Group>
           <TextInput label="ID Google-таблицы" {...form.getInputProps('spreadsheet_id')} />
           <TextInput label="Лист с составом" {...form.getInputProps('sheet_name')} />
+          <TextInput
+            label="Лист статуса учеников"
+            description="Бот раз в 10 минут переписывает его: VK без бота, с ботом не в чате, в чате. Пусто — выключено. Сервисному аккаунту нужны права редактора."
+            {...form.getInputProps('status_sheet_name')}
+          />
           <Switch
             label="Скрывать сообщения о входе и выходе"
             description="Бот удаляет их из чата. Нужно право «Удаление сообщений»."

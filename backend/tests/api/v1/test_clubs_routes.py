@@ -228,3 +228,13 @@ async def test_block_members_export_is_an_xlsx_file(api_client, login_as, db_ses
     assert response.status_code == 200
     assert response.headers["content-disposition"] == f'attachment; filename="block-{block.id}-no-bot.xlsx"'
     assert [row[1] for row in read_xlsx(response.content)[1:]] == [501]
+
+
+async def test_club_status_sheet_is_set_and_cleared(api_client, login_as, manager) -> None:
+    await login_as(manager)
+    club = (await api_client.post("/api/v1/clubs", json={"title": "Клуб", "status_sheet_name": "Статус"})).json()
+
+    cleared = await api_client.patch(f"/api/v1/clubs/{club['id']}", json={"status_sheet_name": None})
+
+    assert club["status_sheet_name"] == "Статус"
+    assert cleared.json()["status_sheet_name"] is None

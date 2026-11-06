@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 from app.enums import BlockMemberSort, BlockMemberState, ChatAccessStatus, SortOrder
 from app.schemas import BlockDTO, BlockMember, BlockMemberFunnel, BlockMemberUser, BlockSummary, ClubDTO, PageParams
+from app.schemas.club_schemas import STATUS_SHEET_DESCRIPTION
 
 
 class ClubResponse(BaseModel):
@@ -14,6 +15,7 @@ class ClubResponse(BaseModel):
     reminders_topic_id: int | None = Field(description="Forum topic id for reminders")
     spreadsheet_id: str | None = Field(description="Google Sheets document id")
     sheet_name: str | None = Field(description="Sheet with block columns")
+    status_sheet_name: str | None = Field(description=STATUS_SHEET_DESCRIPTION)
     is_active: bool = Field(description="Inactive clubs are skipped by the bot")
     hide_service_messages: bool = Field(description="Bot deletes the join and leave messages in the club chat")
 
@@ -26,6 +28,7 @@ class ClubResponse(BaseModel):
             reminders_topic_id=club.reminders_topic_id,
             spreadsheet_id=club.spreadsheet_id,
             sheet_name=club.sheet_name,
+            status_sheet_name=club.status_sheet_name,
             is_active=club.is_active,
             hide_service_messages=club.hide_service_messages,
         )
