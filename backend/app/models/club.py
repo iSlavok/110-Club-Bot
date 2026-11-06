@@ -13,6 +13,7 @@ class Club(Base):
     reminders_topic_id: Mapped[int | None]
     spreadsheet_id: Mapped[str | None] = mapped_column(String(CLUB_TEXT_MAX_LEN))
     sheet_name: Mapped[str | None] = mapped_column(String(CLUB_TEXT_MAX_LEN))
+    status_sheet_name: Mapped[str | None] = mapped_column(String(CLUB_TEXT_MAX_LEN))
     is_active: Mapped[bool] = mapped_column(server_default=true())
     hide_service_messages: Mapped[bool] = mapped_column(server_default=false())
     # Chat state kept by the worker, so the owner is alerted on a change, not on every run.

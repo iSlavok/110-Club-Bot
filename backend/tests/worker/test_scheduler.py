@@ -54,6 +54,17 @@ async def test_chat_access_is_reconciled_every_five_minutes_with_app_container(c
     assert job.kwargs == {"container": container}
 
 
+async def test_status_sheets_are_published_every_ten_minutes_with_app_container(container) -> None:
+    scheduler = create_scheduler(container, SyncSettings())
+
+    job = scheduler.get_job("publish_status_sheets")
+
+    assert job is not None
+    assert isinstance(job.trigger, IntervalTrigger)
+    assert job.trigger.interval == timedelta(minutes=10)
+    assert job.kwargs == {"container": container}
+
+
 async def test_sheet_sync_history_is_purged_nightly(container) -> None:
     scheduler = create_scheduler(container, SyncSettings())
 

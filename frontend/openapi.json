@@ -3586,6 +3586,17 @@
             ],
             "description": "Sheet with block columns"
           },
+          "status_sheet_name": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClubText"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Sheet in the same spreadsheet the bot rewrites with the VK links of the access block by funnel step; empty turns it off"
+          },
           "hide_service_messages": {
             "type": "boolean",
             "title": "Hide Service Messages",
@@ -3707,6 +3718,18 @@
             "title": "Sheet Name",
             "description": "Sheet with block columns"
           },
+          "status_sheet_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Sheet Name",
+            "description": "Sheet in the same spreadsheet the bot rewrites with the VK links of the access block by funnel step; empty turns it off"
+          },
           "is_active": {
             "type": "boolean",
             "title": "Is Active",
@@ -3726,6 +3749,7 @@
           "reminders_topic_id",
           "spreadsheet_id",
           "sheet_name",
+          "status_sheet_name",
           "is_active",
           "hide_service_messages"
         ],
@@ -3822,6 +3846,18 @@
             ],
             "title": "Sheet Name",
             "description": "Sheet with block columns"
+          },
+          "status_sheet_name": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClubText"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Sheet Name",
+            "description": "Sheet in the same spreadsheet the bot rewrites with the VK links of the access block by funnel step; empty turns it off"
           },
           "is_active": {
             "type": "boolean",
