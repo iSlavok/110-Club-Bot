@@ -7,6 +7,7 @@ import { Link, useParams } from 'react-router';
 import { BlockStatusBadge } from '@/entities/block';
 import { ChatStatusBadge } from '@/entities/chat-access';
 import {
+  getExportBlockMembersUrl,
   useGetBlock,
   useGetBlockMemberFunnel,
   useListBlockMembersInfinite,
@@ -20,6 +21,7 @@ import { routes } from '@/shared/config/routes';
 import { useClubId } from '@/shared/lib/club-id';
 import { formatDateTime } from '@/shared/lib/dates';
 import { infinitePage, PER_PAGE, useInfinitePage } from '@/shared/lib/infinite-page';
+import { DownloadButton } from '@/shared/ui/DownloadButton';
 import { InfiniteList } from '@/shared/ui/InfiniteList';
 import { PageHeader } from '@/shared/ui/PageHeader';
 import { QueryState } from '@/shared/ui/QueryState';
@@ -69,14 +71,10 @@ function BlockMembers({ block }: { block: BlockResponse }) {
     order: 'asc',
   });
   const funnel = useGetBlockMemberFunnel(block.id);
+  const filters = { state: state === 'all' ? undefined : state, q: debounced || undefined };
   const query = useListBlockMembersInfinite(
     block.id,
-    {
-      per_page: PER_PAGE,
-      ...sorting,
-      state: state === 'all' ? undefined : state,
-      q: debounced || undefined,
-    },
+    { per_page: PER_PAGE, ...sorting, ...filters },
     infinitePage,
   );
   const members = useInfinitePage(query);
@@ -90,6 +88,7 @@ function BlockMembers({ block }: { block: BlockResponse }) {
             <BlockStatusBadge block={block} />
           </Group>
         }
+        actions={<DownloadButton href={getExportBlockMembersUrl(block.id, filters)} />}
       />
       <Text size="sm" c="dimmed" mb="md">
         {formatDateTime(block.starts_at)} — {formatDateTime(block.ends_at)}, столбец «

@@ -1,14 +1,16 @@
 from typing import Annotated
 
 from dishka.integrations.fastapi import FromDishka
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Query, Response, status
 
 from api.core.auth import require
+from api.core.files import XLSX_RESPONSES, xlsx_response
 from api.core.params import IdPath
 from api.core.routing import UnitOfWorkRoute
 from api.schemas import Page
 from api.schemas.club_schemas import (
     BlockListItemResponse,
+    BlockMemberFilters,
     BlockMemberFunnelResponse,
     BlockMemberListParams,
     BlockMemberResponse,
@@ -18,7 +20,7 @@ from api.schemas.club_schemas import (
 from api.schemas.club_stats_schemas import ClubStatsResponse
 from app.enums import Permission
 from app.schemas import BlockCreate, BlockUpdate, ClubCreate, ClubUpdate, PageParams
-from app.services import BlockService, ClubService, ClubStatsService
+from app.services import BlockService, ClubService, ClubStatsService, ExportService
 
 router = APIRouter(tags=["clubs"], route_class=UnitOfWorkRoute)
 
@@ -81,6 +83,21 @@ async def list_block_members(
         order=params.order,
     )
     return Page.from_paginated(members, params, BlockMemberResponse.from_dto)
+
+
+@router.get(
+    "/blocks/{block_id}/members/export",
+    dependencies=[require(Permission.USERS_VIEW)],
+    response_class=Response,
+    responses=XLSX_RESPONSES,
+)
+async def export_block_members(
+    block_id: IdPath,
+    filters: Annotated[BlockMemberFilters, Query()],
+    export_service: FromDishka[ExportService],
+) -> Response:
+    file = await export_service.block_members(block_id, state=filters.state, query=filters.q)
+    return xlsx_response(file)
 
 
 @router.get("/blocks/{block_id}/members/funnel", dependencies=[require(Permission.USERS_VIEW)])
