@@ -9,6 +9,7 @@ from api.core.routing import UnitOfWorkRoute
 from api.schemas import Page
 from api.schemas.club_schemas import (
     BlockListItemResponse,
+    BlockMemberFunnelResponse,
     BlockMemberListParams,
     BlockMemberResponse,
     BlockResponse,
@@ -71,8 +72,30 @@ async def list_block_members(
     params: Annotated[BlockMemberListParams, Query()],
     block_service: FromDishka[BlockService],
 ) -> Page[BlockMemberResponse]:
-    members = await block_service.list_members(block_id, params, sort=params.sort, order=params.order)
+    members = await block_service.list_members(
+        block_id,
+        params,
+        state=params.state,
+        query=params.q,
+        sort=params.sort,
+        order=params.order,
+    )
     return Page.from_paginated(members, params, BlockMemberResponse.from_dto)
+
+
+@router.get("/blocks/{block_id}/members/funnel", dependencies=[require(Permission.USERS_VIEW)])
+async def get_block_member_funnel(
+    block_id: IdPath,
+    block_service: FromDishka[BlockService],
+) -> BlockMemberFunnelResponse:
+    funnel = await block_service.member_funnel(block_id)
+    return BlockMemberFunnelResponse.from_dto(funnel)
+
+
+@router.get("/blocks/{block_id}", dependencies=[require(Permission.CLUBS_VIEW)])
+async def get_block(block_id: IdPath, block_service: FromDishka[BlockService]) -> BlockResponse:
+    block = await block_service.get(block_id)
+    return BlockResponse.from_dto(block)
 
 
 @router.post(

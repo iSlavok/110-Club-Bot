@@ -190,3 +190,28 @@ async def test_block_members_sort_by_query(api_client, login_as, db_session) -> 
     assert [item["vk_id"] for item in sorted_.json()["items"]] == [502, 501]
     assert invalid.status_code == 422
     assert invalid.json()["code"] == "VALIDATION_FAILED"
+
+
+async def test_block_member_page_endpoints(api_client, login_as, db_session) -> None:
+    await login_as(await make_admin_user(db_session, await make_role(db_session, P.CLUBS_VIEW, P.USERS_VIEW)))
+    block = await make_block(db_session, await make_club(db_session), title="Блок 5")
+    await make_membership(db_session, block, vk_id=501)
+    await make_membership(db_session, block, vk_id=502)
+    await make_user(db_session, vk_id=501)
+
+    got = await api_client.get(f"/api/v1/blocks/{block.id}")
+    funnel = await api_client.get(f"/api/v1/blocks/{block.id}/members/funnel")
+    no_bot = await api_client.get(f"/api/v1/blocks/{block.id}/members", params={"state": "no_bot"})
+
+    assert got.json()["title"] == "Блок 5"
+    assert funnel.json() == {"total": 2, "with_bot": 1, "in_chat": 0}
+    assert [member["vk_id"] for member in no_bot.json()["items"]] == [502]
+
+
+async def test_unknown_block_is_404(api_client, login_as, manager) -> None:
+    await login_as(manager)
+
+    response = await api_client.get("/api/v1/blocks/999999")
+
+    assert response.status_code == 404
+    assert response.json()["code"] == "BLOCK_NOT_FOUND"

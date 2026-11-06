@@ -6,6 +6,7 @@ export const routes = {
   clubs: '/clubs',
   club: (clubId: Id) => `/clubs/${clubId}`,
   clubBlocks: (clubId: Id) => `/clubs/${clubId}/blocks`,
+  clubBlock: (clubId: Id, blockId: Id) => `/clubs/${clubId}/blocks/${blockId}`,
   clubSync: (clubId: Id) => `/clubs/${clubId}/sync`,
   clubLessons: (clubId: Id) => `/clubs/${clubId}/lessons`,
   clubLesson: (clubId: Id, lessonId: Id) => `/clubs/${clubId}/lessons/${lessonId}`,

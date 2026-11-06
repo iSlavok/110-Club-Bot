@@ -103,11 +103,18 @@ class BlockMemberUser(BaseModel):
     full_name: str
     tg_username: str | None
     chat_status: ChatAccessStatus | None
+    chat_joined_at: datetime | None
 
 
 class BlockMember(BaseModel):
     vk_id: int
     user: BlockMemberUser | None
+
+
+class BlockMemberFunnel(BaseModel):
+    total: int
+    with_bot: int
+    in_chat: int
 
 
 class BlockCreate(BaseModel):

@@ -1,3 +1,4 @@
+from app.enums.block_member_state import BlockMemberState
 from app.enums.chat_access import ChatAccessStatus
 from app.enums.health import CheckStatus, HealthStatus
 from app.enums.lesson import LessonKind, LessonView
@@ -10,6 +11,7 @@ from app.enums.vk_link_mode import VkLinkMode
 
 __all__ = [
     "BlockMemberSort",
+    "BlockMemberState",
     "ChatAccessStatus",
     "CheckStatus",
     "HealthStatus",
