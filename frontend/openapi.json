@@ -1227,6 +1227,43 @@
             "description": "Items per page"
           },
           {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BlockMemberState"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "in_chat: joined the club chat; not_in_chat: everyone else; no_bot: never linked the bot; not_joined: linked the bot but not in the chat",
+              "title": "State"
+            },
+            "description": "in_chat: joined the club chat; not_in_chat: everyone else; no_bot: never linked the bot; not_joined: linked the bot but not in the chat"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Name, username, Telegram or VK id",
+              "title": "Q"
+            },
+            "description": "Name, username, Telegram or VK id"
+          },
+          {
             "name": "sort",
             "in": "query",
             "required": false,
@@ -1283,7 +1320,123 @@
         }
       }
     },
+    "/api/v1/blocks/{block_id}/members/funnel": {
+      "get": {
+        "tags": [
+          "clubs"
+        ],
+        "summary": "Get Block Member Funnel",
+        "operationId": "get_block_member_funnel",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Block Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockMemberFunnelResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/blocks/{block_id}": {
+      "get": {
+        "tags": [
+          "clubs"
+        ],
+        "summary": "Get Block",
+        "operationId": "get_block",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Block Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "patch": {
         "tags": [
           "clubs"
@@ -2996,6 +3149,32 @@
         ],
         "title": "BlockListItemResponse"
       },
+      "BlockMemberFunnelResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Members of the block in the sheet"
+          },
+          "with_bot": {
+            "type": "integer",
+            "title": "With Bot",
+            "description": "Members who linked the bot"
+          },
+          "in_chat": {
+            "type": "integer",
+            "title": "In Chat",
+            "description": "Members in the club chat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "with_bot",
+          "in_chat"
+        ],
+        "title": "BlockMemberFunnelResponse"
+      },
       "BlockMemberResponse": {
         "properties": {
           "vk_id": {
@@ -3031,6 +3210,16 @@
         ],
         "title": "BlockMemberSort"
       },
+      "BlockMemberState": {
+        "type": "string",
+        "enum": [
+          "in_chat",
+          "not_in_chat",
+          "no_bot",
+          "not_joined"
+        ],
+        "title": "BlockMemberState"
+      },
       "BlockMemberUserResponse": {
         "properties": {
           "id": {
@@ -3065,6 +3254,19 @@
               }
             ],
             "description": "State in the club chat for students the bot invited; null if the bot never invited them"
+          },
+          "chat_joined_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Joined At",
+            "description": "When the student last joined the club chat"
           }
         },
         "type": "object",
@@ -3072,7 +3274,8 @@
           "id",
           "full_name",
           "tg_username",
-          "chat_status"
+          "chat_status",
+          "chat_joined_at"
         ],
         "title": "BlockMemberUserResponse"
       },

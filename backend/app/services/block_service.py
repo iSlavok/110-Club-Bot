@@ -1,4 +1,4 @@
-from app.enums import BlockMemberSort, SortOrder
+from app.enums import BlockMemberSort, BlockMemberState, SortOrder
 from app.exceptions import (
     BlockColumnTakenError,
     BlockHasMembersError,
@@ -15,6 +15,7 @@ from app.schemas import (
     BlockCreate,
     BlockDTO,
     BlockMember,
+    BlockMemberFunnel,
     BlockMemberUser,
     BlockSummary,
     BlockUpdate,
@@ -55,6 +56,8 @@ class BlockService:
         block_id: int,
         page: PageParams,
         *,
+        state: BlockMemberState | None = None,
+        query: str | None = None,
         sort: BlockMemberSort = BlockMemberSort.BOT,
         order: SortOrder = SortOrder.ASC,
     ) -> Paginated[BlockMember]:
@@ -62,6 +65,8 @@ class BlockService:
         members = await self._membership_queries.list_block_members_page(
             block_id=block_id,
             club_id=block.club_id,
+            state=state,
+            query=query,
             sort=sort,
             order=order,
             limit=page.per_page,
@@ -69,6 +74,15 @@ class BlockService:
         )
         items = [BlockMember(vk_id=row.vk_id, user=self._member_user(row)) for row in members.items]
         return Paginated(items=items, total=members.total)
+
+    async def get(self, block_id: int) -> BlockDTO:
+        block = await self._get(block_id)
+        return BlockDTO.from_orm_obj(block)
+
+    async def member_funnel(self, block_id: int) -> BlockMemberFunnel:
+        block = await self._get(block_id)
+        funnel = await self._membership_queries.block_member_funnel(block_id=block_id, club_id=block.club_id)
+        return BlockMemberFunnel(total=funnel.total, with_bot=funnel.with_bot, in_chat=funnel.in_chat)
 
     async def create(self, club_id: int, data: BlockCreate) -> BlockDTO:
         await self._ensure_club_exists(club_id)
@@ -117,6 +131,7 @@ class BlockService:
             full_name=row.full_name,
             tg_username=row.tg_username,
             chat_status=row.chat_status,
+            chat_joined_at=row.chat_joined_at,
         )
 
     async def _get(self, block_id: int) -> Block:

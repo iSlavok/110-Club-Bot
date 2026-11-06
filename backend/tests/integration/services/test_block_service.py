@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from app.enums import BlockMemberSort, ChatAccessStatus, SortOrder
+from app.enums import BlockMemberSort, BlockMemberState, ChatAccessStatus, SortOrder
 from app.exceptions import (
     BlockColumnTakenError,
     BlockHasMembersError,
@@ -120,6 +120,7 @@ async def test_members_show_linked_bot_users(service, db_session) -> None:
         full_name="Ученик Тестов",
         tg_username="pupil",
         chat_status=None,
+        chat_joined_at=None,
     )
     assert page.items[1].user is None
 
@@ -167,3 +168,51 @@ async def test_members_sort(service, db_session, sort, order, expected) -> None:
     page = await service.list_members(block.id, PageParams(), sort=sort, order=order)
 
     assert [member.vk_id for member in page.items] == expected
+
+
+async def _funnel_block(db_session):
+    club = await make_club(db_session, chat_id=-100500)
+    block = await make_block(db_session, club)
+    for vk_id in (501, 502, 503, 504):
+        await make_membership(db_session, block, vk_id=vk_id)
+    joined = await make_user(db_session, vk_id=501, full_name="Борис")
+    invited = await make_user(db_session, vk_id=502, full_name="Анна")
+    await make_user(db_session, vk_id=503, full_name="Вера")
+    await make_chat_access(db_session, club, joined, status=ChatAccessStatus.JOINED)
+    await make_chat_access(db_session, club, invited, status=ChatAccessStatus.INVITED)
+    return block
+
+
+@pytest.mark.parametrize(
+    ("state", "expected"),
+    [
+        (BlockMemberState.IN_CHAT, [501]),
+        (BlockMemberState.NOT_IN_CHAT, [502, 503, 504]),
+        (BlockMemberState.NO_BOT, [504]),
+        (BlockMemberState.NOT_JOINED, [502, 503]),
+    ],
+)
+async def test_members_filter_by_state(service, db_session, state, expected) -> None:
+    block = await _funnel_block(db_session)
+
+    page = await service.list_members(block.id, PageParams(), state=state, sort=BlockMemberSort.VK)
+
+    assert [member.vk_id for member in page.items] == expected
+    assert page.total == len(expected)
+
+
+@pytest.mark.parametrize(("query", "expected"), [("анна", [502]), ("504", [504])], ids=["name", "vk id"])
+async def test_members_search(service, db_session, query, expected) -> None:
+    block = await _funnel_block(db_session)
+
+    page = await service.list_members(block.id, PageParams(), query=query)
+
+    assert [member.vk_id for member in page.items] == expected
+
+
+async def test_member_funnel(service, db_session) -> None:
+    block = await _funnel_block(db_session)
+
+    funnel = await service.member_funnel(block.id)
+
+    assert (funnel.total, funnel.with_bot, funnel.in_chat) == (4, 3, 1)
