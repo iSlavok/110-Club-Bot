@@ -33,6 +33,7 @@ def _club(title: str) -> ClubDTO:
         reminders_topic_id=None,
         spreadsheet_id=None,
         sheet_name=None,
+        status_sheet_name=None,
         is_active=True,
         hide_service_messages=False,
         chat_kicks_on_hold=False,

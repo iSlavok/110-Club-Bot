@@ -9,6 +9,7 @@ from app.utils import BUSINESS_TZ
 from worker.jobs import (
     cleanup_rate_limiters,
     dispatch_reminders,
+    publish_status_sheets,
     purge_expired_auth,
     purge_sheet_syncs,
     reconcile_chat_access,
@@ -16,6 +17,7 @@ from worker.jobs import (
 )
 
 CHAT_RECONCILE_INTERVAL = 5
+STATUS_SHEET_INTERVAL = 10
 
 
 # auto_inject: every job run gets its own request scope, so DatabaseProvider commits or rolls back per run.
@@ -47,5 +49,11 @@ def create_scheduler(container: AsyncContainer, sync_settings: SyncSettings) -> 
         IntervalTrigger(minutes=CHAT_RECONCILE_INTERVAL),
         kwargs={"container": container},
         id="reconcile_chat_access",
+    )
+    scheduler.add_job(
+        publish_status_sheets,
+        IntervalTrigger(minutes=STATUS_SHEET_INTERVAL),
+        kwargs={"container": container},
+        id="publish_status_sheets",
     )
     return scheduler
