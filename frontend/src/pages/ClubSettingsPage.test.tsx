@@ -37,4 +37,29 @@ describe('ClubSettingsPage', () => {
       expect(body).toMatchObject({ hide_service_messages: true });
     });
   });
+
+  it('sets the status sheet', async () => {
+    let body: unknown;
+    const club = makeClub(7);
+    server.use(
+      meHandler(makeAdmin('clubs.view', 'clubs.edit')),
+      http.get('/api/v1/clubs/7', () => HttpResponse.json(club)),
+      http.patch('/api/v1/clubs/7', async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({ ...club, status_sheet_name: 'Статус' });
+      }),
+    );
+    renderRoutes([{ path: '/clubs/:clubId/settings', element: <ClubSettingsPage /> }], {
+      route: '/clubs/7/settings',
+    });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Изменить' }));
+    const modal = within(await screen.findByRole('dialog'));
+    await userEvent.type(modal.getByRole('textbox', { name: /Лист статуса учеников/ }), 'Статус');
+    await userEvent.click(modal.getByRole('button', { name: 'Сохранить' }));
+
+    await waitFor(() => {
+      expect(body).toMatchObject({ status_sheet_name: 'Статус' });
+    });
+  });
 });

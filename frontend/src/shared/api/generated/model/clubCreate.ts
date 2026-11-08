@@ -19,6 +19,8 @@ export interface ClubCreate {
   spreadsheet_id?: ClubText | null;
   /** Sheet with block columns */
   sheet_name?: ClubText | null;
+  /** Sheet in the same spreadsheet the bot rewrites with the VK links of the access block by funnel step; empty turns it off */
+  status_sheet_name?: ClubText | null;
   /** Bot deletes the join and leave messages in the club chat */
   hide_service_messages?: boolean;
 }
