@@ -1199,6 +1199,43 @@
             }
           },
           {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BlockMemberState"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "in_chat: joined the club chat; not_in_chat: everyone else; no_bot: never linked the bot; not_joined: linked the bot but not in the chat",
+              "title": "State"
+            },
+            "description": "in_chat: joined the club chat; not_in_chat: everyone else; no_bot: never linked the bot; not_joined: linked the bot but not in the chat"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Name, username, Telegram or VK id",
+              "title": "Q"
+            },
+            "description": "Name, username, Telegram or VK id"
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -1283,7 +1320,220 @@
         }
       }
     },
+    "/api/v1/blocks/{block_id}/members/export": {
+      "get": {
+        "tags": [
+          "clubs"
+        ],
+        "summary": "Export Block Members",
+        "operationId": "export_block_members",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Block Id"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BlockMemberState"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "in_chat: joined the club chat; not_in_chat: everyone else; no_bot: never linked the bot; not_joined: linked the bot but not in the chat",
+              "title": "State"
+            },
+            "description": "in_chat: joined the club chat; not_in_chat: everyone else; no_bot: never linked the bot; not_joined: linked the bot but not in the chat"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Name, username, Telegram or VK id",
+              "title": "Q"
+            },
+            "description": "Name, username, Telegram or VK id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "XLSX file",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/blocks/{block_id}/members/funnel": {
+      "get": {
+        "tags": [
+          "clubs"
+        ],
+        "summary": "Get Block Member Funnel",
+        "operationId": "get_block_member_funnel",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Block Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockMemberFunnelResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/blocks/{block_id}": {
+      "get": {
+        "tags": [
+          "clubs"
+        ],
+        "summary": "Get Block",
+        "operationId": "get_block",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Block Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "patch": {
         "tags": [
           "clubs"
@@ -2514,6 +2764,25 @@
         ],
         "parameters": [
           {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Name, username, Telegram or VK id",
+              "title": "Q"
+            },
+            "description": "Name, username, Telegram or VK id"
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -2540,7 +2809,55 @@
               "title": "Per Page"
             },
             "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_UserResponse_"
+                }
+              }
+            }
           },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/export": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Export Users",
+        "operationId": "export_users",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
           {
             "name": "q",
             "in": "query",
@@ -2563,11 +2880,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "XLSX file",
             "content": {
-              "application/json": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page_UserResponse_"
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }
@@ -2996,6 +3314,32 @@
         ],
         "title": "BlockListItemResponse"
       },
+      "BlockMemberFunnelResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Members of the block in the sheet"
+          },
+          "with_bot": {
+            "type": "integer",
+            "title": "With Bot",
+            "description": "Members who linked the bot"
+          },
+          "in_chat": {
+            "type": "integer",
+            "title": "In Chat",
+            "description": "Members in the club chat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "with_bot",
+          "in_chat"
+        ],
+        "title": "BlockMemberFunnelResponse"
+      },
       "BlockMemberResponse": {
         "properties": {
           "vk_id": {
@@ -3031,6 +3375,16 @@
         ],
         "title": "BlockMemberSort"
       },
+      "BlockMemberState": {
+        "type": "string",
+        "enum": [
+          "in_chat",
+          "not_in_chat",
+          "no_bot",
+          "not_joined"
+        ],
+        "title": "BlockMemberState"
+      },
       "BlockMemberUserResponse": {
         "properties": {
           "id": {
@@ -3065,6 +3419,19 @@
               }
             ],
             "description": "State in the club chat for students the bot invited; null if the bot never invited them"
+          },
+          "chat_joined_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Joined At",
+            "description": "When the student last joined the club chat"
           }
         },
         "type": "object",
@@ -3072,7 +3439,8 @@
           "id",
           "full_name",
           "tg_username",
-          "chat_status"
+          "chat_status",
+          "chat_joined_at"
         ],
         "title": "BlockMemberUserResponse"
       },
@@ -3218,6 +3586,17 @@
             ],
             "description": "Sheet with block columns"
           },
+          "status_sheet_name": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClubText"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Sheet in the same spreadsheet the bot rewrites with the VK links of the access block by funnel step; empty turns it off"
+          },
           "hide_service_messages": {
             "type": "boolean",
             "title": "Hide Service Messages",
@@ -3339,6 +3718,18 @@
             "title": "Sheet Name",
             "description": "Sheet with block columns"
           },
+          "status_sheet_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Sheet Name",
+            "description": "Sheet in the same spreadsheet the bot rewrites with the VK links of the access block by funnel step; empty turns it off"
+          },
           "is_active": {
             "type": "boolean",
             "title": "Is Active",
@@ -3358,6 +3749,7 @@
           "reminders_topic_id",
           "spreadsheet_id",
           "sheet_name",
+          "status_sheet_name",
           "is_active",
           "hide_service_messages"
         ],
@@ -3454,6 +3846,18 @@
             ],
             "title": "Sheet Name",
             "description": "Sheet with block columns"
+          },
+          "status_sheet_name": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClubText"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Sheet Name",
+            "description": "Sheet in the same spreadsheet the bot rewrites with the VK links of the access block by funnel step; empty turns it off"
           },
           "is_active": {
             "type": "boolean",

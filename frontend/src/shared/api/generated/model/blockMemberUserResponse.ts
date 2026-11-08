@@ -15,4 +15,6 @@ export interface BlockMemberUserResponse {
   tg_username: string | null;
   /** State in the club chat for students the bot invited; null if the bot never invited them */
   chat_status: ChatAccessStatus | null;
+  /** When the student last joined the club chat */
+  chat_joined_at: string | null;
 }

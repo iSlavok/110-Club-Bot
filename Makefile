@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 .PHONY: help infra infra-down dev front prod prod-down prod-logs lint fmt typecheck test migration migrate gen build \
-	build-backend build-web
+	build-backend build-web deploy
 
 COMPOSE_DEV := docker compose -f docker-compose.yml -f docker-compose.dev.yml
 COMPOSE_PROD := docker compose -p club110-prod
@@ -24,6 +24,7 @@ help:
 	@echo "migration   autogenerate alembic revision: make migration m=\"add lessons\""
 	@echo "migrate     alembic upgrade head on the dev database"
 	@echo "build       build docker images $(IMAGE_PREFIX)-backend:latest and -web:latest"
+	@echo "deploy      deploy a tag without GitHub Actions: make deploy v=1.3.0"
 
 infra:
 	$(COMPOSE_PROD) down
@@ -84,3 +85,8 @@ build-backend:
 
 build-web:
 	docker build -f docker/web.Dockerfile -t $(IMAGE_PREFIX)-web:latest .
+
+# Fallback for when GitHub Actions cannot run; the release workflow stays the normal way.
+deploy:
+	@test -n "$(v)" || (echo 'usage: make deploy v=X.Y.Z' && exit 1)
+	./scripts/deploy.sh $(v)

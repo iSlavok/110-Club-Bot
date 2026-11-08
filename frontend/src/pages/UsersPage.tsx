@@ -3,9 +3,10 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { IconSearch } from '@tabler/icons-react';
 import { useState } from 'react';
 
-import { useListUsersInfinite } from '@/shared/api';
+import { getExportUsersUrl, useListUsersInfinite } from '@/shared/api';
 import { formatDateTime } from '@/shared/lib/dates';
 import { infinitePage, PER_PAGE, useInfinitePage } from '@/shared/lib/infinite-page';
+import { DownloadButton } from '@/shared/ui/DownloadButton';
 import { InfiniteList } from '@/shared/ui/InfiniteList';
 import { PageHeader } from '@/shared/ui/PageHeader';
 
@@ -20,7 +21,10 @@ export function UsersPage() {
 
   return (
     <>
-      <PageHeader title="Пользователи бота" />
+      <PageHeader
+        title="Пользователи бота"
+        actions={<DownloadButton href={getExportUsersUrl({ q: debounced || undefined })} />}
+      />
       <InfiniteList
         list={users}
         emptyText="Никого не нашли"

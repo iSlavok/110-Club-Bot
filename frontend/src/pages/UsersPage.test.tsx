@@ -45,5 +45,9 @@ describe('UsersPage', () => {
       'https://vk.com/id42',
     );
     expect(screen.getByText('02.09.2026 12:00')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Скачать .xlsx' })).toHaveAttribute(
+      'href',
+      '/api/v1/users/export?q=%D0%B0%D0%BD%D0%BD%D0%B0',
+    );
   });
 });

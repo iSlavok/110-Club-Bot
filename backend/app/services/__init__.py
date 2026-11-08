@@ -9,6 +9,7 @@ from app.services.chat_access_service import ChatAccessService
 from app.services.club_message_service import ClubMessageService
 from app.services.club_service import ClubService
 from app.services.club_stats_service import ClubStatsService
+from app.services.export_service import ExportService
 from app.services.health_service import HealthService
 from app.services.lesson_service import LessonService
 from app.services.login_service import LoginService
@@ -20,6 +21,7 @@ from app.services.role_service import RoleService
 from app.services.schedule_service import ScheduleService
 from app.services.sheet_sync_service import SheetSyncService
 from app.services.status_service import StatusService
+from app.services.status_sheet_service import StatusSheetService
 from app.services.student_status_service import StudentStatusService
 from app.services.user_service import UserService
 from app.services.vk_link_availability import VkLinkAvailability
@@ -37,6 +39,7 @@ __all__ = [
     "ClubMessageService",
     "ClubService",
     "ClubStatsService",
+    "ExportService",
     "HealthService",
     "LessonService",
     "LoginService",
@@ -48,6 +51,7 @@ __all__ = [
     "ScheduleService",
     "SheetSyncService",
     "StatusService",
+    "StatusSheetService",
     "StudentStatusService",
     "UserService",
     "VkLinkAvailability",

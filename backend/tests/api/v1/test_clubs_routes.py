@@ -12,6 +12,7 @@ from tests.factories import (
     make_sheet_sync,
     make_user,
 )
+from tests.xlsx import read_xlsx
 
 P = Permission
 
@@ -190,3 +191,50 @@ async def test_block_members_sort_by_query(api_client, login_as, db_session) -> 
     assert [item["vk_id"] for item in sorted_.json()["items"]] == [502, 501]
     assert invalid.status_code == 422
     assert invalid.json()["code"] == "VALIDATION_FAILED"
+
+
+async def test_block_member_page_endpoints(api_client, login_as, db_session) -> None:
+    await login_as(await make_admin_user(db_session, await make_role(db_session, P.CLUBS_VIEW, P.USERS_VIEW)))
+    block = await make_block(db_session, await make_club(db_session), title="Блок 5")
+    await make_membership(db_session, block, vk_id=501)
+    await make_membership(db_session, block, vk_id=502)
+    await make_user(db_session, vk_id=501)
+
+    got = await api_client.get(f"/api/v1/blocks/{block.id}")
+    funnel = await api_client.get(f"/api/v1/blocks/{block.id}/members/funnel")
+    no_bot = await api_client.get(f"/api/v1/blocks/{block.id}/members", params={"state": "no_bot"})
+
+    assert got.json()["title"] == "Блок 5"
+    assert funnel.json() == {"total": 2, "with_bot": 1, "in_chat": 0}
+    assert [member["vk_id"] for member in no_bot.json()["items"]] == [502]
+
+
+async def test_unknown_block_is_404(api_client, login_as, manager) -> None:
+    await login_as(manager)
+
+    response = await api_client.get("/api/v1/blocks/999999")
+
+    assert response.status_code == 404
+    assert response.json()["code"] == "BLOCK_NOT_FOUND"
+
+
+async def test_block_members_export_is_an_xlsx_file(api_client, login_as, db_session) -> None:
+    await login_as(await make_admin_user(db_session, await make_role(db_session, P.USERS_VIEW)))
+    block = await make_block(db_session, await make_club(db_session))
+    await make_membership(db_session, block, vk_id=501)
+
+    response = await api_client.get(f"/api/v1/blocks/{block.id}/members/export", params={"state": "no_bot"})
+
+    assert response.status_code == 200
+    assert response.headers["content-disposition"] == f'attachment; filename="block-{block.id}-no-bot.xlsx"'
+    assert [row[1] for row in read_xlsx(response.content)[1:]] == [501]
+
+
+async def test_club_status_sheet_is_set_and_cleared(api_client, login_as, manager) -> None:
+    await login_as(manager)
+    club = (await api_client.post("/api/v1/clubs", json={"title": "Клуб", "status_sheet_name": "Статус"})).json()
+
+    cleared = await api_client.patch(f"/api/v1/clubs/{club['id']}", json={"status_sheet_name": None})
+
+    assert club["status_sheet_name"] == "Статус"
+    assert cleared.json()["status_sheet_name"] is None

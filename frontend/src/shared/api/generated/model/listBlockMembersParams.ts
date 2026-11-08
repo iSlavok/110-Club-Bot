@@ -5,9 +5,18 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BlockMemberSort } from './blockMemberSort';
+import type { BlockMemberState } from './blockMemberState';
 import type { SortOrder } from './sortOrder';
 
 export type ListBlockMembersParams = {
+  /**
+   * in_chat: joined the club chat; not_in_chat: everyone else; no_bot: never linked the bot; not_joined: linked the bot but not in the chat
+   */
+  state?: BlockMemberState | null;
+  /**
+   * Name, username, Telegram or VK id
+   */
+  q?: string | null;
   /**
    * Page number, starting from 1
    * @minimum 1

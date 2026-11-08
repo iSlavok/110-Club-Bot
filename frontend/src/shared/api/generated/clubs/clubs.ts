@@ -26,6 +26,7 @@ import type {
 
 import type {
   BlockCreate,
+  BlockMemberFunnelResponse,
   BlockResponse,
   BlockUpdate,
   ClubCreate,
@@ -33,6 +34,7 @@ import type {
   ClubStatsResponse,
   ClubUpdate,
   ErrorResponse,
+  ExportBlockMembersParams,
   ListBlockMembersParams,
   ListBlocksParams,
   ListClubsParams,
@@ -1544,6 +1546,415 @@ export function useListBlockMembers<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getListBlockMembersQueryOptions(blockId, params, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+export const getExportBlockMembersUrl = (blockId: number, params?: ExportBlockMembersParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/blocks/${blockId}/members/export?${stringifiedParams}`
+    : `/api/v1/blocks/${blockId}/members/export`;
+};
+
+/**
+ * @summary Export Block Members
+ */
+export const exportBlockMembers = async (
+  blockId: number,
+  params?: ExportBlockMembersParams,
+  options?: Parameters<typeof apiFetch>[1],
+): Promise<Blob> => {
+  return apiFetch<Blob>(getExportBlockMembersUrl(blockId, params), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getExportBlockMembersQueryKey = (
+  blockId: number,
+  params?: ExportBlockMembersParams,
+) => {
+  return [`/api/v1/blocks/${blockId}/members/export`, ...(params ? [params] : [])] as const;
+};
+
+export const getExportBlockMembersQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportBlockMembers>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  params?: ExportBlockMembersParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportBlockMembers>>, TError, TData>>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getExportBlockMembersQueryKey(blockId, params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof exportBlockMembers>>> = ({ signal }) =>
+    exportBlockMembers(blockId, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: blockId !== null && blockId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof exportBlockMembers>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+};
+
+export type ExportBlockMembersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportBlockMembers>>
+>;
+export type ExportBlockMembersQueryError = ErrorType<ValidationErrorResponse | ErrorResponse>;
+
+export function useExportBlockMembers<
+  TData = Awaited<ReturnType<typeof exportBlockMembers>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  params: undefined | ExportBlockMembersParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportBlockMembers>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof exportBlockMembers>>,
+          TError,
+          Awaited<ReturnType<typeof exportBlockMembers>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useExportBlockMembers<
+  TData = Awaited<ReturnType<typeof exportBlockMembers>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  params?: ExportBlockMembersParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof exportBlockMembers>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof exportBlockMembers>>,
+          TError,
+          Awaited<ReturnType<typeof exportBlockMembers>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useExportBlockMembers<
+  TData = Awaited<ReturnType<typeof exportBlockMembers>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  params?: ExportBlockMembersParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportBlockMembers>>, TError, TData>>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary Export Block Members
+ */
+
+export function useExportBlockMembers<
+  TData = Awaited<ReturnType<typeof exportBlockMembers>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  params?: ExportBlockMembersParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportBlockMembers>>, TError, TData>>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getExportBlockMembersQueryOptions(blockId, params, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+export const getGetBlockMemberFunnelUrl = (blockId: number) => {
+  return `/api/v1/blocks/${blockId}/members/funnel`;
+};
+
+/**
+ * @summary Get Block Member Funnel
+ */
+export const getBlockMemberFunnel = async (
+  blockId: number,
+  options?: Parameters<typeof apiFetch>[1],
+): Promise<BlockMemberFunnelResponse> => {
+  return apiFetch<BlockMemberFunnelResponse>(getGetBlockMemberFunnelUrl(blockId), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getGetBlockMemberFunnelQueryKey = (blockId: number) => {
+  return [`/api/v1/blocks/${blockId}/members/funnel`] as const;
+};
+
+export const getGetBlockMemberFunnelQueryOptions = <
+  TData = Awaited<ReturnType<typeof getBlockMemberFunnel>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getBlockMemberFunnel>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetBlockMemberFunnelQueryKey(blockId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getBlockMemberFunnel>>> = ({ signal }) =>
+    getBlockMemberFunnel(blockId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: blockId !== null && blockId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getBlockMemberFunnel>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+};
+
+export type GetBlockMemberFunnelQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getBlockMemberFunnel>>
+>;
+export type GetBlockMemberFunnelQueryError = ErrorType<ValidationErrorResponse | ErrorResponse>;
+
+export function useGetBlockMemberFunnel<
+  TData = Awaited<ReturnType<typeof getBlockMemberFunnel>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getBlockMemberFunnel>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBlockMemberFunnel>>,
+          TError,
+          Awaited<ReturnType<typeof getBlockMemberFunnel>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useGetBlockMemberFunnel<
+  TData = Awaited<ReturnType<typeof getBlockMemberFunnel>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getBlockMemberFunnel>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBlockMemberFunnel>>,
+          TError,
+          Awaited<ReturnType<typeof getBlockMemberFunnel>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useGetBlockMemberFunnel<
+  TData = Awaited<ReturnType<typeof getBlockMemberFunnel>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getBlockMemberFunnel>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary Get Block Member Funnel
+ */
+
+export function useGetBlockMemberFunnel<
+  TData = Awaited<ReturnType<typeof getBlockMemberFunnel>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getBlockMemberFunnel>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetBlockMemberFunnelQueryOptions(blockId, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+export const getGetBlockUrl = (blockId: number) => {
+  return `/api/v1/blocks/${blockId}`;
+};
+
+/**
+ * @summary Get Block
+ */
+export const getBlock = async (
+  blockId: number,
+  options?: Parameters<typeof apiFetch>[1],
+): Promise<BlockResponse> => {
+  return apiFetch<BlockResponse>(getGetBlockUrl(blockId), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getGetBlockQueryKey = (blockId: number) => {
+  return [`/api/v1/blocks/${blockId}`] as const;
+};
+
+export const getGetBlockQueryOptions = <
+  TData = Awaited<ReturnType<typeof getBlock>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getBlock>>, TError, TData>>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetBlockQueryKey(blockId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getBlock>>> = ({ signal }) =>
+    getBlock(blockId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: blockId !== null && blockId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getBlock>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+};
+
+export type GetBlockQueryResult = NonNullable<Awaited<ReturnType<typeof getBlock>>>;
+export type GetBlockQueryError = ErrorType<ValidationErrorResponse | ErrorResponse>;
+
+export function useGetBlock<
+  TData = Awaited<ReturnType<typeof getBlock>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getBlock>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBlock>>,
+          TError,
+          Awaited<ReturnType<typeof getBlock>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useGetBlock<
+  TData = Awaited<ReturnType<typeof getBlock>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getBlock>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBlock>>,
+          TError,
+          Awaited<ReturnType<typeof getBlock>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useGetBlock<
+  TData = Awaited<ReturnType<typeof getBlock>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getBlock>>, TError, TData>>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary Get Block
+ */
+
+export function useGetBlock<
+  TData = Awaited<ReturnType<typeof getBlock>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  blockId: number,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getBlock>>, TError, TData>>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetBlockQueryOptions(blockId, options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>;
