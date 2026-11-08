@@ -16,6 +16,7 @@ Telegram-бот + веб-админка для клубов «110» онлайн
 | `docker/` | Dockerfile'ы (`backend`, `web` = сборка админки + nginx), `nginx.conf`. |
 | `docker-compose.yml` | Эталонная топология для одного VPS. |
 | `Makefile` | Оркестратор, делегирует в backend и frontend. |
+| `scripts/` | `deploy.sh` — ручной деплой тега без GitHub Actions. |
 
 ## Команды
 
@@ -32,6 +33,7 @@ make gen         # OpenAPI из backend → frontend/openapi.json → orval-кл
 make migration m="add lessons"   # alembic autogenerate против dev-базы
 make migrate     # alembic upgrade head
 make build       # docker-образы ghcr.io/islavok/110-club-bot-{backend,web}:latest (те же имена, что публикует релиз)
+make deploy v=1.3.0   # деплой тега без Actions: сборка образов здесь, docker load на сервер по SSH (DEPLOY_SSH, DEPLOY_PATH — в .env.deploy)
 ```
 
 Env — `.env` в корне (шаблон `.env.example`). Там только секреты и имена; хосты по умолчанию (`postgres`, `redis`) заданы в `Settings` под docker-сеть. Запуск на хосте: `Makefile` подставляет `DB_HOST=localhost REDIS_HOST=localhost`, запускает `uv run --env-file ../.env` из `backend/`. Run configuration в PyCharm — то же: `.env` + эти две переменные. Python-окружение — `backend/.venv`.
@@ -51,7 +53,7 @@ Env — `.env` в корне (шаблон `.env.example`). Там только 
 Репозиторий публичный.
 
 **Ветки:**
-- `main` — только выпущенные версии. Каждый мерж в `main` → тег `vX.Y.Z` + GitHub Release. Публикация Release собирает образы в GHCR и деплоит на сервер (`release.yml` → `deploy.yml`); откат — ручной запуск Deploy со старой версией.
+- `main` — только выпущенные версии. Каждый мерж в `main` → тег `vX.Y.Z` + GitHub Release. Публикация Release собирает образы в GHCR и деплоит на сервер (`release.yml` → `deploy.yml`); откат — ручной запуск Deploy со старой версией. Actions недоступны → `make deploy v=X.Y.Z`.
 - `release/X.Y.Z` — разработка версии. От `main`, в `main` одним PR через merge commit.
 - `feat/*`, `fix/*`, `chore/*` — один PR на фичу/этап, всегда в текущий `release/*`, мерж rebase'ом.
 - `hotfix/*` — от `main`, мерж в `main` с patch-тегом и обратно в текущий `release/*`.
