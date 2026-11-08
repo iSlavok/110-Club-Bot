@@ -1,14 +1,15 @@
 from typing import Annotated
 
 from dishka.integrations.fastapi import FromDishka
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Response
 
 from api.core.auth import require
+from api.core.files import XLSX_RESPONSES, xlsx_response
 from api.core.routing import UnitOfWorkRoute
 from api.schemas import Page
-from api.schemas.user_schemas import UserListParams, UserResponse
+from api.schemas.user_schemas import UserFilters, UserListParams, UserResponse
 from app.enums import Permission
-from app.services import UserService
+from app.services import ExportService, UserService
 
 router = APIRouter(prefix="/users", tags=["users"], route_class=UnitOfWorkRoute)
 
@@ -20,3 +21,17 @@ async def list_users(
 ) -> Page[UserResponse]:
     users = await user_service.search_page(params.q, params)
     return Page.from_paginated(users, params, UserResponse.from_dto)
+
+
+@router.get(
+    "/export",
+    dependencies=[require(Permission.USERS_VIEW)],
+    response_class=Response,
+    responses=XLSX_RESPONSES,
+)
+async def export_users(
+    filters: Annotated[UserFilters, Query()],
+    export_service: FromDishka[ExportService],
+) -> Response:
+    file = await export_service.users(filters.q)
+    return xlsx_response(file)

@@ -7,6 +7,10 @@
 
 export type ListUsersParams = {
   /**
+   * Name, username, Telegram or VK id
+   */
+  q?: string | null;
+  /**
    * Page number, starting from 1
    * @minimum 1
    * @maximum 46116860184273880
@@ -18,8 +22,4 @@ export type ListUsersParams = {
    * @maximum 200
    */
   per_page?: number;
-  /**
-   * Name, username, Telegram or VK id
-   */
-  q?: string | null;
 };

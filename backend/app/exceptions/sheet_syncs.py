@@ -9,3 +9,8 @@ class ClubNotSyncableError(ConflictError):
 class SheetSyncDisabledError(ExternalServiceError):
     def __init__(self) -> None:
         super().__init__("Sheet sync is disabled: Google credentials are not configured")
+
+
+class StatusSheetWriteError(ExternalServiceError):
+    def __init__(self, club_id: int, reason: str) -> None:
+        super().__init__(f"Cannot write the status sheet of club {club_id}: {reason}")

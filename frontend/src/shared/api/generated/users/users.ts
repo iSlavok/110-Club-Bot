@@ -23,6 +23,7 @@ import type {
 
 import type {
   ErrorResponse,
+  ExportUsersParams,
   ListUsersParams,
   PageUserResponse,
   ValidationErrorResponse,
@@ -324,6 +325,139 @@ export function useListUsers<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getListUsersQueryOptions(params, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+export const getExportUsersUrl = (params?: ExportUsersParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/users/export?${stringifiedParams}`
+    : `/api/v1/users/export`;
+};
+
+/**
+ * @summary Export Users
+ */
+export const exportUsers = async (
+  params?: ExportUsersParams,
+  options?: Parameters<typeof apiFetch>[1],
+): Promise<Blob> => {
+  return apiFetch<Blob>(getExportUsersUrl(params), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getExportUsersQueryKey = (params?: ExportUsersParams) => {
+  return [`/api/v1/users/export`, ...(params ? [params] : [])] as const;
+};
+
+export const getExportUsersQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportUsers>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params?: ExportUsersParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportUsers>>, TError, TData>>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getExportUsersQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof exportUsers>>> = ({ signal }) =>
+    exportUsers(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportUsers>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type ExportUsersQueryResult = NonNullable<Awaited<ReturnType<typeof exportUsers>>>;
+export type ExportUsersQueryError = ErrorType<ValidationErrorResponse | ErrorResponse>;
+
+export function useExportUsers<
+  TData = Awaited<ReturnType<typeof exportUsers>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params: undefined | ExportUsersParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportUsers>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof exportUsers>>,
+          TError,
+          Awaited<ReturnType<typeof exportUsers>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useExportUsers<
+  TData = Awaited<ReturnType<typeof exportUsers>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params?: ExportUsersParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportUsers>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof exportUsers>>,
+          TError,
+          Awaited<ReturnType<typeof exportUsers>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useExportUsers<
+  TData = Awaited<ReturnType<typeof exportUsers>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params?: ExportUsersParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportUsers>>, TError, TData>>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary Export Users
+ */
+
+export function useExportUsers<
+  TData = Awaited<ReturnType<typeof exportUsers>>,
+  TError = ErrorType<ValidationErrorResponse | ErrorResponse>,
+>(
+  params?: ExportUsersParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportUsers>>, TError, TData>>;
+    request?: SecondParameter<typeof apiFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getExportUsersQueryOptions(params, options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>;

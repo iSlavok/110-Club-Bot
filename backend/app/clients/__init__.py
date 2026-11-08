@@ -10,6 +10,7 @@ from app.clients.google_sheets_client import (
     DisabledSheetsClient,
     GoogleSheetsClient,
     SheetsClient,
+    WrittenCell,
     open_sheets_client,
 )
 from app.clients.login_throttle import LoginThrottle, RedisLoginThrottle
@@ -30,5 +31,6 @@ __all__ = [
     "VkClient",
     "VkClientError",
     "VkUser",
+    "WrittenCell",
     "open_sheets_client",
 ]

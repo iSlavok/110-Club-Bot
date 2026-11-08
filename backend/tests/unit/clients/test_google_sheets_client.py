@@ -151,3 +151,56 @@ async def test_broken_credentials_file_disables_the_client(tmp_path: Path) -> No
 
 def test_empty_setting_means_not_configured() -> None:
     assert GoogleSettings.model_validate({"credentials_file": ""}).credentials_file is None
+
+
+async def test_replace_sheet_creates_a_protected_sheet_and_rewrites_it(requests_seen: list[httpx.Request]) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests_seen.append(request)
+        if request.method == "GET":
+            return httpx.Response(200, json={"sheets": [{"properties": {"sheetId": 0, "title": "Зачисленные"}}]})
+        if request.url.path.endswith(":batchUpdate"):
+            return httpx.Response(200, json={"replies": [{"addSheet": {"properties": {"sheetId": 7, "title": "x"}}}]})
+        return httpx.Response(200, json={})
+
+    await make_client(handler).replace_sheet("sheet-id", "Статус", [["VK"], ["https://vk.com/id1"]])
+
+    calls = [(request.method, request.url.path) for request in requests_seen]
+    assert calls == [
+        ("GET", "/v4/spreadsheets/sheet-id"),
+        ("POST", "/v4/spreadsheets/sheet-id:batchUpdate"),
+        ("POST", "/v4/spreadsheets/sheet-id:batchUpdate"),
+        ("POST", "/v4/spreadsheets/sheet-id/values/'Статус':clear"),
+        ("PUT", "/v4/spreadsheets/sheet-id/values/'Статус'"),
+    ]
+    protect = json.loads(requests_seen[2].content)["requests"][0]["addProtectedRange"]["protectedRange"]
+    assert protect == {"range": {"sheetId": 7}, "warningOnly": True}
+    assert requests_seen[4].url.params["valueInputOption"] == "RAW"
+    assert json.loads(requests_seen[4].content)["values"] == [["VK"], ["https://vk.com/id1"]]
+
+
+async def test_replace_sheet_keeps_an_existing_sheet(requests_seen: list[httpx.Request]) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests_seen.append(request)
+        if request.method == "GET":
+            return httpx.Response(200, json={"sheets": [{"properties": {"sheetId": 3, "title": "Статус"}}]})
+        return httpx.Response(200, json={})
+
+    await make_client(handler).replace_sheet("sheet-id", "Статус", [], column_widths=[320, 200])
+
+    assert [request.method for request in requests_seen] == ["GET", "POST", "POST", "PUT"]
+    widths = json.loads(requests_seen[1].content)["requests"]
+    assert [width["updateDimensionProperties"]["range"] for width in widths] == [
+        {"sheetId": 3, "dimension": "COLUMNS", "startIndex": 0, "endIndex": 1},
+        {"sheetId": 3, "dimension": "COLUMNS", "startIndex": 1, "endIndex": 2},
+    ]
+    assert [width["updateDimensionProperties"]["properties"] for width in widths] == [
+        {"pixelSize": 320},
+        {"pixelSize": 200},
+    ]
+
+
+async def test_replace_sheet_error_becomes_client_error() -> None:
+    client = make_client(lambda _: httpx.Response(403, json={"error": {"code": 403, "status": "PERMISSION_DENIED"}}))
+
+    with pytest.raises(SheetsClientError, match="403 PERMISSION_DENIED"):
+        await client.replace_sheet("sheet-id", "Статус", [])
