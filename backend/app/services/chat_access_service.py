@@ -5,14 +5,15 @@ from aiogram.types import ChatMemberRestricted, ResultChatMemberUnion
 from loguru import logger
 
 from app import texts
-from app.enums import ChatAccessStatus, MessageDelivery
+from app.enums import ChatAccessStatus, MessageDelivery, Permission
+from app.exceptions import BlockNotFoundError, ClubNotFoundError, PermissionDeniedError
 from app.models import Block, ChatAccess, Club, User
 from app.queries import ChatAccessQueries
 from app.repositories import BlockRepository, ChatAccessRepository, ClubRepository, MembershipRepository, UserRepository
-from app.schemas import ChatStudent, ClubAccess, StudentClubStatus
+from app.schemas import ChatStudent, ClubAccess, StudentClubStatus, TelegramProfile
 from app.services.bot_admin_service import BotAdminService
 from app.services.direct_message_service import DirectMessageService
-from app.telegram import AdminAlerts, chat_invite_keyboard
+from app.telegram import AdminAlerts, chat_invite_keyboard, kick_approval_keyboard
 from app.utils import Clock
 
 REINVITED_STATUSES = (ChatAccessStatus.LEFT, ChatAccessStatus.KICKED)
@@ -77,6 +78,9 @@ class ChatAccessService:
         on_hold = filled is None and bool(kick_ids)
         await self._set_kicks_on_hold(club, on_hold=on_hold, block=block, waiting=len(kick_ids))
         if filled is None:
+            return
+        if filled.kicks_approved_at is None:
+            await self._ask_kick_approval(club, filled, kick_ids)
             return
         errors: list[str] = []
         kicked: list[ChatStudent] = []
@@ -174,6 +178,24 @@ class ChatAccessService:
             await self._admin_alerts.send(texts.alerts.chat_invites_failing(club.title, failed))
         else:
             await self._admin_alerts.send(texts.alerts.chat_invites_recovered(club.title))
+
+    async def approve_kicks(self, block_id: int, decider: TelegramProfile) -> None:
+        if not await self._bot_admin_service.has_permission(decider.tg_id, Permission.SYNC_RUN):
+            raise PermissionDeniedError
+        block = await self._block_repository.get_by_id(block_id)
+        if block is None:
+            raise BlockNotFoundError(block_id)
+        club = await self._club_repository.get_by_id(block.club_id)
+        if club is None:
+            raise ClubNotFoundError(block.club_id)
+        if block.kicks_approved_at is None:
+            block.kicks_approved_at = self._clock.now()
+            await self._block_repository.flush()
+            logger.info("Kicks of block {} approved by {}", block.id, decider.tg_id)
+        if block.kick_approval_message_id is not None:
+            text = texts.alerts.chat_kicks_approved(club.title, block.title, decider.full_name)
+            await self._admin_alerts.edit(block.kick_approval_message_id, text)
+        await self.reconcile_club(club.id)
 
     async def access_blocks(self, user: User) -> list[tuple[Club, Block]]:
         is_admin = await self._bot_admin_service.is_admin(user.tg_id)
@@ -313,6 +335,34 @@ class ChatAccessService:
             club.chat_error = None
             await self._admin_alerts.send(texts.alerts.chat_recovered(club.title))
         await self._club_repository.flush()
+
+    # One alert per block, edited when the number of students to remove changes as curators fill the sheet.
+    async def _ask_kick_approval(self, club: Club, block: Block, access_ids: list[int]) -> None:
+        waiting = len(access_ids)
+        if waiting == (block.kick_approval_waiting or 0):
+            return
+        block.kick_approval_waiting = waiting
+        if waiting:
+            accesses = await self._chat_access_repository.list_with_users(access_ids)
+            students = [
+                ChatStudent(
+                    vk_id=access.user.vk_id, full_name=access.user.full_name, tg_username=access.user.tg_username
+                )
+                for access in accesses
+                if access.user.vk_id is not None
+            ]
+            text = texts.alerts.chat_kicks_need_approval(club.title, block.title, students)
+            keyboard = kick_approval_keyboard(block.id)
+            if block.kick_approval_message_id is None:
+                block.kick_approval_message_id = await self._admin_alerts.send(text, keyboard)
+            else:
+                await self._admin_alerts.edit(block.kick_approval_message_id, text, keyboard)
+        elif block.kick_approval_message_id is not None:
+            await self._admin_alerts.edit(
+                block.kick_approval_message_id, texts.alerts.chat_kicks_nobody(club.title, block.title)
+            )
+            block.kick_approval_message_id = None
+        await self._block_repository.flush()
 
     async def _set_kicks_on_hold(self, club: Club, *, on_hold: bool, block: Block | None, waiting: int) -> None:
         if club.chat_kicks_on_hold == on_hold:
