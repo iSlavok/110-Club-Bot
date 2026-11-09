@@ -440,3 +440,4 @@ async def test_blocked_bot_does_not_undo_the_link(service, db_session, vk, bot) 
 
     assert completion.bot_username == BOT_USERNAME
     assert user.vk_id == VK_ID
+    assert user.bot_blocked_at == DEFAULT_NOW

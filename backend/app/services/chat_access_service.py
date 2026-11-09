@@ -1,7 +1,7 @@
 from aiogram import Bot
 from aiogram.enums import ChatMemberStatus
-from aiogram.exceptions import TelegramAPIError, TelegramForbiddenError
-from aiogram.types import ChatMemberRestricted, InlineKeyboardMarkup, ResultChatMemberUnion
+from aiogram.exceptions import TelegramAPIError
+from aiogram.types import ChatMemberRestricted, ResultChatMemberUnion
 from loguru import logger
 
 from app import texts
@@ -11,6 +11,7 @@ from app.queries import ChatAccessQueries
 from app.repositories import BlockRepository, ChatAccessRepository, ClubRepository, MembershipRepository, UserRepository
 from app.schemas import ClubAccess, KickedMember, StudentClubStatus
 from app.services.bot_admin_service import BotAdminService
+from app.services.direct_message_service import DirectMessageService
 from app.telegram import AdminAlerts, chat_invite_keyboard
 from app.utils import Clock
 
@@ -34,6 +35,7 @@ class ChatAccessService:
         membership_repository: MembershipRepository,
         user_repository: UserRepository,
         bot_admin_service: BotAdminService,
+        direct_message_service: DirectMessageService,
         bot: Bot,
         admin_alerts: AdminAlerts,
         clock: Clock,
@@ -45,6 +47,7 @@ class ChatAccessService:
         self._membership_repository = membership_repository
         self._user_repository = user_repository
         self._bot_admin_service = bot_admin_service
+        self._direct_message_service = direct_message_service
         self._bot = bot
         self._admin_alerts = admin_alerts
         self._clock = clock
@@ -222,7 +225,7 @@ class ChatAccessService:
             return
         await self._mark_invited(club.id, chat_id, user)
         item = self._club_access(club, block, invite_link)
-        await self._message(user.tg_id, texts.chat_access.invite(item), chat_invite_keyboard([item]))
+        await self._direct_message_service.send(user, texts.chat_access.invite(item), chat_invite_keyboard([item]))
         logger.info("User {} invited to the chat of club {}", user.id, club.id)
 
     async def _kick(self, club: Club, access_id: int) -> KickedMember | None:
@@ -248,7 +251,7 @@ class ChatAccessService:
         except TelegramAPIError:
             # Not fatal: the ban is lifted again when the student is invited back.
             logger.exception("Cannot lift the ban of user {} in club {}", user.id, club.id)
-        await self._message(user.tg_id, texts.chat_access.kicked(club.title))
+        await self._direct_message_service.send(user, texts.chat_access.kicked(club.title))
         return KickedMember(vk_id=vk_id, full_name=user.full_name, tg_username=user.tg_username)
 
     # attempted: without any Telegram call in the run the chat state is unknown, so a past error is kept.
@@ -273,15 +276,6 @@ class ChatAccessService:
             await self._admin_alerts.send(texts.alerts.chat_kicks_on_hold(club.title, block_title, waiting))
         else:
             await self._admin_alerts.send(texts.alerts.chat_kicks_resumed(club.title))
-
-    # The state is already saved, so a message that did not reach the student is only logged.
-    async def _message(self, tg_id: int, text: str, reply_markup: InlineKeyboardMarkup | None = None) -> None:
-        try:
-            await self._bot.send_message(tg_id, text, reply_markup=reply_markup)
-        except TelegramForbiddenError:
-            logger.info("User {} blocked the bot, chat message not delivered", tg_id)
-        except TelegramAPIError:
-            logger.exception("Failed to send a chat access message to user {}", tg_id)
 
     async def _access_block(self, club: Club, vk_id: int) -> Block | None:
         block = await self._block_repository.get_access_block(club_id=club.id, now=self._clock.now())

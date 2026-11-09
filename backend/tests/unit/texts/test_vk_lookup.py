@@ -14,6 +14,7 @@ def _user(vk_id: int | None) -> UserDTO:
         full_name="Аня",
         vk_id=vk_id,
         vk_linked_at=None,
+        bot_blocked_at=None,
         created_at=NOW,
         updated_at=NOW,
     )

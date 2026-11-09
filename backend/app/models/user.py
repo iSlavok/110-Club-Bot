@@ -28,5 +28,7 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(TG_FULL_NAME_MAX_LEN))
     vk_id: Mapped[int | None] = mapped_column(BigInteger, unique=True)
     vk_linked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Set when Telegram refuses to deliver to the user, cleared when they unblock or write to the bot again.
+    bot_blocked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Service column for fuzzy search, maintained by Postgres; not part of UserDTO.
     search_text: Mapped[str] = mapped_column(Text, Computed(_SEARCH_TEXT, persisted=True))
