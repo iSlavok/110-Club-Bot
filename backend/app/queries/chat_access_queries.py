@@ -12,6 +12,7 @@ class ChatAccessQueries:
         self._session = session
 
     # Linked members of the access block the bot has not invited to this chat yet, or who are out of it again.
+    # Students who blocked the bot are skipped: Telegram would refuse every message until they unblock it.
     async def list_users_to_invite(self, *, club_id: int, chat_id: int, block_id: int) -> list[int]:
         statement = (
             select(User.id)
@@ -25,6 +26,7 @@ class ChatAccessQueries:
             )
             .where(
                 Membership.block_id == block_id,
+                User.bot_blocked_at.is_(None),
                 or_(
                     ChatAccess.id.is_(None),
                     ChatAccess.chat_id != chat_id,

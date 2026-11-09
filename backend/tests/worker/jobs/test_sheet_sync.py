@@ -5,7 +5,8 @@ from app.enums import SheetSyncStatus
 from app.models import Membership, SheetSync
 from app.services import SheetSyncService
 from app.services.sheet_sync_service import INTERNAL_ERROR_MESSAGE
-from tests.factories import make_block, make_club
+from tests.factories import make_block, make_club, make_user
+from tests.providers import ALERTS_CHAT_ID
 from worker.jobs import sync_sheets
 
 
@@ -64,3 +65,17 @@ async def test_disabled_client_syncs_nothing(container, service, db_session, she
     await sync_sheets(container, service)
 
     assert club.id not in await syncs_by_club(db_session)
+
+
+async def test_students_added_by_the_sheet_are_invited_right_away(
+    container, service, db_session, sheets_client, bot
+) -> None:
+    club = await make_club(db_session, spreadsheet_id="s1", sheet_name="list", chat_id=-100500)
+    await make_block(db_session, club, sheet_column_title="Блок 5")
+    user = await make_user(db_session, vk_id=501)
+    sheets_client.set_sheet("s1", "list", [[True, "Блок 5", 501]])
+
+    await sync_sheets(container, service)
+
+    recipients = [call.args[0] for call in bot.send_message.await_args_list]
+    assert [tg_id for tg_id in recipients if tg_id != ALERTS_CHAT_ID] == [user.tg_id]
