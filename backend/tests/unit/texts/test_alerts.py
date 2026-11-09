@@ -4,7 +4,7 @@ import pytest
 
 from app.enums import LessonKind, ReminderKind, ReminderStatus, RemovalRequestStatus, SheetIssueKind
 from app.schemas import (
-    KickedMember,
+    ChatStudent,
     LessonDTO,
     ReminderWithLessonDTO,
     RemovalCandidate,
@@ -171,7 +171,7 @@ def test_reminder_failed_alert() -> None:
 
 
 def test_chat_kick_lists_people_and_shortens_long_lists() -> None:
-    kicked = [KickedMember(vk_id=500 + n, full_name=f"Ученик {n}", tg_username=None) for n in range(17)]
+    kicked = [ChatStudent(vk_id=500 + n, full_name=f"Ученик {n}", tg_username=None) for n in range(17)]
 
     lines = alerts.chat_kicked("110", kicked).splitlines()
 
@@ -183,3 +183,16 @@ def test_chat_kick_lists_people_and_shortens_long_lists() -> None:
 def test_held_kicks_name_the_unfilled_block_or_the_missing_one() -> None:
     assert "в блоке 6 нет участников" in alerts.chat_kicks_on_hold("110", "6", 3)
     assert "у клуба нет текущего и следующего блока" in alerts.chat_kicks_on_hold("110", None, 3)
+
+
+def test_invite_report_lists_blocked_students_and_failures() -> None:
+    blocked = [ChatStudent(vk_id=7, full_name="Катя", tg_username=None)]
+
+    text = alerts.chat_invites_sent("Химия", 3, blocked, 2)
+
+    assert text == (
+        "<b>Клуб Химия</b>: ссылка на чат отправлена — 3 человека.\n"
+        "Заблокировали бота, ссылку не получили — 1 человек. Напишите им в VK:\n"
+        '• <a href="https://vk.com/id7">id7</a> — Катя\n'
+        "Не дошло из-за ошибки Telegram — 2 человека, повторю через 5 минут."
+    )
