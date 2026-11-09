@@ -4,7 +4,7 @@ import { formatDateTime } from '@/shared/lib/dates';
 
 export function BotBlockedBadge({ blockedAt }: { blockedAt: string }) {
   return (
-    <Tooltip label={`Заблокировал бота ${formatDateTime(blockedAt)}: сообщения не доходят`}>
+    <Tooltip label={`Заблокировал бота ${formatDateTime(blockedAt)}`}>
       <Badge color="red" variant="light">
         заблокировал бота
       </Badge>
