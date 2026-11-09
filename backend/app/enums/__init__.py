@@ -3,6 +3,7 @@ from app.enums.chat_access import ChatAccessStatus
 from app.enums.health import CheckStatus, HealthStatus
 from app.enums.lesson import LessonKind, LessonView
 from app.enums.membership_removal import RemovalDecision, RemovalRequestStatus
+from app.enums.message_delivery import MessageDelivery
 from app.enums.permission import Permission, PermissionGroup, known_permissions
 from app.enums.reminder import ReminderKind, ReminderStatus, ReminderTarget, ReminderView
 from app.enums.sheet_sync import SheetIssueKind, SheetSyncStatus
@@ -17,6 +18,7 @@ __all__ = [
     "HealthStatus",
     "LessonKind",
     "LessonView",
+    "MessageDelivery",
     "Permission",
     "PermissionGroup",
     "ReminderKind",

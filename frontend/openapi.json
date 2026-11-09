@@ -1211,10 +1211,10 @@
                   "type": "null"
                 }
               ],
-              "description": "in_chat: joined the club chat; not_in_chat: everyone else; no_bot: never linked the bot; not_joined: linked the bot but not in the chat",
+              "description": "in_chat: joined the club chat; not_in_chat: everyone else, split into no_bot: never linked the bot, not_joined: linked the bot but not in the chat, bot_blocked: blocked the bot and not in the chat",
               "title": "State"
             },
-            "description": "in_chat: joined the club chat; not_in_chat: everyone else; no_bot: never linked the bot; not_joined: linked the bot but not in the chat"
+            "description": "in_chat: joined the club chat; not_in_chat: everyone else, split into no_bot: never linked the bot, not_joined: linked the bot but not in the chat, bot_blocked: blocked the bot and not in the chat"
           },
           {
             "name": "q",
@@ -1357,10 +1357,10 @@
                   "type": "null"
                 }
               ],
-              "description": "in_chat: joined the club chat; not_in_chat: everyone else; no_bot: never linked the bot; not_joined: linked the bot but not in the chat",
+              "description": "in_chat: joined the club chat; not_in_chat: everyone else, split into no_bot: never linked the bot, not_joined: linked the bot but not in the chat, bot_blocked: blocked the bot and not in the chat",
               "title": "State"
             },
-            "description": "in_chat: joined the club chat; not_in_chat: everyone else; no_bot: never linked the bot; not_joined: linked the bot but not in the chat"
+            "description": "in_chat: joined the club chat; not_in_chat: everyone else, split into no_bot: never linked the bot, not_joined: linked the bot but not in the chat, bot_blocked: blocked the bot and not in the chat"
           },
           {
             "name": "q",
@@ -3330,13 +3330,19 @@
             "type": "integer",
             "title": "In Chat",
             "description": "Members in the club chat"
+          },
+          "bot_blocked": {
+            "type": "integer",
+            "title": "Bot Blocked",
+            "description": "Members who blocked the bot and are not in the chat"
           }
         },
         "type": "object",
         "required": [
           "total",
           "with_bot",
-          "in_chat"
+          "in_chat",
+          "bot_blocked"
         ],
         "title": "BlockMemberFunnelResponse"
       },
@@ -3381,7 +3387,8 @@
           "in_chat",
           "not_in_chat",
           "no_bot",
-          "not_joined"
+          "not_joined",
+          "bot_blocked"
         ],
         "title": "BlockMemberState"
       },
@@ -3432,6 +3439,19 @@
             ],
             "title": "Chat Joined At",
             "description": "When the student last joined the club chat"
+          },
+          "bot_blocked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bot Blocked At",
+            "description": "When the user blocked the bot, UTC; null if the bot can write to them"
           }
         },
         "type": "object",
@@ -3440,7 +3460,8 @@
           "full_name",
           "tg_username",
           "chat_status",
-          "chat_joined_at"
+          "chat_joined_at",
+          "bot_blocked_at"
         ],
         "title": "BlockMemberUserResponse"
       },
@@ -5356,6 +5377,19 @@
             "title": "Vk Linked At",
             "description": "When the user linked VK, UTC"
           },
+          "bot_blocked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bot Blocked At",
+            "description": "When the user blocked the bot, UTC; null if the bot can write to them"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -5371,6 +5405,7 @@
           "full_name",
           "vk_id",
           "vk_linked_at",
+          "bot_blocked_at",
           "created_at"
         ],
         "title": "UserResponse"

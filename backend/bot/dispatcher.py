@@ -21,6 +21,7 @@ def create_dispatcher(container: AsyncContainer, redis: Redis) -> Dispatcher:
     dp.callback_query.outer_middleware(throttling)
     dp.callback_query.outer_middleware(errors)
     dp.chat_join_request.outer_middleware(errors)
+    dp.my_chat_member.outer_middleware(errors)
     dp.include_router(create_router())
     setup_dishka(container, router=dp, auto_inject=True)
     dp.startup.register(partial(sync_command_menus, container))

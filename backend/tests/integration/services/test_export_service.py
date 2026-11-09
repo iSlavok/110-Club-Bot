@@ -20,7 +20,13 @@ async def test_block_members_export_follows_the_filter(service, db_session) -> N
     for vk_id in (501, 502, 503):
         await make_membership(db_session, block, vk_id=vk_id)
     joined = await make_user(db_session, vk_id=501, full_name="Борис", tg_username="boris")
-    await make_user(db_session, vk_id=502, full_name="Анна", tg_username=None)
+    await make_user(
+        db_session,
+        vk_id=502,
+        full_name="Анна",
+        tg_username=None,
+        bot_blocked_at=datetime(2026, 9, 3, 7, 0, tzinfo=UTC),
+    )
     await make_chat_access(
         db_session,
         club,
@@ -34,7 +40,7 @@ async def test_block_members_export_follows_the_filter(service, db_session) -> N
 
     assert everyone.filename == f"block-{block.id}-all.xlsx"
     assert read_xlsx(everyone.content)[1:] == [
-        ["https://vk.com/id502", 502, "Анна", None, "подключил", None, None],
+        ["https://vk.com/id502", 502, "Анна", None, "заблокировал", None, None],
         ["https://vk.com/id501", 501, "Борис", "@boris", "подключил", "в чате", "02.09.2026 10:00"],
         ["https://vk.com/id503", 503, None, None, "не подключил", None, None],
     ]
@@ -48,11 +54,18 @@ async def test_block_members_export_of_unknown_block(service) -> None:
 
 
 async def test_users_export_follows_the_search(service, db_session) -> None:
-    await make_user(db_session, full_name="Анна Белова", vk_id=601)
+    await make_user(
+        db_session,
+        full_name="Анна Белова",
+        vk_id=601,
+        bot_blocked_at=datetime(2026, 9, 3, 7, 0, tzinfo=UTC),
+    )
     await make_user(db_session, full_name="Борис")
 
     file = await service.users("анна")
 
     rows = read_xlsx(file.content)
     assert rows[0][0] == "Имя в Telegram"
-    assert [(row[0], row[3]) for row in rows[1:]] == [("Анна Белова", "https://vk.com/id601")]
+    assert [(row[0], row[3], row[6]) for row in rows[1:]] == [
+        ("Анна Белова", "https://vk.com/id601", "03.09.2026 10:00"),
+    ]

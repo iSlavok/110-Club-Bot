@@ -205,7 +205,7 @@ async def test_block_member_page_endpoints(api_client, login_as, db_session) -> 
     no_bot = await api_client.get(f"/api/v1/blocks/{block.id}/members", params={"state": "no_bot"})
 
     assert got.json()["title"] == "Блок 5"
-    assert funnel.json() == {"total": 2, "with_bot": 1, "in_chat": 0}
+    assert funnel.json() == {"total": 2, "with_bot": 1, "in_chat": 0, "bot_blocked": 0}
     assert [member["vk_id"] for member in no_bot.json()["items"]] == [502]
 
 

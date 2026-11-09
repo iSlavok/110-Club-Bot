@@ -7,6 +7,7 @@ from app.enums import ChatAccessStatus
 from app.exceptions import StatusSheetWriteError
 from app.services import StatusSheetService
 from tests.factories import make_block, make_chat_access, make_club, make_membership, make_user
+from tests.providers import DEFAULT_NOW
 
 NOW = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
 TITLE_TAIL = "обновлено 01.10.2026 12:00"
@@ -27,10 +28,11 @@ async def test_lists_the_access_block_by_funnel_step(service, db_session, sheets
         starts_at=datetime(2026, 9, 1, tzinfo=UTC),
         ends_at=datetime(2026, 11, 1, tzinfo=UTC),
     )
-    for vk_id in (501, 502, 503, 504):
+    for vk_id in (501, 502, 503, 504, 505):
         await make_membership(db_session, block, vk_id=vk_id)
     joined = await make_user(db_session, vk_id=501)
     invited = await make_user(db_session, vk_id=502)
+    await make_user(db_session, vk_id=505, bot_blocked_at=DEFAULT_NOW)
     await make_chat_access(db_session, club, joined, status=ChatAccessStatus.JOINED)
     await make_chat_access(db_session, club, invited, status=ChatAccessStatus.INVITED)
 
@@ -39,11 +41,16 @@ async def test_lists_the_access_block_by_funnel_step(service, db_session, sheets
     assert sheets_client.written["s1", "Статус"] == [
         [f"Блок «5» · {TITLE_TAIL}"],
         [],
-        ["Не подключили бота (2)", "Зашли в чат (1)", "Подключили бота, но не зашли в чат (1)"],
-        ["https://vk.com/id503", "https://vk.com/id501", "https://vk.com/id502"],
-        ["https://vk.com/id504", "", ""],
+        [
+            "Не подключили бота (2)",
+            "Зашли в чат (1)",
+            "Подключили бота, но не зашли в чат (1)",
+            "Заблокировали бота, не зашли в чат (1)",
+        ],
+        ["https://vk.com/id503", "https://vk.com/id501", "https://vk.com/id502", "https://vk.com/id505"],
+        ["https://vk.com/id504", "", "", ""],
     ]
-    assert sheets_client.column_widths["s1", "Статус"] == [320, 320, 320]
+    assert sheets_client.column_widths["s1", "Статус"] == [320, 320, 320, 320]
 
 
 async def test_without_an_access_block_says_so(service, db_session, sheets_client) -> None:

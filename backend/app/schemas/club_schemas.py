@@ -31,6 +31,7 @@ class ClubDTO(BaseModel):
     is_active: bool
     hide_service_messages: bool
     chat_kicks_on_hold: bool
+    chat_invites_failing: bool
     chat_error: str | None
     chat_invite_link: str | None
     created_at: datetime
@@ -49,6 +50,7 @@ class ClubDTO(BaseModel):
             is_active=club.is_active,
             hide_service_messages=club.hide_service_messages,
             chat_kicks_on_hold=club.chat_kicks_on_hold,
+            chat_invites_failing=club.chat_invites_failing,
             chat_error=club.chat_error,
             chat_invite_link=club.chat_invite_link,
             created_at=club.created_at,
@@ -84,6 +86,9 @@ class BlockDTO(BaseModel):
     sheet_column_title: str
     starts_at: datetime
     ends_at: datetime
+    kicks_approved_at: datetime | None
+    kick_approval_message_id: int | None
+    kick_approval_waiting: int | None
     created_at: datetime
     updated_at: datetime
 
@@ -96,6 +101,9 @@ class BlockDTO(BaseModel):
             sheet_column_title=block.sheet_column_title,
             starts_at=block.starts_at,
             ends_at=block.ends_at,
+            kicks_approved_at=block.kicks_approved_at,
+            kick_approval_message_id=block.kick_approval_message_id,
+            kick_approval_waiting=block.kick_approval_waiting,
             created_at=block.created_at,
             updated_at=block.updated_at,
         )
@@ -112,6 +120,7 @@ class BlockMemberUser(BaseModel):
     tg_username: str | None
     chat_status: ChatAccessStatus | None
     chat_joined_at: datetime | None
+    bot_blocked_at: datetime | None
 
 
 class BlockMember(BaseModel):
@@ -123,6 +132,7 @@ class BlockMemberFunnel(BaseModel):
     total: int
     with_bot: int
     in_chat: int
+    bot_blocked: int
 
 
 class BlockCreate(BaseModel):

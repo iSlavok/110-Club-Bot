@@ -2,8 +2,7 @@ from datetime import timedelta
 from urllib.parse import urlencode
 
 from aiogram import Bot
-from aiogram.exceptions import TelegramAPIError, TelegramForbiddenError
-from aiogram.types import InlineKeyboardMarkup
+from aiogram.exceptions import TelegramAPIError
 from loguru import logger
 
 from app import texts
@@ -35,6 +34,7 @@ from app.schemas import (
 )
 from app.services.app_settings_service import AppSettingsService
 from app.services.chat_access_service import ChatAccessService
+from app.services.direct_message_service import DirectMessageService
 from app.services.vk_link_availability import VkLinkAvailability
 from app.telegram import chat_invite_keyboard
 from app.utils import (
@@ -71,6 +71,7 @@ class VkLinkService:
         public_settings: PublicSettings,
         vk_settings: VkSettings,
         bot: Bot,
+        direct_message_service: DirectMessageService,
     ) -> None:
         self._user_repository = user_repository
         self._vk_auth_request_repository = vk_auth_request_repository
@@ -82,6 +83,7 @@ class VkLinkService:
         self._public_settings = public_settings
         self._vk_settings = vk_settings
         self._bot = bot
+        self._direct_message_service = direct_message_service
 
     async def offer(self, tg_id: int) -> VkLinkOffer:
         user = await self._get_user(tg_id)
@@ -129,7 +131,7 @@ class VkLinkService:
         await self._vk_auth_request_repository.flush()
         if error is not None or code is None or device_id is None:
             logger.info("VK ID returned no code for user {}: {}", request.user_id, error)
-            await self._notify(request.user.tg_id, texts.vk_link.OAUTH_CANCELLED)
+            await self._direct_message_service.send(request.user, texts.vk_link.OAUTH_CANCELLED)
         else:
             await self._finish_oauth(request, state=state, code=code, device_id=device_id)
         bot_username = await self._bot_username()
@@ -166,7 +168,7 @@ class VkLinkService:
     async def _finish_oauth(self, request: VkAuthRequest, *, state: str, code: str, device_id: str) -> None:
         user = request.user
         if user.vk_id is not None:
-            await self._notify(user.tg_id, texts.vk_link.OAUTH_ALREADY_LINKED)
+            await self._direct_message_service.send(user, texts.vk_link.OAUTH_ALREADY_LINKED)
             return
         try:
             vk_id = await self._vk_client.exchange_code(
@@ -178,23 +180,14 @@ class VkLinkService:
             )
         except VkClientError as error:
             logger.warning("VK ID code exchange failed for user {}: {}", user.id, error)
-            await self._notify(user.tg_id, texts.vk_link.OAUTH_FAILED)
+            await self._direct_message_service.send(user, texts.vk_link.OAUTH_FAILED)
             return
         try:
             result = await self._link(user, vk_id)
         except VkAccountTakenError:
-            await self._notify(user.tg_id, texts.vk_link.OAUTH_VK_TAKEN)
+            await self._direct_message_service.send(user, texts.vk_link.OAUTH_VK_TAKEN)
             return
-        await self._notify(user.tg_id, texts.vk_link.linked(result), chat_invite_keyboard(result.access))
-
-    # The link is already saved, so a failed message is only logged: /vk shows the status again.
-    async def _notify(self, tg_id: int, text: str, reply_markup: InlineKeyboardMarkup | None = None) -> None:
-        try:
-            await self._bot.send_message(tg_id, text, reply_markup=reply_markup)
-        except TelegramForbiddenError:
-            logger.info("User {} blocked the bot, VK ID result not delivered", tg_id)
-        except TelegramAPIError:
-            logger.exception("Failed to send the VK ID result to user {}", tg_id)
+        await self._direct_message_service.send(user, texts.vk_link.linked(result), chat_invite_keyboard(result.access))
 
     def _redirect_uri(self) -> str:
         if self._public_settings.url is None:

@@ -2,7 +2,7 @@ from datetime import datetime
 from html import escape
 
 from app.enums import RemovalRequestStatus, SheetIssueKind
-from app.schemas import KickedMember, ReminderWithLessonDTO, RemovalCandidate, RemovalRequestAlert, SheetIssue
+from app.schemas import ChatStudent, ReminderWithLessonDTO, RemovalCandidate, RemovalRequestAlert, SheetIssue
 from app.texts.reminders import KIND_LABELS, subject
 from app.utils import BUSINESS_TZ
 
@@ -11,6 +11,8 @@ MAX_LISTED = 15
 
 CONFIRM_REMOVAL_BUTTON = "Подтвердить"
 REJECT_REMOVAL_BUTTON = "Отклонить"
+APPROVE_KICKS_BUTTON = "Убрать из чата"
+KICKS_APPROVED_ANSWER = "Убираю из чата."
 
 _FEW_LAST_DIGITS = (2, 3, 4)
 _TEENS = range(11, 15)
@@ -64,7 +66,7 @@ def reminder_failed(club_title: str, reminder: ReminderWithLessonDTO) -> str:
     )
 
 
-def chat_kicked(club_title: str, kicked: list[KickedMember]) -> str:
+def chat_kicked(club_title: str, kicked: list[ChatStudent]) -> str:
     lines = [f"<b>Клуб {escape(club_title)}</b>: бот убрал из чата {_people(len(kicked))} — их нет в текущем блоке."]
     lines.extend(_candidate(member) for member in kicked[:MAX_LISTED])
     lines.extend(_more(len(kicked)))
@@ -83,8 +85,55 @@ def chat_kicks_on_hold(club_title: str, block_title: str | None, waiting: int) -
     )
 
 
+def chat_kicks_need_approval(club_title: str, block_title: str, students: list[ChatStudent]) -> str:
+    block = escape(block_title)
+    lines = [
+        f"⚠️ <b>Клуб {escape(club_title)}</b>: доступ в чат теперь по блоку {block}.",
+        f"Из чата выйдут {_people(len(students))} — их нет в блоке {block}:",
+    ]
+    lines.extend(_candidate(student) for student in students[:MAX_LISTED])
+    lines.extend(_more(len(students)))
+    lines.append(
+        "Проверь, что столбец блока в таблице заполнен целиком, и нажми кнопку. До этого бот никого не убирает."
+    )
+    return "\n".join(lines)
+
+
+def chat_kicks_nobody(club_title: str, block_title: str) -> str:
+    return f"<b>Клуб {escape(club_title)}</b>: убирать из чата некого — все есть в блоке {escape(block_title)}."
+
+
+def chat_kicks_approved(club_title: str, block_title: str, decided_by: str) -> str:
+    return (
+        f"✅ <b>Клуб {escape(club_title)}</b>: {escape(decided_by)} подтвердил кик по блоку {escape(block_title)}.\n"
+        "Дальше бот сам убирает из чата тех, кого нет в блоке."
+    )
+
+
 def chat_kicks_resumed(club_title: str) -> str:
     return f"✅ <b>Клуб {escape(club_title)}</b>: кик из чата снова работает."
+
+
+def chat_invites_sent(club_title: str, sent: int, blocked: list[ChatStudent], failed: int) -> str:
+    lines = [f"<b>Клуб {escape(club_title)}</b>: ссылка на чат отправлена — {_people(sent)}."]
+    if blocked:
+        lines.append(f"Заблокировали бота, ссылку не получили — {_people(len(blocked))}. Напишите им в VK:")
+        lines.extend(_candidate(student) for student in blocked[:MAX_LISTED])
+        lines.extend(_more(len(blocked)))
+    if failed:
+        lines.append(f"Не дошло из-за ошибки Telegram — {_people(failed)}, повторю через 5 минут.")
+    return "\n".join(lines)
+
+
+def chat_invites_failing(club_title: str, failed: int) -> str:
+    return (
+        f"⚠️ <b>Клуб {escape(club_title)}</b>: ссылка на чат не дошла из-за ошибки Telegram — {_people(failed)}.\n"
+        "Повторяю каждые 5 минут, подробности — в логах. Напишу, когда пройдёт."
+    )
+
+
+def chat_invites_recovered(club_title: str) -> str:
+    return f"✅ <b>Клуб {escape(club_title)}</b>: ссылки на чат снова доходят."
 
 
 def chat_failed(club_title: str, error: str) -> str:
@@ -139,7 +188,7 @@ def _more(total: int) -> list[str]:
     return [f"и ещё {hidden}"] if hidden > 0 else []
 
 
-def _candidate(candidate: RemovalCandidate | KickedMember) -> str:
+def _candidate(candidate: RemovalCandidate | ChatStudent) -> str:
     link = f'<a href="https://vk.com/id{candidate.vk_id}">id{candidate.vk_id}</a>'
     if candidate.full_name is None:
         return f"• {link}"

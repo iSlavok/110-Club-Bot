@@ -1,23 +1,25 @@
 from datetime import UTC, datetime
 
 import pytest
-from aiogram.exceptions import TelegramBadRequest
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError, TelegramNetworkError
 from aiogram.methods import (
     ApproveChatJoinRequest,
     BanChatMember,
     CreateChatInviteLink,
     DeleteMessage,
     GetChatMember,
+    SendMessage,
     UnbanChatMember,
 )
 from aiogram.types import ChatMemberAdministrator, ChatMemberLeft, ChatMemberMember, ChatMemberRestricted
 from aiogram.types import User as TelegramUser
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from app import texts
-from app.enums import ChatAccessStatus
-from app.models import ChatAccess, User
-from app.schemas import KickedMember
+from app.enums import ChatAccessStatus, MessageDelivery
+from app.exceptions import PermissionDeniedError
+from app.models import ChatAccess, Club, User
+from app.schemas import ChatStudent, TelegramProfile
 from app.services import ChatAccessService
 from tests.factories import (
     make_admin_user,
@@ -28,7 +30,7 @@ from tests.factories import (
     make_role,
     make_user,
 )
-from tests.providers import ALERTS_CHAT_ID, DEFAULT_NOW, INVITE_LINK_PREFIX, OWNER_TG_ID
+from tests.providers import ALERT_MESSAGE_ID, ALERTS_CHAT_ID, DEFAULT_NOW, INVITE_LINK_PREFIX, OWNER_TG_ID
 
 CHAT_ID = -100500
 VK_ID = 4242
@@ -238,7 +240,7 @@ def _in_chat(bot) -> None:
     bot.get_chat_member.side_effect = lambda **kwargs: ChatMemberMember(user=_tg_user(kwargs["user_id"]))
 
 
-async def test_reconcile_invites_new_members_and_kicks_those_out_of_the_block(service, db_session, club, bot) -> None:
+async def test_reconcile_kicks_and_leaves_invites_to_the_worker(service, db_session, club, bot) -> None:
     block = await make_block(db_session, club)
     await make_membership(db_session, block, vk_id=1)
     await make_membership(db_session, block, vk_id=2)
@@ -249,11 +251,8 @@ async def test_reconcile_invites_new_members_and_kicks_those_out_of_the_block(se
 
     await service.reconcile_club(club.id)
 
-    assert await _statuses(db_session) == {
-        new.id: ChatAccessStatus.INVITED,
-        stays.id: ChatAccessStatus.JOINED,
-        gone.id: ChatAccessStatus.KICKED,
-    }
+    assert await _statuses(db_session) == {stays.id: ChatAccessStatus.JOINED, gone.id: ChatAccessStatus.KICKED}
+    assert await service.list_invitees(club.id) == [new.id]
 
 
 async def test_unfilled_access_block_holds_kicks_and_alerts_once(service, db_session, club, bot) -> None:
@@ -295,17 +294,88 @@ async def test_empty_block_without_anyone_to_kick_is_not_alerted(service, db_ses
     assert _alerts(bot) == []
 
 
+async def _invite_all(service, club) -> dict[int, MessageDelivery | None]:
+    return {user_id: await service.invite(club.id, user_id) for user_id in await service.list_invitees(club.id)}
+
+
 async def test_invite_sends_the_join_button_once(service, db_session, club, bot) -> None:
     user = await make_user(db_session, vk_id=VK_ID)
     await make_membership(db_session, await make_block(db_session, club, title="5"), vk_id=VK_ID)
 
-    await service.reconcile_club(club.id)
-    await service.reconcile_club(club.id)
+    assert await _invite_all(service, club) == {user.id: MessageDelivery.SENT}
+    assert await service.invite(club.id, user.id) is None
 
     [message] = bot.send_message.await_args_list
     assert message.args[0] == user.tg_id
     assert message.args[1].startswith("Ты в клубе Химия, блок 5.")
     assert message.kwargs["reply_markup"].inline_keyboard[0][0].text == "Вступить в чат клуба Химия"
+
+
+async def test_undelivered_invite_is_not_counted_and_is_retried(service, db_session, club, bot) -> None:
+    user = await make_user(db_session, vk_id=VK_ID)
+    await make_membership(db_session, await make_block(db_session, club), vk_id=VK_ID)
+    bot.send_message.side_effect = TelegramNetworkError(method=SendMessage(chat_id=1, text="x"), message="timeout")
+
+    assert await _invite_all(service, club) == {user.id: MessageDelivery.FAILED}
+
+    assert await _access_row(db_session, user) is None
+    assert await service.list_invitees(club.id) == [user.id]
+
+
+async def test_student_who_blocked_the_bot_waits_until_unblocking(service, db_session, club, bot) -> None:
+    user = await make_user(db_session, vk_id=VK_ID)
+    await make_membership(db_session, await make_block(db_session, club), vk_id=VK_ID)
+    bot.send_message.side_effect = TelegramForbiddenError(
+        method=SendMessage(chat_id=1, text="x"),
+        message="bot was blocked by the user",
+    )
+
+    assert await _invite_all(service, club) == {user.id: MessageDelivery.BOT_BLOCKED}
+    assert await _access_row(db_session, user) is None
+    assert user.bot_blocked_at == DEFAULT_NOW
+    assert await service.list_invitees(club.id) == []
+
+    user.bot_blocked_at = None
+    bot.send_message.side_effect = None
+
+    assert await _invite_all(service, club) == {user.id: MessageDelivery.SENT}
+    assert await _statuses(db_session) == {user.id: ChatAccessStatus.INVITED}
+
+
+async def test_student_gone_from_the_block_is_not_invited(service, db_session, club, bot) -> None:
+    user = await make_user(db_session, vk_id=VK_ID)
+    await make_block(db_session, club)
+
+    assert await service.invite(club.id, user.id) is None
+    bot.send_message.assert_not_awaited()
+
+
+async def test_invite_report_lists_sent_and_blocked_students(service, db_session, club, bot) -> None:
+    sent = await make_user(db_session, vk_id=1)
+    blocked = await make_user(db_session, vk_id=2, full_name="Катя Орлова", tg_username="kate")
+    deliveries = {sent.id: MessageDelivery.SENT, blocked.id: MessageDelivery.BOT_BLOCKED}
+
+    await service.report_invites(club.id, deliveries)
+    await service.report_invites(club.id, {})
+
+    students = [ChatStudent(vk_id=2, full_name="Катя Орлова", tg_username="kate")]
+    assert _alerts(bot) == [texts.alerts.chat_invites_sent("Химия", 1, students, 0)]
+
+
+async def test_failing_invites_are_alerted_when_they_start_and_stop(service, db_session, club, bot) -> None:
+    user = await make_user(db_session, vk_id=1)
+
+    await service.report_invites(club.id, {user.id: MessageDelivery.FAILED})
+    await service.report_invites(club.id, {user.id: MessageDelivery.FAILED})
+    assert club.chat_invites_failing
+    await service.report_invites(club.id, {user.id: MessageDelivery.SENT})
+
+    assert not club.chat_invites_failing
+    assert _alerts(bot) == [
+        texts.alerts.chat_invites_failing("Химия", 1),
+        texts.alerts.chat_invites_sent("Химия", 1, [], 0),
+        texts.alerts.chat_invites_recovered("Химия"),
+    ]
 
 
 @pytest.fixture
@@ -327,7 +397,7 @@ async def test_kick_bans_and_unbans_and_tells_the_student(service, db_session, c
     assert access.status is ChatAccessStatus.KICKED
     assert access.kicked_at == DEFAULT_NOW
     assert _direct_messages(bot, user.tg_id) == [texts.chat_access.kicked("Химия")]
-    kicked = [KickedMember(vk_id=VK_ID, full_name="Катя Орлова", tg_username="kate")]
+    kicked = [ChatStudent(vk_id=VK_ID, full_name="Катя Орлова", tg_username="kate")]
     assert _alerts(bot) == [texts.alerts.chat_kicked("Химия", kicked)]
 
 
@@ -395,13 +465,13 @@ async def test_failed_unban_still_counts_as_kicked(service, db_session, club, bo
     assert club.chat_error is None
 
 
-async def test_reconcile_makes_one_link_for_all_invited(service, db_session, club, bot) -> None:
+async def test_one_join_link_is_made_for_all_invited(service, db_session, club, bot) -> None:
     block = await make_block(db_session, club)
     for vk_id in (1, 2, 3):
         await make_membership(db_session, block, vk_id=vk_id)
         await make_user(db_session, vk_id=vk_id)
 
-    await service.reconcile_club(club.id)
+    await _invite_all(service, club)
 
     bot.create_chat_invite_link.assert_awaited_once()
     assert set((await _statuses(db_session)).values()) == {ChatAccessStatus.INVITED}
@@ -415,13 +485,13 @@ async def test_refused_join_link_is_alerted_and_nobody_is_invited(service, db_se
         message="not enough rights",
     )
 
-    await service.reconcile_club(club.id)
+    assert await service.list_invitees(club.id) == []
 
     assert await _statuses(db_session) == {}
     assert club.chat_error == "Telegram server says - not enough rights"
 
 
-async def test_failed_invite_is_alerted_and_others_still_invited(service, db_session, club, bot) -> None:
+async def test_failed_unban_fails_the_invite_and_others_still_invited(service, db_session, club, bot) -> None:
     block = await make_block(db_session, club)
     for vk_id in (1, 2):
         await make_membership(db_session, block, vk_id=vk_id)
@@ -433,10 +503,11 @@ async def test_failed_invite_is_alerted_and_others_still_invited(service, db_ses
         message="not enough rights",
     )
 
-    await service.reconcile_club(club.id)
+    deliveries = await _invite_all(service, club)
 
+    assert deliveries == {first.id: MessageDelivery.FAILED, second.id: MessageDelivery.SENT}
     assert await _statuses(db_session) == {first.id: ChatAccessStatus.KICKED, second.id: ChatAccessStatus.INVITED}
-    assert club.chat_error == "Telegram server says - not enough rights"
+    assert _direct_messages(bot, first.tg_id) == []
 
 
 async def test_service_message_is_deleted_when_the_club_hides_them(service, db_session, bot) -> None:
@@ -596,3 +667,90 @@ async def test_admin_has_access_to_every_active_club_with_a_block(service, db_se
     club_blocks = await service.access_blocks(admin)
 
     assert [(club_.title, block_.title) for club_, block_ in club_blocks] == [("Биология", "2"), ("Химия", "6")]
+
+
+def _edits(bot) -> list[str]:
+    return [call.kwargs["text"] for call in bot.edit_message_text.await_args_list]
+
+
+def _owner() -> TelegramProfile:
+    return TelegramProfile(tg_id=OWNER_TG_ID, tg_username=None, full_name="Владелец")
+
+
+async def test_first_kicks_of_a_block_wait_for_an_admin(service, db_session, club, bot) -> None:
+    block = await make_block(db_session, club, title="6", kicks_approved_at=None)
+    await make_membership(db_session, block, vk_id=1)
+    access, _ = await _joined(db_session, club, 3, full_name="Катя Орлова", tg_username="kate")
+    _in_chat(bot)
+
+    await service.reconcile_club(club.id)
+    await service.reconcile_club(club.id)
+
+    assert access.status is ChatAccessStatus.JOINED
+    bot.ban_chat_member.assert_not_awaited()
+    students = [ChatStudent(vk_id=3, full_name="Катя Орлова", tg_username="kate")]
+    assert _alerts(bot) == [texts.alerts.chat_kicks_need_approval("Химия", "6", students)]
+    keyboard = bot.send_message.await_args.kwargs["reply_markup"]
+    assert keyboard.inline_keyboard[0][0].text == texts.alerts.APPROVE_KICKS_BUTTON
+    assert block.kick_approval_message_id == ALERT_MESSAGE_ID
+
+
+async def test_approval_alert_follows_the_sheet_until_nobody_is_left(service, db_session, club, bot) -> None:
+    block = await make_block(db_session, club, title="6", kicks_approved_at=None)
+    await make_membership(db_session, block, vk_id=1)
+    await _joined(db_session, club, 3)
+    await _joined(db_session, club, 4)
+    _in_chat(bot)
+    await service.reconcile_club(club.id)
+
+    await make_membership(db_session, block, vk_id=3)
+    await service.reconcile_club(club.id)
+    await make_membership(db_session, block, vk_id=4)
+    await service.reconcile_club(club.id)
+
+    edits = _edits(bot)
+    assert len(edits) == 2
+    assert "Из чата выйдут 1 человек" in edits[0]
+    assert edits[1] == texts.alerts.chat_kicks_nobody("Химия", "6")
+    assert block.kick_approval_message_id is None
+
+
+async def test_approved_block_kicks_and_keeps_kicking(service, db_session, club, bot) -> None:
+    block = await make_block(db_session, club, title="6", kicks_approved_at=None)
+    await make_membership(db_session, block, vk_id=1)
+    access, _ = await _joined(db_session, club, 3)
+    _in_chat(bot)
+    await service.reconcile_club(club.id)
+
+    await service.approve_kicks(block.id, _owner())
+
+    assert access.status is ChatAccessStatus.KICKED
+    assert block.kicks_approved_at == DEFAULT_NOW
+    assert _edits(bot) == [texts.alerts.chat_kicks_approved("Химия", "6", "Владелец")]
+
+    later, _ = await _joined(db_session, club, 5)
+    await service.reconcile_club(club.id)
+    assert later.status is ChatAccessStatus.KICKED
+
+
+async def test_only_admins_who_run_the_sync_approve_kicks(service, db_session, club) -> None:
+    block = await make_block(db_session, club, kicks_approved_at=None)
+    stranger = TelegramProfile(tg_id=1, tg_username=None, full_name="Кто-то")
+
+    with pytest.raises(PermissionDeniedError):
+        await service.approve_kicks(block.id, stranger)
+
+    assert block.kicks_approved_at is None
+
+
+async def test_hold_set_by_a_concurrent_run_is_not_alerted_again(service, db_session, club, bot) -> None:
+    await make_block(db_session, club, title="2")
+    await _joined(db_session, club, 3)
+    # Another transaction has already put the kicks on hold; this session still holds the club loaded before.
+    statement = update(Club).where(Club.id == club.id).values(chat_kicks_on_hold=True)
+    await db_session.execute(statement.execution_options(synchronize_session=False))
+    assert not club.chat_kicks_on_hold
+
+    await service.reconcile_club(club.id)
+
+    assert _alerts(bot) == []

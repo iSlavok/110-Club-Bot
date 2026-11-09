@@ -1,17 +1,18 @@
 from unittest.mock import AsyncMock, MagicMock
 
-from aiogram.types import BotCommandScopeChat
+from aiogram.types import BotCommandScopeChat, ChatMemberLeft
+from aiogram.types import User as TelegramUser
 from sqlalchemy import select
 
 from app import texts
 from app.enums import VkLinkMode
 from app.models import User
-from app.services import BotAdminService, UserService, VkLinkService
+from app.services import BotAdminService, StudentStatusService, UserService, VkLinkService
 from app.telegram import ADMIN_COMMANDS
 from bot.handlers.start import start
 from bot.states import VkLinkStates
-from tests.factories import set_app_settings
-from tests.providers import OWNER_TG_ID
+from tests.factories import make_block, make_club, make_membership, make_user, set_app_settings
+from tests.providers import DEFAULT_NOW, OWNER_TG_ID
 
 
 def _message(tg_id: int, full_name: str) -> AsyncMock:
@@ -23,10 +24,11 @@ def _message(tg_id: int, full_name: str) -> AsyncMock:
 async def _start(message: AsyncMock, state, request_container) -> None:
     await start(
         message,
-        state,
-        await request_container.get(UserService),
-        await request_container.get(BotAdminService),
-        await request_container.get(VkLinkService),
+        state=state,
+        user_service=await request_container.get(UserService),
+        bot_admin_service=await request_container.get(BotAdminService),
+        vk_link_service=await request_container.get(VkLinkService),
+        student_status_service=await request_container.get(StudentStatusService),
     )
 
 
@@ -61,3 +63,20 @@ async def test_start_ignores_messages_without_sender(request_container, state) -
     await _start(message, state, request_container)
 
     message.answer.assert_not_awaited()
+
+
+async def test_start_of_a_linked_student_shows_the_status_with_the_join_button(
+    request_container, db_session, state, bot
+) -> None:
+    user = await make_user(db_session, vk_id=4242, bot_blocked_at=DEFAULT_NOW)
+    club = await make_club(db_session, title="Химия", chat_id=-100500)
+    await make_membership(db_session, await make_block(db_session, club, title="5"), vk_id=4242)
+    bot.get_chat_member.return_value = ChatMemberLeft(user=TelegramUser(id=user.tg_id, is_bot=False, first_name="S"))
+    message = _message(tg_id=user.tg_id, full_name=user.full_name)
+
+    await _start(message, state, request_container)
+
+    [answer] = message.answer.await_args_list
+    assert "<b>Клуб Химия, блок 5</b>" in answer.args[0]
+    assert answer.kwargs["reply_markup"].inline_keyboard[0][0].text == "Вступить в чат клуба Химия"
+    assert user.bot_blocked_at is None

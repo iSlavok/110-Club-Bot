@@ -1,17 +1,19 @@
 from aiogram import Bot
 from aiogram.enums import ChatMemberStatus
-from aiogram.exceptions import TelegramAPIError, TelegramForbiddenError
-from aiogram.types import ChatMemberRestricted, InlineKeyboardMarkup, ResultChatMemberUnion
+from aiogram.exceptions import TelegramAPIError
+from aiogram.types import ChatMemberRestricted, ResultChatMemberUnion
 from loguru import logger
 
 from app import texts
-from app.enums import ChatAccessStatus
+from app.enums import ChatAccessStatus, MessageDelivery, Permission
+from app.exceptions import BlockNotFoundError, ClubNotFoundError, PermissionDeniedError
 from app.models import Block, ChatAccess, Club, User
 from app.queries import ChatAccessQueries
 from app.repositories import BlockRepository, ChatAccessRepository, ClubRepository, MembershipRepository, UserRepository
-from app.schemas import ClubAccess, KickedMember, StudentClubStatus
+from app.schemas import ChatStudent, ClubAccess, StudentClubStatus, TelegramProfile
 from app.services.bot_admin_service import BotAdminService
-from app.telegram import AdminAlerts, chat_invite_keyboard
+from app.services.direct_message_service import DirectMessageService
+from app.telegram import AdminAlerts, chat_invite_keyboard, kick_approval_keyboard
 from app.utils import Clock
 
 REINVITED_STATUSES = (ChatAccessStatus.LEFT, ChatAccessStatus.KICKED)
@@ -34,6 +36,7 @@ class ChatAccessService:
         membership_repository: MembershipRepository,
         user_repository: UserRepository,
         bot_admin_service: BotAdminService,
+        direct_message_service: DirectMessageService,
         bot: Bot,
         admin_alerts: AdminAlerts,
         clock: Clock,
@@ -45,6 +48,7 @@ class ChatAccessService:
         self._membership_repository = membership_repository
         self._user_repository = user_repository
         self._bot_admin_service = bot_admin_service
+        self._direct_message_service = direct_message_service
         self._bot = bot
         self._admin_alerts = admin_alerts
         self._clock = clock
@@ -55,8 +59,9 @@ class ChatAccessService:
 
     # Runs in the caller's transaction (sheet sync, confirmed removal, chat job), so it sees members changed just
     # before. Telegram errors are collected per student and alerted, never raised: they must not undo the caller.
+    # Kicks only: invites go out from the worker, one student per transaction (see invite).
     async def reconcile_club(self, club_id: int) -> None:
-        club = await self._club_repository.get_by_id(club_id)
+        club = await self._club_repository.get_for_update(club_id)
         if club is None or not club.is_active or club.chat_id is None:
             return
         chat_id = club.chat_id
@@ -74,14 +79,11 @@ class ChatAccessService:
         await self._set_kicks_on_hold(club, on_hold=on_hold, block=block, waiting=len(kick_ids))
         if filled is None:
             return
-        invite_ids = await self._chat_access_queries.list_users_to_invite(
-            club_id=club.id,
-            chat_id=chat_id,
-            block_id=filled.id,
-        )
-
-        errors = await self._invite_all(club, chat_id, filled, invite_ids)
-        kicked: list[KickedMember] = []
+        if filled.kicks_approved_at is None:
+            await self._ask_kick_approval(club, filled, kick_ids)
+            return
+        errors: list[str] = []
+        kicked: list[ChatStudent] = []
         for access_id in kick_ids:
             try:
                 member = await self._kick(club, access_id)
@@ -94,9 +96,106 @@ class ChatAccessService:
         await self._report(
             club,
             kicked=kicked,
-            attempted=bool(invite_ids or kick_ids),
+            attempted=bool(kick_ids),
             error=errors[0] if errors else None,
         )
+
+    # Makes the join link before the run: without it nobody can be invited, and a chat the bot cannot manage is
+    # alerted once for the club instead of once per student.
+    async def list_invitees(self, club_id: int) -> list[int]:
+        club = await self._club_repository.get_for_update(club_id)
+        if club is None or not club.is_active or club.chat_id is None:
+            return []
+        block = await self._block_repository.get_access_block(club_id=club.id, now=self._clock.now())
+        if block is None:
+            return []
+        user_ids = await self._chat_access_queries.list_users_to_invite(
+            club_id=club.id,
+            chat_id=club.chat_id,
+            block_id=block.id,
+        )
+        if not user_ids or club.chat_invite_link is not None:
+            return user_ids
+        try:
+            await self._chat_link(club, club.chat_id)
+        except TelegramAPIError as error:
+            logger.warning("Cannot make the join link of club {}: {}", club.id, error)
+            await self._report(club, kicked=[], attempted=True, error=str(error))
+            return []
+        await self._report(club, kicked=[], attempted=True, error=None)
+        return user_ids
+
+    # One student per call, each in its own transaction: a failure late in a run of a thousand invites must not undo
+    # the ones already sent. The student counts as invited only once the message is delivered.
+    async def invite(self, club_id: int, user_id: int) -> MessageDelivery | None:
+        club = await self._club_repository.get_by_id(club_id)
+        if club is None or not club.is_active or club.chat_id is None or club.chat_invite_link is None:
+            return None
+        user = await self._user_repository.get_for_update(user_id)
+        if user is None or user.vk_id is None or user.bot_blocked_at is not None:
+            return None
+        block = await self._access_block(club, user.vk_id)
+        if block is None:
+            return None
+        access = await self._chat_access_repository.get_for_user(club_id=club.id, user_id=user.id)
+        if access is not None and access.chat_id == club.chat_id and access.status not in REINVITED_STATUSES:
+            return None
+        try:
+            await self._lift_ban(access, club.chat_id, user)
+        except TelegramAPIError as error:
+            logger.warning("Cannot unban user {} in the chat of club {}: {}", user.id, club.id, error)
+            return MessageDelivery.FAILED
+        item = self._club_access(club, block, club.chat_invite_link)
+        keyboard = chat_invite_keyboard([item])
+        delivery = await self._direct_message_service.send(user, texts.chat_access.invite(item), keyboard)
+        if delivery is MessageDelivery.SENT:
+            await self._mark_invited(access, club.id, club.chat_id, user)
+            logger.info("User {} invited to the chat of club {}", user.id, club.id)
+        return delivery
+
+    # A summary only when something happened; failures are alerted when they start and stop, not on every run.
+    async def report_invites(self, club_id: int, deliveries: dict[int, MessageDelivery]) -> None:
+        club = await self._club_repository.get_for_update(club_id)
+        if club is None:
+            return
+        sent = sum(delivery is MessageDelivery.SENT for delivery in deliveries.values())
+        failed = sum(delivery is MessageDelivery.FAILED for delivery in deliveries.values())
+        blocked_ids = [user_id for user_id, delivery in deliveries.items() if delivery is MessageDelivery.BOT_BLOCKED]
+        if sent or blocked_ids:
+            blocked_users = await self._user_repository.list_by_ids(blocked_ids) if blocked_ids else []
+            blocked = [
+                ChatStudent(vk_id=user.vk_id, full_name=user.full_name, tg_username=user.tg_username)
+                for user in blocked_users
+                if user.vk_id is not None
+            ]
+            await self._admin_alerts.send(texts.alerts.chat_invites_sent(club.title, sent, blocked, failed))
+        failing = failed > 0
+        if failing == club.chat_invites_failing:
+            return
+        club.chat_invites_failing = failing
+        await self._club_repository.flush()
+        if failing:
+            await self._admin_alerts.send(texts.alerts.chat_invites_failing(club.title, failed))
+        else:
+            await self._admin_alerts.send(texts.alerts.chat_invites_recovered(club.title))
+
+    async def approve_kicks(self, block_id: int, decider: TelegramProfile) -> None:
+        if not await self._bot_admin_service.has_permission(decider.tg_id, Permission.SYNC_RUN):
+            raise PermissionDeniedError
+        block = await self._block_repository.get_by_id(block_id)
+        if block is None:
+            raise BlockNotFoundError(block_id)
+        club = await self._club_repository.get_by_id(block.club_id)
+        if club is None:
+            raise ClubNotFoundError(block.club_id)
+        if block.kicks_approved_at is None:
+            block.kicks_approved_at = self._clock.now()
+            await self._block_repository.flush()
+            logger.info("Kicks of block {} approved by {}", block.id, decider.tg_id)
+        if block.kick_approval_message_id is not None:
+            text = texts.alerts.chat_kicks_approved(club.title, block.title, decider.full_name)
+            await self._admin_alerts.edit(block.kick_approval_message_id, text)
+        await self.reconcile_club(club.id)
 
     async def access_blocks(self, user: User) -> list[tuple[Club, Block]]:
         is_admin = await self._bot_admin_service.is_admin(user.tg_id)
@@ -199,33 +298,7 @@ class ChatAccessService:
             invite_link=invite_link,
         )
 
-    async def _invite_all(self, club: Club, chat_id: int, block: Block, user_ids: list[int]) -> list[str]:
-        if not user_ids:
-            return []
-        try:
-            invite_link = await self._chat_link(club, chat_id)
-        except TelegramAPIError as error:
-            logger.warning("Cannot make the join link of club {}: {}", club.id, error)
-            return [str(error)]
-        errors: list[str] = []
-        for user_id in user_ids:
-            try:
-                await self._invite(club, chat_id, block, user_id, invite_link)
-            except TelegramAPIError as error:
-                logger.warning("Cannot invite user {} to the chat of club {}: {}", user_id, club.id, error)
-                errors.append(str(error))
-        return errors
-
-    async def _invite(self, club: Club, chat_id: int, block: Block, user_id: int, invite_link: str) -> None:
-        user = await self._user_repository.get_by_id(user_id)
-        if user is None:
-            return
-        await self._mark_invited(club.id, chat_id, user)
-        item = self._club_access(club, block, invite_link)
-        await self._message(user.tg_id, texts.chat_access.invite(item), chat_invite_keyboard([item]))
-        logger.info("User {} invited to the chat of club {}", user.id, club.id)
-
-    async def _kick(self, club: Club, access_id: int) -> KickedMember | None:
+    async def _kick(self, club: Club, access_id: int) -> ChatStudent | None:
         access = await self._chat_access_repository.get_with_user(access_id)
         if access is None or access.user.vk_id is None:
             return None
@@ -248,11 +321,11 @@ class ChatAccessService:
         except TelegramAPIError:
             # Not fatal: the ban is lifted again when the student is invited back.
             logger.exception("Cannot lift the ban of user {} in club {}", user.id, club.id)
-        await self._message(user.tg_id, texts.chat_access.kicked(club.title))
-        return KickedMember(vk_id=vk_id, full_name=user.full_name, tg_username=user.tg_username)
+        await self._direct_message_service.send(user, texts.chat_access.kicked(club.title))
+        return ChatStudent(vk_id=vk_id, full_name=user.full_name, tg_username=user.tg_username)
 
     # attempted: without any Telegram call in the run the chat state is unknown, so a past error is kept.
-    async def _report(self, club: Club, *, kicked: list[KickedMember], attempted: bool, error: str | None) -> None:
+    async def _report(self, club: Club, *, kicked: list[ChatStudent], attempted: bool, error: str | None) -> None:
         if kicked:
             await self._admin_alerts.send(texts.alerts.chat_kicked(club.title, kicked))
         if error is not None and club.chat_error is None:
@@ -262,6 +335,34 @@ class ChatAccessService:
             club.chat_error = None
             await self._admin_alerts.send(texts.alerts.chat_recovered(club.title))
         await self._club_repository.flush()
+
+    # One alert per block, edited when the number of students to remove changes as curators fill the sheet.
+    async def _ask_kick_approval(self, club: Club, block: Block, access_ids: list[int]) -> None:
+        waiting = len(access_ids)
+        if waiting == (block.kick_approval_waiting or 0):
+            return
+        block.kick_approval_waiting = waiting
+        if waiting:
+            accesses = await self._chat_access_repository.list_with_users(access_ids)
+            students = [
+                ChatStudent(
+                    vk_id=access.user.vk_id, full_name=access.user.full_name, tg_username=access.user.tg_username
+                )
+                for access in accesses
+                if access.user.vk_id is not None
+            ]
+            text = texts.alerts.chat_kicks_need_approval(club.title, block.title, students)
+            keyboard = kick_approval_keyboard(block.id)
+            if block.kick_approval_message_id is None:
+                block.kick_approval_message_id = await self._admin_alerts.send(text, keyboard)
+            else:
+                await self._admin_alerts.edit(block.kick_approval_message_id, text, keyboard)
+        elif block.kick_approval_message_id is not None:
+            await self._admin_alerts.edit(
+                block.kick_approval_message_id, texts.alerts.chat_kicks_nobody(club.title, block.title)
+            )
+            block.kick_approval_message_id = None
+        await self._block_repository.flush()
 
     async def _set_kicks_on_hold(self, club: Club, *, on_hold: bool, block: Block | None, waiting: int) -> None:
         if club.chat_kicks_on_hold == on_hold:
@@ -273,15 +374,6 @@ class ChatAccessService:
             await self._admin_alerts.send(texts.alerts.chat_kicks_on_hold(club.title, block_title, waiting))
         else:
             await self._admin_alerts.send(texts.alerts.chat_kicks_resumed(club.title))
-
-    # The state is already saved, so a message that did not reach the student is only logged.
-    async def _message(self, tg_id: int, text: str, reply_markup: InlineKeyboardMarkup | None = None) -> None:
-        try:
-            await self._bot.send_message(tg_id, text, reply_markup=reply_markup)
-        except TelegramForbiddenError:
-            logger.info("User {} blocked the bot, chat message not delivered", tg_id)
-        except TelegramAPIError:
-            logger.exception("Failed to send a chat access message to user {}", tg_id)
 
     async def _access_block(self, club: Club, vk_id: int) -> Block | None:
         block = await self._block_repository.get_access_block(club_id=club.id, now=self._clock.now())
@@ -316,7 +408,9 @@ class ChatAccessService:
             return None
         try:
             invite_link = await self._chat_link(club, club.chat_id)
-            await self._mark_invited(club.id, club.chat_id, user)
+            access = await self._chat_access_repository.get_for_user(club_id=club.id, user_id=user.id)
+            await self._lift_ban(access, club.chat_id, user)
+            await self._mark_invited(access, club.id, club.chat_id, user)
         except TelegramAPIError:
             logger.exception("Cannot give the join link of club {} to user {}", club.id, user.id)
             return None
@@ -330,12 +424,14 @@ class ChatAccessService:
         await self._club_repository.flush()
         return link.invite_link
 
-    async def _mark_invited(self, club_id: int, chat_id: int, user: User) -> None:
-        access = await self._chat_access_repository.get_for_user(club_id=club_id, user_id=user.id)
+    # A student the bot kicked stays banned until let back: a join link alone would not work.
+    async def _lift_ban(self, access: ChatAccess | None, chat_id: int, user: User) -> None:
+        if access is not None and access.chat_id == chat_id and access.status is ChatAccessStatus.KICKED:
+            await self._bot.unban_chat_member(chat_id=chat_id, user_id=user.tg_id, only_if_banned=True)
+
+    async def _mark_invited(self, access: ChatAccess | None, club_id: int, chat_id: int, user: User) -> None:
         now = self._clock.now()
         if access is not None and access.chat_id == chat_id:
-            if access.status is ChatAccessStatus.KICKED:
-                await self._bot.unban_chat_member(chat_id=chat_id, user_id=user.tg_id, only_if_banned=True)
             if access.status in REINVITED_STATUSES:
                 access.status = ChatAccessStatus.INVITED
                 access.invited_at = now
