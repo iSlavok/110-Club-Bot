@@ -16,6 +16,10 @@ router.message.filter(F.chat.type == ChatType.PRIVATE)
 async def status(message: Message, student_status_service: FromDishka[StudentStatusService]) -> None:
     if message.from_user is None:
         return
-    report = await student_status_service.build(message.from_user.id)
+    await answer_student_status(message, message.from_user.id, student_status_service)
+
+
+async def answer_student_status(message: Message, tg_id: int, student_status_service: StudentStatusService) -> None:
+    report = await student_status_service.build(tg_id)
     keyboard = chat_invite_keyboard([club.access for club in report.clubs])
     await message.answer(texts.student_status.student_status(report), reply_markup=keyboard)
