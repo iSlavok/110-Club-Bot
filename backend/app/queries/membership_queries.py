@@ -48,6 +48,7 @@ class MembershipQueries:
                     User.tg_username,
                     ChatAccess.status,
                     ChatAccess.joined_at,
+                    User.bot_blocked_at,
                 ),
                 club_id,
             )
@@ -65,8 +66,9 @@ class MembershipQueries:
                 tg_username=tg_username,
                 chat_status=chat_status,
                 chat_joined_at=chat_joined_at,
+                bot_blocked_at=bot_blocked_at,
             )
-            for vk_id, user_id, full_name, tg_username, chat_status, chat_joined_at in result
+            for vk_id, user_id, full_name, tg_username, chat_status, chat_joined_at, bot_blocked_at in result
         ]
         return PageResult(items=rows, total=total)
 
@@ -77,14 +79,15 @@ class MembershipQueries:
                     func.count(),
                     func.count(User.id),
                     func.count().filter(ChatAccess.status == ChatAccessStatus.JOINED),
+                    func.count().filter(User.bot_blocked_at.is_not(None), _not_joined()),
                 ),
                 club_id,
             )
             .where(Membership.block_id == block_id)
         )
         result = await self._session.execute(statement)
-        total, with_bot, in_chat = result.one()
-        return BlockMemberFunnelRow(total=total, with_bot=with_bot, in_chat=in_chat)
+        total, with_bot, in_chat, bot_blocked = result.one()
+        return BlockMemberFunnelRow(total=total, with_bot=with_bot, in_chat=in_chat, bot_blocked=bot_blocked)
 
 
 def _with_user_and_chat[*Ts](statement: Select[*Ts], club_id: int) -> Select[*Ts]:
@@ -102,8 +105,13 @@ def _with_user_and_chat[*Ts](statement: Select[*Ts], club_id: int) -> Select[*Ts
     )
 
 
+def _not_joined() -> ColumnElement[bool]:
+    return or_(ChatAccess.status.is_(None), ChatAccess.status != ChatAccessStatus.JOINED)
+
+
+# no_bot, not_joined and bot_blocked split not_in_chat: a student who blocked the bot is only in bot_blocked.
 def _state_conditions(state: BlockMemberState | None) -> list[ColumnElement[bool]]:
-    not_joined = or_(ChatAccess.status.is_(None), ChatAccess.status != ChatAccessStatus.JOINED)
+    not_joined = _not_joined()
     match state:
         case None:
             return []
@@ -114,7 +122,9 @@ def _state_conditions(state: BlockMemberState | None) -> list[ColumnElement[bool
         case BlockMemberState.NO_BOT:
             return [User.id.is_(None)]
         case BlockMemberState.NOT_JOINED:
-            return [User.id.is_not(None), not_joined]
+            return [User.id.is_not(None), User.bot_blocked_at.is_(None), not_joined]
+        case BlockMemberState.BOT_BLOCKED:
+            return [User.bot_blocked_at.is_not(None), not_joined]
 
 
 # Matches the users search; digits also hit the VK id from the sheet, which has no bot user behind it.

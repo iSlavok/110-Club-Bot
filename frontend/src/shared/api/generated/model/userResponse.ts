@@ -18,6 +18,8 @@ export interface UserResponse {
   vk_id: number | null;
   /** When the user linked VK, UTC */
   vk_linked_at: string | null;
+  /** When the user blocked the bot, UTC; null if the bot can write to them */
+  bot_blocked_at: string | null;
   /** First /start, UTC */
   created_at: string;
 }

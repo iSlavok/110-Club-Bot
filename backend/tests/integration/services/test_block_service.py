@@ -13,6 +13,7 @@ from app.exceptions import (
 from app.schemas import BlockCreate, BlockMemberUser, BlockUpdate, PageParams
 from app.services import BlockService
 from tests.factories import make_block, make_chat_access, make_club, make_membership, make_user
+from tests.providers import DEFAULT_NOW
 
 SEPT = datetime(2026, 9, 1, tzinfo=UTC)
 NOV = datetime(2026, 11, 1, tzinfo=UTC)
@@ -121,6 +122,7 @@ async def test_members_show_linked_bot_users(service, db_session) -> None:
         tg_username="pupil",
         chat_status=None,
         chat_joined_at=None,
+        bot_blocked_at=None,
     )
     assert page.items[1].user is None
 
@@ -173,23 +175,27 @@ async def test_members_sort(service, db_session, sort, order, expected) -> None:
 async def _funnel_block(db_session):
     club = await make_club(db_session, chat_id=-100500)
     block = await make_block(db_session, club)
-    for vk_id in (501, 502, 503, 504):
+    for vk_id in (501, 502, 503, 504, 505, 506):
         await make_membership(db_session, block, vk_id=vk_id)
     joined = await make_user(db_session, vk_id=501, full_name="Борис")
     invited = await make_user(db_session, vk_id=502, full_name="Анна")
     await make_user(db_session, vk_id=503, full_name="Вера")
+    await make_user(db_session, vk_id=505, full_name="Глеб", bot_blocked_at=DEFAULT_NOW)
+    joined_then_blocked = await make_user(db_session, vk_id=506, full_name="Дина", bot_blocked_at=DEFAULT_NOW)
     await make_chat_access(db_session, club, joined, status=ChatAccessStatus.JOINED)
     await make_chat_access(db_session, club, invited, status=ChatAccessStatus.INVITED)
+    await make_chat_access(db_session, club, joined_then_blocked, status=ChatAccessStatus.JOINED)
     return block
 
 
 @pytest.mark.parametrize(
     ("state", "expected"),
     [
-        (BlockMemberState.IN_CHAT, [501]),
-        (BlockMemberState.NOT_IN_CHAT, [502, 503, 504]),
+        (BlockMemberState.IN_CHAT, [501, 506]),
+        (BlockMemberState.NOT_IN_CHAT, [502, 503, 504, 505]),
         (BlockMemberState.NO_BOT, [504]),
         (BlockMemberState.NOT_JOINED, [502, 503]),
+        (BlockMemberState.BOT_BLOCKED, [505]),
     ],
 )
 async def test_members_filter_by_state(service, db_session, state, expected) -> None:
@@ -215,4 +221,4 @@ async def test_member_funnel(service, db_session) -> None:
 
     funnel = await service.member_funnel(block.id)
 
-    assert (funnel.total, funnel.with_bot, funnel.in_chat) == (4, 3, 1)
+    assert (funnel.total, funnel.with_bot, funnel.in_chat, funnel.bot_blocked) == (6, 5, 2, 1)

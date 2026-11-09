@@ -16,6 +16,7 @@ const ANNA: UserResponse = {
   full_name: 'Анна Белова',
   vk_id: 42,
   vk_linked_at: '2026-09-02T09:00:00Z',
+  bot_blocked_at: '2026-09-03T09:00:00Z',
   created_at: '2026-09-01T09:00:00Z',
 };
 
@@ -45,6 +46,7 @@ describe('UsersPage', () => {
       'https://vk.com/id42',
     );
     expect(screen.getByText('02.09.2026 12:00')).toBeInTheDocument();
+    expect(screen.getByText('заблокировал бота')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Скачать .xlsx' })).toHaveAttribute(
       'href',
       '/api/v1/users/export?q=%D0%B0%D0%BD%D0%BD%D0%B0',
