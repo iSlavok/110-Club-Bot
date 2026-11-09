@@ -21,6 +21,9 @@ class UserResponse(BaseModel):
     full_name: str = Field(description="Telegram display name")
     vk_id: int | None = Field(description="Linked VK id")
     vk_linked_at: datetime | None = Field(description="When the user linked VK, UTC")
+    bot_blocked_at: datetime | None = Field(
+        description="When the user blocked the bot, UTC; null if the bot can write to them"
+    )
     created_at: datetime = Field(description="First /start, UTC")
 
     @classmethod
@@ -32,5 +35,6 @@ class UserResponse(BaseModel):
             full_name=user.full_name,
             vk_id=user.vk_id,
             vk_linked_at=user.vk_linked_at,
+            bot_blocked_at=user.bot_blocked_at,
             created_at=user.created_at,
         )

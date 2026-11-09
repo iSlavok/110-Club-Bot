@@ -82,7 +82,12 @@ class BlockService:
     async def member_funnel(self, block_id: int) -> BlockMemberFunnel:
         block = await self._get(block_id)
         funnel = await self._membership_queries.block_member_funnel(block_id=block_id, club_id=block.club_id)
-        return BlockMemberFunnel(total=funnel.total, with_bot=funnel.with_bot, in_chat=funnel.in_chat)
+        return BlockMemberFunnel(
+            total=funnel.total,
+            with_bot=funnel.with_bot,
+            in_chat=funnel.in_chat,
+            bot_blocked=funnel.bot_blocked,
+        )
 
     async def create(self, club_id: int, data: BlockCreate) -> BlockDTO:
         await self._ensure_club_exists(club_id)
@@ -132,6 +137,7 @@ class BlockService:
             tg_username=row.tg_username,
             chat_status=row.chat_status,
             chat_joined_at=row.chat_joined_at,
+            bot_blocked_at=row.bot_blocked_at,
         )
 
     async def _get(self, block_id: int) -> Block:
