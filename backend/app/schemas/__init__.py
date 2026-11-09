@@ -1,7 +1,7 @@
 from app.schemas.admin_user_schemas import AdminUserCreate, AdminUserDTO, AdminUserUpdate, AdminUserWithRoleDTO
 from app.schemas.app_settings_schemas import AppSettingsDTO, AppSettingsOverview, AppSettingsUpdate
 from app.schemas.auth_schemas import AdminPrincipal, AuthConfig, IssuedLoginCode, SessionGrant, TelegramWidgetPayload
-from app.schemas.chat_access_schemas import KickedMember
+from app.schemas.chat_access_schemas import ChatStudent
 from app.schemas.club_schemas import (
     BlockCreate,
     BlockDTO,
@@ -71,6 +71,7 @@ __all__ = [
     "BlockSummary",
     "BlockUpdate",
     "ChatStatusSection",
+    "ChatStudent",
     "ClubAccess",
     "ClubCreate",
     "ClubDTO",
@@ -84,7 +85,6 @@ __all__ = [
     "CurrentBlockStats",
     "ExportFile",
     "IssuedLoginCode",
-    "KickedMember",
     "LessonCreate",
     "LessonDTO",
     "LessonDraft",

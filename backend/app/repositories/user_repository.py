@@ -22,6 +22,25 @@ class UserRepository(BaseRepository[User]):
         )
         return await self._session.scalar(statement)
 
+    # Locks the row until the transaction ends: two runs inviting the same student wait for each other.
+    async def get_for_update(self, user_id: int) -> User | None:
+        statement = (
+            select(User)
+            .where(User.id == user_id)
+            .with_for_update(of=User)
+            .execution_options(populate_existing=True)
+        )
+        return await self._session.scalar(statement)
+
+    async def list_by_ids(self, user_ids: list[int]) -> list[User]:
+        statement = (
+            select(User)
+            .where(User.id.in_(user_ids))
+            .order_by(User.id)
+        )
+        users = await self._session.scalars(statement)
+        return list(users)
+
     async def get_by_vk_id(self, vk_id: int) -> User | None:
         statement = (
             select(User)

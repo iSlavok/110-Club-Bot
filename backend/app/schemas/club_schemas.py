@@ -31,6 +31,7 @@ class ClubDTO(BaseModel):
     is_active: bool
     hide_service_messages: bool
     chat_kicks_on_hold: bool
+    chat_invites_failing: bool
     chat_error: str | None
     chat_invite_link: str | None
     created_at: datetime
@@ -49,6 +50,7 @@ class ClubDTO(BaseModel):
             is_active=club.is_active,
             hide_service_messages=club.hide_service_messages,
             chat_kicks_on_hold=club.chat_kicks_on_hold,
+            chat_invites_failing=club.chat_invites_failing,
             chat_error=club.chat_error,
             chat_invite_link=club.chat_invite_link,
             created_at=club.created_at,
