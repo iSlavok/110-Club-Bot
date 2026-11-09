@@ -80,6 +80,7 @@ async def make_block(session: AsyncSession, club: Club, **overrides: Any) -> Blo
             "sheet_column_title": f"Блок {n}",
             "starts_at": starts_at,
             "ends_at": starts_at + timedelta(days=60),
+            "kicks_approved_at": starts_at,
             **overrides,
         },
     )

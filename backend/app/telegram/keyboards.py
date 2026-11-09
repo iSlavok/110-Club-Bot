@@ -3,7 +3,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from app import texts
 from app.enums import RemovalDecision
 from app.schemas import ClubAccess
-from app.telegram.callbacks import RemovalRequestCallback
+from app.telegram.callbacks import KickApprovalCallback, RemovalRequestCallback
 
 
 def removal_request_keyboard(request_id: int) -> InlineKeyboardMarkup:
@@ -17,6 +17,12 @@ def removal_request_keyboard(request_id: int) -> InlineKeyboardMarkup:
             ],
         ],
     )
+
+
+def kick_approval_keyboard(block_id: int) -> InlineKeyboardMarkup:
+    approve = KickApprovalCallback(block_id=block_id)
+    button = InlineKeyboardButton(text=texts.alerts.APPROVE_KICKS_BUTTON, callback_data=approve.pack())
+    return InlineKeyboardMarkup(inline_keyboard=[[button]])
 
 
 def chat_invite_keyboard(access: list[ClubAccess]) -> InlineKeyboardMarkup | None:

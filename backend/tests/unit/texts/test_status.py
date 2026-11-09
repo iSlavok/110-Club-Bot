@@ -54,6 +54,9 @@ def _block(title: str) -> BlockDTO:
         # 21:00 UTC is already the next day in Moscow.
         starts_at=datetime(2026, 8, 31, 21, 0, tzinfo=UTC),
         ends_at=datetime(2026, 10, 31, 21, 0, tzinfo=UTC),
+        kicks_approved_at=None,
+        kick_approval_message_id=None,
+        kick_approval_waiting=None,
         created_at=NOW,
         updated_at=NOW,
     )
