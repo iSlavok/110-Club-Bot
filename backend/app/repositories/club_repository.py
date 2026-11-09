@@ -9,6 +9,17 @@ class ClubRepository(BaseRepository[Club]):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session, Club)
 
+    # Waits for a concurrent run on the same club and reads its committed state, not a copy loaded earlier
+    # in this session: the sheet sync loads the club long before it reconciles the chat.
+    async def get_for_update(self, club_id: int) -> Club | None:
+        statement = (
+            select(Club)
+            .where(Club.id == club_id)
+            .with_for_update(of=Club)
+            .execution_options(populate_existing=True)
+        )
+        return await self._session.scalar(statement)
+
     async def get_by_title(self, title: str) -> Club | None:
         statement = (
             select(Club)

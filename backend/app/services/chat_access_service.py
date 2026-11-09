@@ -61,7 +61,7 @@ class ChatAccessService:
     # before. Telegram errors are collected per student and alerted, never raised: they must not undo the caller.
     # Kicks only: invites go out from the worker, one student per transaction (see invite).
     async def reconcile_club(self, club_id: int) -> None:
-        club = await self._club_repository.get_by_id(club_id)
+        club = await self._club_repository.get_for_update(club_id)
         if club is None or not club.is_active or club.chat_id is None:
             return
         chat_id = club.chat_id
@@ -103,7 +103,7 @@ class ChatAccessService:
     # Makes the join link before the run: without it nobody can be invited, and a chat the bot cannot manage is
     # alerted once for the club instead of once per student.
     async def list_invitees(self, club_id: int) -> list[int]:
-        club = await self._club_repository.get_by_id(club_id)
+        club = await self._club_repository.get_for_update(club_id)
         if club is None or not club.is_active or club.chat_id is None:
             return []
         block = await self._block_repository.get_access_block(club_id=club.id, now=self._clock.now())
@@ -155,7 +155,7 @@ class ChatAccessService:
 
     # A summary only when something happened; failures are alerted when they start and stop, not on every run.
     async def report_invites(self, club_id: int, deliveries: dict[int, MessageDelivery]) -> None:
-        club = await self._club_repository.get_by_id(club_id)
+        club = await self._club_repository.get_for_update(club_id)
         if club is None:
             return
         sent = sum(delivery is MessageDelivery.SENT for delivery in deliveries.values())
