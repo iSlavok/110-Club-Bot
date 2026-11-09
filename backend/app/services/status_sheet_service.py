@@ -64,7 +64,7 @@ class StatusSheetService:
                 club.spreadsheet_id,
                 club.status_sheet_name,
                 rows,
-                column_widths=[STATUS_SHEET_COLUMN_WIDTH] * 3,
+                column_widths=[STATUS_SHEET_COLUMN_WIDTH] * 4,
             )
         except SheetsClientError as error:
             raise StatusSheetWriteError(club_id, error.message) from error
@@ -75,14 +75,20 @@ class StatusSheetService:
         in_chat = [
             texts.exports.vk_url(member.vk_id) for member in members if member.chat_status is ChatAccessStatus.JOINED
         ]
-        not_joined = [
-            texts.exports.vk_url(member.vk_id)
+        out_of_chat = [
+            member
             for member in members
             if member.user_id is not None and member.chat_status is not ChatAccessStatus.JOINED
+        ]
+        not_joined = [texts.exports.vk_url(member.vk_id) for member in out_of_chat if member.bot_blocked_at is None]
+        bot_blocked = [
+            texts.exports.vk_url(member.vk_id) for member in out_of_chat if member.bot_blocked_at is not None
         ]
         header: list[WrittenCell] = [
             texts.status_sheet.no_bot(len(no_bot)),
             texts.status_sheet.in_chat(len(in_chat)),
             texts.status_sheet.not_joined(len(not_joined)),
+            texts.status_sheet.bot_blocked(len(bot_blocked)),
         ]
-        return [header, *(list(row) for row in zip_longest(no_bot, in_chat, not_joined, fillvalue=""))]
+        columns = zip_longest(no_bot, in_chat, not_joined, bot_blocked, fillvalue="")
+        return [header, *(list(row) for row in columns)]

@@ -12,4 +12,5 @@ export const BlockMemberState = {
   not_in_chat: 'not_in_chat',
   no_bot: 'no_bot',
   not_joined: 'not_joined',
+  bot_blocked: 'bot_blocked',
 } as const;

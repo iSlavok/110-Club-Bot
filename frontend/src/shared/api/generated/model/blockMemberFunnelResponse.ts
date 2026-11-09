@@ -12,4 +12,6 @@ export interface BlockMemberFunnelResponse {
   with_bot: number;
   /** Members in the club chat */
   in_chat: number;
+  /** Members who blocked the bot and are not in the chat */
+  bot_blocked: number;
 }

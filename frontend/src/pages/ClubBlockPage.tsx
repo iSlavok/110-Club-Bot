@@ -6,6 +6,7 @@ import { Link, useParams } from 'react-router';
 
 import { BlockStatusBadge } from '@/entities/block';
 import { ChatStatusBadge } from '@/entities/chat-access';
+import { BotBlockedBadge } from '@/entities/user';
 import {
   getExportBlockMembersUrl,
   useGetBlock,
@@ -34,12 +35,14 @@ function stateOptions(funnel: BlockMemberFunnelResponse | undefined) {
   const total = funnel?.total ?? 0;
   const withBot = funnel?.with_bot ?? 0;
   const inChat = funnel?.in_chat ?? 0;
+  const botBlocked = funnel?.bot_blocked ?? 0;
   return [
     { value: 'all', label: `Все${count(total)}` },
     { value: 'in_chat', label: `В чате${count(inChat)}` },
     { value: 'not_in_chat', label: `Не в чате${count(total - inChat)}` },
     { value: 'no_bot', label: `Без бота${count(total - withBot)}` },
-    { value: 'not_joined', label: `С ботом, не в чате${count(withBot - inChat)}` },
+    { value: 'not_joined', label: `С ботом, не в чате${count(withBot - inChat - botBlocked)}` },
+    { value: 'bot_blocked', label: `Заблокировали бота${count(botBlocked)}` },
   ];
 }
 
@@ -153,7 +156,12 @@ function BlockMembers({ block }: { block: BlockResponse }) {
                     </Table.Td>
                     <Table.Td fw={member.user ? 500 : undefined}>
                       {member.user ? (
-                        member.user.full_name
+                        <Group gap="xs" wrap="nowrap">
+                          {member.user.full_name}
+                          {member.user.bot_blocked_at && (
+                            <BotBlockedBadge blockedAt={member.user.bot_blocked_at} />
+                          )}
+                        </Group>
                       ) : (
                         <Text c="dimmed">не подключил бота</Text>
                       )}

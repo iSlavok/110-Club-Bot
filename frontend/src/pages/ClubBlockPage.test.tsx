@@ -29,9 +29,21 @@ const MEMBERS: BlockMemberResponse[] = [
       tg_username: 'anna',
       chat_status: 'joined',
       chat_joined_at: '2026-09-02T10:00:00Z',
+      bot_blocked_at: null,
     },
   },
   { vk_id: 502, user: null },
+  {
+    vk_id: 503,
+    user: {
+      id: 2,
+      full_name: 'Борис Орлов',
+      tg_username: null,
+      chat_status: null,
+      chat_joined_at: null,
+      bot_blocked_at: '2026-09-03T10:00:00Z',
+    },
+  },
 ];
 
 function renderBlock() {
@@ -40,7 +52,7 @@ function renderBlock() {
     meHandler(makeAdmin('clubs.view', 'users.view')),
     http.get('/api/v1/blocks/3', () => HttpResponse.json(BLOCK)),
     http.get('/api/v1/blocks/3/members/funnel', () =>
-      HttpResponse.json({ total: 2, with_bot: 1, in_chat: 1 }),
+      HttpResponse.json({ total: 3, with_bot: 2, in_chat: 1, bot_blocked: 1 }),
     ),
     http.get('/api/v1/blocks/3/members', ({ request }) => {
       requests.push(new URL(request.url).searchParams);
@@ -69,6 +81,18 @@ describe('ClubBlockPage', () => {
     );
     expect(screen.getByText('не подключил бота')).toBeInTheDocument();
     expect(screen.getByText('в чате')).toBeInTheDocument();
+    expect(screen.getByText('заблокировал бота')).toBeInTheDocument();
+  });
+
+  it('filters the students who blocked the bot', async () => {
+    const requests = renderBlock();
+
+    await screen.findByText('Анна Белова');
+    expect(screen.getByText('С ботом, не в чате · 0')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Заблокировали бота · 1'));
+    await waitFor(() => {
+      expect(requests.at(-1)?.get('state')).toBe('bot_blocked');
+    });
   });
 
   it('filters by the funnel step, with its count, and searches', async () => {

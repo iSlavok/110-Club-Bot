@@ -10,7 +10,7 @@ import type { SortOrder } from './sortOrder';
 
 export type ListBlockMembersParams = {
   /**
-   * in_chat: joined the club chat; not_in_chat: everyone else; no_bot: never linked the bot; not_joined: linked the bot but not in the chat
+   * in_chat: joined the club chat; not_in_chat: everyone else, split into no_bot: never linked the bot, not_joined: linked the bot but not in the chat, bot_blocked: blocked the bot and not in the chat
    */
   state?: BlockMemberState | null;
   /**

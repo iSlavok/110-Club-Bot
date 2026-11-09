@@ -6,3 +6,4 @@ class BlockMemberState(StrEnum):
     NOT_IN_CHAT = "not_in_chat"
     NO_BOT = "no_bot"
     NOT_JOINED = "not_joined"
+    BOT_BLOCKED = "bot_blocked"
