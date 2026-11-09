@@ -5,6 +5,7 @@ from bot.handlers import (
     bot_blocking,
     chat_join_requests,
     chat_service_messages,
+    kick_approvals,
     removal_requests,
     schedule,
     start,
@@ -25,6 +26,7 @@ def create_router() -> Router:
         student_status.router,
         schedule.router,
         removal_requests.router,
+        kick_approvals.router,
         chat_join_requests.router,
         chat_service_messages.router,
     )

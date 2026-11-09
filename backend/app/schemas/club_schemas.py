@@ -86,6 +86,9 @@ class BlockDTO(BaseModel):
     sheet_column_title: str
     starts_at: datetime
     ends_at: datetime
+    kicks_approved_at: datetime | None
+    kick_approval_message_id: int | None
+    kick_approval_waiting: int | None
     created_at: datetime
     updated_at: datetime
 
@@ -98,6 +101,9 @@ class BlockDTO(BaseModel):
             sheet_column_title=block.sheet_column_title,
             starts_at=block.starts_at,
             ends_at=block.ends_at,
+            kicks_approved_at=block.kicks_approved_at,
+            kick_approval_message_id=block.kick_approval_message_id,
+            kick_approval_waiting=block.kick_approval_waiting,
             created_at=block.created_at,
             updated_at=block.updated_at,
         )

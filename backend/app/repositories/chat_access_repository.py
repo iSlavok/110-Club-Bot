@@ -29,6 +29,16 @@ class ChatAccessRepository(BaseRepository[ChatAccess]):
         )
         return await self._session.scalar(statement)
 
+    async def list_with_users(self, access_ids: list[int]) -> list[ChatAccess]:
+        statement = (
+            select(ChatAccess)
+            .options(joinedload(ChatAccess.user))
+            .where(ChatAccess.id.in_(access_ids))
+            .order_by(ChatAccess.id)
+        )
+        accesses = await self._session.scalars(statement)
+        return list(accesses)
+
     async def count_by_status(self, *, club_id: int, chat_id: int) -> dict[ChatAccessStatus, int]:
         statement = (
             select(ChatAccess.status, func.count())
