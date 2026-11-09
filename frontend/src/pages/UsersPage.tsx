@@ -1,8 +1,9 @@
-import { Anchor, Table, Text, TextInput } from '@mantine/core';
+import { Anchor, Group, Table, Text, TextInput } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { IconSearch } from '@tabler/icons-react';
 import { useState } from 'react';
 
+import { BotBlockedBadge } from '@/entities/user';
 import { getExportUsersUrl, useListUsersInfinite } from '@/shared/api';
 import { formatDateTime } from '@/shared/lib/dates';
 import { infinitePage, PER_PAGE, useInfinitePage } from '@/shared/lib/infinite-page';
@@ -58,7 +59,12 @@ export function UsersPage() {
               <Table.Tbody>
                 {items.map((user) => (
                   <Table.Tr key={user.id}>
-                    <Table.Td fw={500}>{user.full_name}</Table.Td>
+                    <Table.Td fw={500}>
+                      <Group gap="xs" wrap="nowrap">
+                        {user.full_name}
+                        {user.bot_blocked_at && <BotBlockedBadge blockedAt={user.bot_blocked_at} />}
+                      </Group>
+                    </Table.Td>
                     <Table.Td>
                       {user.tg_username ? (
                         <Anchor

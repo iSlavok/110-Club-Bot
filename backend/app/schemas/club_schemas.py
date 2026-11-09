@@ -114,6 +114,7 @@ class BlockMemberUser(BaseModel):
     tg_username: str | None
     chat_status: ChatAccessStatus | None
     chat_joined_at: datetime | None
+    bot_blocked_at: datetime | None
 
 
 class BlockMember(BaseModel):
@@ -125,6 +126,7 @@ class BlockMemberFunnel(BaseModel):
     total: int
     with_bot: int
     in_chat: int
+    bot_blocked: int
 
 
 class BlockCreate(BaseModel):

@@ -53,6 +53,7 @@ class ExportService:
                 None if user.vk_id is None else texts.exports.vk_url(user.vk_id),
                 texts.exports.moment(user.vk_linked_at),
                 texts.exports.moment(user.created_at),
+                texts.exports.moment(user.bot_blocked_at),
             ]
             for user in users.items
         ]
@@ -61,13 +62,20 @@ class ExportService:
 
     @staticmethod
     def _member_row(member: BlockMemberRow) -> list[XlsxCell]:
-        linked = member.user_id is not None
         return [
             texts.exports.vk_url(member.vk_id),
             member.vk_id,
             member.full_name,
             texts.exports.telegram(member.tg_username),
-            texts.exports.BOT_LINKED if linked else texts.exports.BOT_MISSING,
+            _bot_state(member),
             None if member.chat_status is None else texts.exports.CHAT_STATUS[member.chat_status],
             texts.exports.moment(member.chat_joined_at),
         ]
+
+
+def _bot_state(member: BlockMemberRow) -> str:
+    if member.user_id is None:
+        return texts.exports.BOT_MISSING
+    if member.bot_blocked_at is not None:
+        return texts.exports.BOT_BLOCKED
+    return texts.exports.BOT_LINKED

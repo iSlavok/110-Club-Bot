@@ -19,3 +19,7 @@ def in_chat(count: int) -> str:
 
 def not_joined(count: int) -> str:
     return f"Подключили бота, но не зашли в чат ({count})"
+
+
+def bot_blocked(count: int) -> str:
+    return f"Заблокировали бота, не зашли в чат ({count})"

@@ -75,8 +75,8 @@ class BlockMemberFilters(BaseModel):
     state: BlockMemberState | None = Field(
         default=None,
         description=(
-            "in_chat: joined the club chat; not_in_chat: everyone else; "
-            "no_bot: never linked the bot; not_joined: linked the bot but not in the chat"
+            "in_chat: joined the club chat; not_in_chat: everyone else, split into no_bot: never linked the bot, "
+            "not_joined: linked the bot but not in the chat, bot_blocked: blocked the bot and not in the chat"
         ),
     )
     q: str | None = Field(default=None, max_length=100, description="Name, username, Telegram or VK id")
@@ -100,6 +100,9 @@ class BlockMemberUserResponse(BaseModel):
         description="State in the club chat for students the bot invited; null if the bot never invited them",
     )
     chat_joined_at: datetime | None = Field(description="When the student last joined the club chat")
+    bot_blocked_at: datetime | None = Field(
+        description="When the user blocked the bot, UTC; null if the bot can write to them"
+    )
 
     @classmethod
     def from_dto(cls, user: BlockMemberUser) -> Self:
@@ -109,6 +112,7 @@ class BlockMemberUserResponse(BaseModel):
             tg_username=user.tg_username,
             chat_status=user.chat_status,
             chat_joined_at=user.chat_joined_at,
+            bot_blocked_at=user.bot_blocked_at,
         )
 
 
@@ -128,7 +132,13 @@ class BlockMemberFunnelResponse(BaseModel):
     total: int = Field(description="Members of the block in the sheet")
     with_bot: int = Field(description="Members who linked the bot")
     in_chat: int = Field(description="Members in the club chat")
+    bot_blocked: int = Field(description="Members who blocked the bot and are not in the chat")
 
     @classmethod
     def from_dto(cls, funnel: BlockMemberFunnel) -> Self:
-        return cls(total=funnel.total, with_bot=funnel.with_bot, in_chat=funnel.in_chat)
+        return cls(
+            total=funnel.total,
+            with_bot=funnel.with_bot,
+            in_chat=funnel.in_chat,
+            bot_blocked=funnel.bot_blocked,
+        )

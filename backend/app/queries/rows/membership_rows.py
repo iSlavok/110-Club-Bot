@@ -12,6 +12,7 @@ class BlockMemberRow:
     tg_username: str | None
     chat_status: ChatAccessStatus | None
     chat_joined_at: datetime | None
+    bot_blocked_at: datetime | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,3 +20,4 @@ class BlockMemberFunnelRow:
     total: int
     with_bot: int
     in_chat: int
+    bot_blocked: int

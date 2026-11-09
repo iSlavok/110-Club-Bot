@@ -4,10 +4,11 @@ from app.enums import BlockMemberState, ChatAccessStatus
 from app.utils import BUSINESS_TZ
 
 BLOCK_MEMBER_HEADERS = ("VK", "VK ID", "Имя в Telegram", "Telegram", "Бот", "Чат", "Зашёл в чат")
-USER_HEADERS = ("Имя в Telegram", "Telegram", "Telegram ID", "VK", "VK привязан", "Первый /start")
+USER_HEADERS = ("Имя в Telegram", "Telegram", "Telegram ID", "VK", "VK привязан", "Первый /start", "Заблокировал бота")
 
 BOT_LINKED = "подключил"
 BOT_MISSING = "не подключил"
+BOT_BLOCKED = "заблокировал"
 
 CHAT_STATUS = {
     ChatAccessStatus.INVITED: "приглашён",
@@ -23,6 +24,7 @@ BLOCK_MEMBERS_FILE_SUFFIX = {
     BlockMemberState.NOT_IN_CHAT: "not-in-chat",
     BlockMemberState.NO_BOT: "no-bot",
     BlockMemberState.NOT_JOINED: "not-joined",
+    BlockMemberState.BOT_BLOCKED: "bot-blocked",
 }
 
 
