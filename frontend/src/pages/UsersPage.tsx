@@ -3,7 +3,7 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { IconSearch } from '@tabler/icons-react';
 import { useState } from 'react';
 
-import { BotBlockedBadge } from '@/entities/user';
+import { BotBlockedBadge, TelegramLink } from '@/entities/user';
 import { getExportUsersUrl, useListUsersInfinite } from '@/shared/api';
 import { formatDateTime } from '@/shared/lib/dates';
 import { infinitePage, PER_PAGE, useInfinitePage } from '@/shared/lib/infinite-page';
@@ -50,7 +50,7 @@ export function UsersPage() {
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Имя</Table.Th>
-                  <Table.Th w={180}>Telegram</Table.Th>
+                  <Table.Th w={240}>Telegram</Table.Th>
                   <Table.Th w={150}>ВК</Table.Th>
                   <Table.Th w={140}>ВК привязан</Table.Th>
                   <Table.Th w={140}>Первый /start</Table.Th>
@@ -67,13 +67,7 @@ export function UsersPage() {
                     </Table.Td>
                     <Table.Td>
                       {user.tg_username ? (
-                        <Anchor
-                          href={`https://t.me/${user.tg_username}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          @{user.tg_username}
-                        </Anchor>
+                        <TelegramLink username={user.tg_username} />
                       ) : (
                         <Text c="dimmed">{user.tg_id}</Text>
                       )}

@@ -6,7 +6,7 @@ import { Link, useParams } from 'react-router';
 
 import { BlockStatusBadge } from '@/entities/block';
 import { ChatStatusBadge } from '@/entities/chat-access';
-import { BotBlockedBadge } from '@/entities/user';
+import { BotBlockedBadge, TelegramLink } from '@/entities/user';
 import {
   getExportBlockMembersUrl,
   useGetBlock,
@@ -135,7 +135,7 @@ function BlockMembers({ block }: { block: BlockResponse }) {
                   <SortableTh sort="bot" current={sorting} onSort={setSorting}>
                     Пользователь бота
                   </SortableTh>
-                  <Table.Th w={180}>Telegram</Table.Th>
+                  <Table.Th w={240}>Telegram</Table.Th>
                   <SortableTh sort="chat" current={sorting} onSort={setSorting} w={140}>
                     Чат
                   </SortableTh>
@@ -168,13 +168,7 @@ function BlockMembers({ block }: { block: BlockResponse }) {
                     </Table.Td>
                     <Table.Td>
                       {member.user?.tg_username ? (
-                        <Anchor
-                          href={`https://t.me/${member.user.tg_username}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          @{member.user.tg_username}
-                        </Anchor>
+                        <TelegramLink username={member.user.tg_username} />
                       ) : (
                         <Text c="dimmed">—</Text>
                       )}
