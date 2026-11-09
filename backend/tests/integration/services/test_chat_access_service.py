@@ -13,12 +13,12 @@ from aiogram.methods import (
 )
 from aiogram.types import ChatMemberAdministrator, ChatMemberLeft, ChatMemberMember, ChatMemberRestricted
 from aiogram.types import User as TelegramUser
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from app import texts
 from app.enums import ChatAccessStatus, MessageDelivery
 from app.exceptions import PermissionDeniedError
-from app.models import ChatAccess, User
+from app.models import ChatAccess, Club, User
 from app.schemas import ChatStudent, TelegramProfile
 from app.services import ChatAccessService
 from tests.factories import (
@@ -741,3 +741,16 @@ async def test_only_admins_who_run_the_sync_approve_kicks(service, db_session, c
         await service.approve_kicks(block.id, stranger)
 
     assert block.kicks_approved_at is None
+
+
+async def test_hold_set_by_a_concurrent_run_is_not_alerted_again(service, db_session, club, bot) -> None:
+    await make_block(db_session, club, title="2")
+    await _joined(db_session, club, 3)
+    # Another transaction has already put the kicks on hold; this session still holds the club loaded before.
+    statement = update(Club).where(Club.id == club.id).values(chat_kicks_on_hold=True)
+    await db_session.execute(statement.execution_options(synchronize_session=False))
+    assert not club.chat_kicks_on_hold
+
+    await service.reconcile_club(club.id)
+
+    assert _alerts(bot) == []
