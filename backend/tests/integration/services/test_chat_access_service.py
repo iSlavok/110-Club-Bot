@@ -17,8 +17,9 @@ from sqlalchemy import select
 
 from app import texts
 from app.enums import ChatAccessStatus, MessageDelivery
+from app.exceptions import PermissionDeniedError
 from app.models import ChatAccess, User
-from app.schemas import ChatStudent
+from app.schemas import ChatStudent, TelegramProfile
 from app.services import ChatAccessService
 from tests.factories import (
     make_admin_user,
@@ -29,7 +30,7 @@ from tests.factories import (
     make_role,
     make_user,
 )
-from tests.providers import ALERTS_CHAT_ID, DEFAULT_NOW, INVITE_LINK_PREFIX, OWNER_TG_ID
+from tests.providers import ALERT_MESSAGE_ID, ALERTS_CHAT_ID, DEFAULT_NOW, INVITE_LINK_PREFIX, OWNER_TG_ID
 
 CHAT_ID = -100500
 VK_ID = 4242
@@ -666,3 +667,77 @@ async def test_admin_has_access_to_every_active_club_with_a_block(service, db_se
     club_blocks = await service.access_blocks(admin)
 
     assert [(club_.title, block_.title) for club_, block_ in club_blocks] == [("Биология", "2"), ("Химия", "6")]
+
+
+def _edits(bot) -> list[str]:
+    return [call.kwargs["text"] for call in bot.edit_message_text.await_args_list]
+
+
+def _owner() -> TelegramProfile:
+    return TelegramProfile(tg_id=OWNER_TG_ID, tg_username=None, full_name="Владелец")
+
+
+async def test_first_kicks_of_a_block_wait_for_an_admin(service, db_session, club, bot) -> None:
+    block = await make_block(db_session, club, title="6", kicks_approved_at=None)
+    await make_membership(db_session, block, vk_id=1)
+    access, _ = await _joined(db_session, club, 3, full_name="Катя Орлова", tg_username="kate")
+    _in_chat(bot)
+
+    await service.reconcile_club(club.id)
+    await service.reconcile_club(club.id)
+
+    assert access.status is ChatAccessStatus.JOINED
+    bot.ban_chat_member.assert_not_awaited()
+    students = [ChatStudent(vk_id=3, full_name="Катя Орлова", tg_username="kate")]
+    assert _alerts(bot) == [texts.alerts.chat_kicks_need_approval("Химия", "6", students)]
+    keyboard = bot.send_message.await_args.kwargs["reply_markup"]
+    assert keyboard.inline_keyboard[0][0].text == texts.alerts.APPROVE_KICKS_BUTTON
+    assert block.kick_approval_message_id == ALERT_MESSAGE_ID
+
+
+async def test_approval_alert_follows_the_sheet_until_nobody_is_left(service, db_session, club, bot) -> None:
+    block = await make_block(db_session, club, title="6", kicks_approved_at=None)
+    await make_membership(db_session, block, vk_id=1)
+    await _joined(db_session, club, 3)
+    await _joined(db_session, club, 4)
+    _in_chat(bot)
+    await service.reconcile_club(club.id)
+
+    await make_membership(db_session, block, vk_id=3)
+    await service.reconcile_club(club.id)
+    await make_membership(db_session, block, vk_id=4)
+    await service.reconcile_club(club.id)
+
+    edits = _edits(bot)
+    assert len(edits) == 2
+    assert "Из чата выйдут 1 человек" in edits[0]
+    assert edits[1] == texts.alerts.chat_kicks_nobody("Химия", "6")
+    assert block.kick_approval_message_id is None
+
+
+async def test_approved_block_kicks_and_keeps_kicking(service, db_session, club, bot) -> None:
+    block = await make_block(db_session, club, title="6", kicks_approved_at=None)
+    await make_membership(db_session, block, vk_id=1)
+    access, _ = await _joined(db_session, club, 3)
+    _in_chat(bot)
+    await service.reconcile_club(club.id)
+
+    await service.approve_kicks(block.id, _owner())
+
+    assert access.status is ChatAccessStatus.KICKED
+    assert block.kicks_approved_at == DEFAULT_NOW
+    assert _edits(bot) == [texts.alerts.chat_kicks_approved("Химия", "6", "Владелец")]
+
+    later, _ = await _joined(db_session, club, 5)
+    await service.reconcile_club(club.id)
+    assert later.status is ChatAccessStatus.KICKED
+
+
+async def test_only_admins_who_run_the_sync_approve_kicks(service, db_session, club) -> None:
+    block = await make_block(db_session, club, kicks_approved_at=None)
+    stranger = TelegramProfile(tg_id=1, tg_username=None, full_name="Кто-то")
+
+    with pytest.raises(PermissionDeniedError):
+        await service.approve_kicks(block.id, stranger)
+
+    assert block.kicks_approved_at is None
