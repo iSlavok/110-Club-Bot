@@ -19,6 +19,7 @@ class UserDTO(BaseModel):
     full_name: str
     vk_id: int | None
     vk_linked_at: datetime | None
+    bot_blocked_at: datetime | None
     created_at: datetime
     updated_at: datetime
 
@@ -31,6 +32,7 @@ class UserDTO(BaseModel):
             full_name=user.full_name,
             vk_id=user.vk_id,
             vk_linked_at=user.vk_linked_at,
+            bot_blocked_at=user.bot_blocked_at,
             created_at=user.created_at,
             updated_at=user.updated_at,
         )

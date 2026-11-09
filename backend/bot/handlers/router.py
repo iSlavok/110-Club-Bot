@@ -2,6 +2,7 @@ from aiogram import Router
 
 from bot.handlers import (
     admin_commands,
+    bot_blocking,
     chat_join_requests,
     chat_service_messages,
     removal_requests,
@@ -18,6 +19,7 @@ def create_router() -> Router:
     router.include_routers(
         start.router,
         admin_commands.router,
+        bot_blocking.router,
         vk_link.router,
         vk_lookup.router,
         student_status.router,
