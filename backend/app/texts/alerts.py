@@ -11,6 +11,8 @@ MAX_LISTED = 15
 
 CONFIRM_REMOVAL_BUTTON = "Подтвердить"
 REJECT_REMOVAL_BUTTON = "Отклонить"
+APPROVE_KICKS_BUTTON = "Убрать из чата"
+KICKS_APPROVED_ANSWER = "Убираю из чата."
 
 _FEW_LAST_DIGITS = (2, 3, 4)
 _TEENS = range(11, 15)
@@ -80,6 +82,31 @@ def chat_kicks_on_hold(club_title: str, block_title: str | None, waiting: int) -
     return (
         f"⚠️ <b>Клуб {escape(club_title)}</b>: кик из чата ждёт таблицу: {reason}.\n"
         f"Впущенные ботом остаются в чате ({_people(waiting)}). Напишу, когда кик снова заработает."
+    )
+
+
+def chat_kicks_need_approval(club_title: str, block_title: str, students: list[ChatStudent]) -> str:
+    block = escape(block_title)
+    lines = [
+        f"⚠️ <b>Клуб {escape(club_title)}</b>: доступ в чат теперь по блоку {block}.",
+        f"Из чата выйдут {_people(len(students))} — их нет в блоке {block}:",
+    ]
+    lines.extend(_candidate(student) for student in students[:MAX_LISTED])
+    lines.extend(_more(len(students)))
+    lines.append(
+        "Проверь, что столбец блока в таблице заполнен целиком, и нажми кнопку. До этого бот никого не убирает."
+    )
+    return "\n".join(lines)
+
+
+def chat_kicks_nobody(club_title: str, block_title: str) -> str:
+    return f"<b>Клуб {escape(club_title)}</b>: убирать из чата некого — все есть в блоке {escape(block_title)}."
+
+
+def chat_kicks_approved(club_title: str, block_title: str, decided_by: str) -> str:
+    return (
+        f"✅ <b>Клуб {escape(club_title)}</b>: {escape(decided_by)} подтвердил кик по блоку {escape(block_title)}.\n"
+        "Дальше бот сам убирает из чата тех, кого нет в блоке."
     )
 
 
