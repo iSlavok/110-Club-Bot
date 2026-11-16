@@ -5,7 +5,7 @@ from app.enums import ReminderStatus
 from app.services import ReminderButtonsService, ReminderDispatchService
 from tests.factories import make_club, make_lesson, make_reminder
 from tests.providers import DEFAULT_NOW
-from worker.jobs import dispatch_reminders, trim_reminder_buttons
+from worker.jobs import dispatch_reminders, sync_reminder_buttons
 
 
 async def test_one_crashing_reminder_does_not_stop_the_others(container, request_container, db_session, bot) -> None:
@@ -32,10 +32,10 @@ async def test_one_crashing_edit_does_not_stop_the_others(container, request_con
     )
     first = await make_reminder(db_session, lesson, status=ReminderStatus.SENT, message_id=7)
     second = await make_reminder(db_session, lesson, status=ReminderStatus.SENT, message_id=8)
+    # Newest first: the second one crashes.
     bot.edit_message_reply_markup.side_effect = [RuntimeError("boom"), True]
     service = await request_container.get(ReminderButtonsService)
 
-    await trim_reminder_buttons(container=container, reminder_buttons_service=service)
+    await sync_reminder_buttons(container=container, reminder_buttons_service=service)
 
-    assert first.call_button_removed_at is None
-    assert second.call_button_removed_at == DEFAULT_NOW
+    assert (first.buttons_checked_at, second.buttons_checked_at) == (DEFAULT_NOW, None)
