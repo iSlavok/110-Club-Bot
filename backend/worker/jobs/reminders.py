@@ -1,7 +1,7 @@
 from dishka import AsyncContainer, FromDishka
 from loguru import logger
 
-from app.services import ReminderDispatchService
+from app.services import ReminderButtonsService, ReminderDispatchService
 
 
 # container is the app container, passed by the scheduler: every reminder is sent in its own scope (transaction),
@@ -32,3 +32,18 @@ async def _record_failure(container: AsyncContainer, reminder_id: int, error: st
             await service.record_failure(reminder_id, error)
     except Exception:  # noqa: BLE001 - the loop over reminders must go on
         logger.exception("Cannot record the failure of reminder {}", reminder_id)
+
+
+# Each reminder in its own scope, as above: one message that fails to edit does not hold up the rest.
+async def trim_reminder_buttons(
+    container: AsyncContainer,
+    reminder_buttons_service: FromDishka[ReminderButtonsService],
+) -> None:
+    reminder_ids = await reminder_buttons_service.list_outdated_ids()
+    for reminder_id in reminder_ids:
+        try:
+            async with container() as scope:
+                service = await scope.get(ReminderButtonsService)
+                await service.trim(reminder_id)
+        except Exception:  # noqa: BLE001 - the loop over reminders must go on
+            logger.exception("Buttons of reminder {} crashed while editing", reminder_id)

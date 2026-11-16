@@ -54,6 +54,17 @@ async def test_chat_access_is_reconciled_every_five_minutes_with_app_container(c
     assert job.kwargs == {"container": container}
 
 
+async def test_reminder_buttons_are_trimmed_every_minute_with_app_container(container) -> None:
+    scheduler = create_scheduler(container, SyncSettings())
+
+    job = scheduler.get_job("trim_reminder_buttons")
+
+    assert job is not None
+    assert isinstance(job.trigger, IntervalTrigger)
+    assert job.trigger.interval == timedelta(minutes=1)
+    assert job.kwargs == {"container": container}
+
+
 async def test_status_sheets_are_published_every_ten_minutes_with_app_container(container) -> None:
     scheduler = create_scheduler(container, SyncSettings())
 

@@ -35,6 +35,8 @@ class Reminder(Base):
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     message_id: Mapped[int | None] = mapped_column(BigInteger)
     error: Mapped[str | None] = mapped_column(Text)
+    call_button_removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    buttons_removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     club: Mapped["Club"] = relationship(lazy="raise")
     lesson: Mapped["Lesson | None"] = relationship(lazy="raise")

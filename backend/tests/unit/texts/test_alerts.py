@@ -159,6 +159,8 @@ def test_reminder_failed_alert() -> None:
         sent_at=None,
         message_id=None,
         error="Bad Request: chat not found",
+        call_button_removed_at=None,
+        buttons_removed_at=None,
         created_at=NOW,
         updated_at=NOW,
         lesson=lesson,
