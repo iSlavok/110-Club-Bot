@@ -23,6 +23,8 @@ class ReminderDTO(BaseModel):
     sent_at: datetime | None
     message_id: int | None
     error: str | None
+    call_button_removed_at: datetime | None
+    buttons_removed_at: datetime | None
     created_at: datetime
     updated_at: datetime
 
@@ -40,6 +42,8 @@ class ReminderDTO(BaseModel):
             sent_at=reminder.sent_at,
             message_id=reminder.message_id,
             error=reminder.error,
+            call_button_removed_at=reminder.call_button_removed_at,
+            buttons_removed_at=reminder.buttons_removed_at,
             created_at=reminder.created_at,
             updated_at=reminder.updated_at,
         )

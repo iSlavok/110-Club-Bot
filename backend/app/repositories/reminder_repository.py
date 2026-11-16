@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload
 
 from app.database import BaseRepository, PageResult
 from app.enums import ReminderKind, ReminderStatus, ReminderView
-from app.models import Reminder
+from app.models import Lesson, Reminder
 
 
 class ReminderRepository(BaseRepository[Reminder]):
@@ -23,6 +23,28 @@ class ReminderRepository(BaseRepository[Reminder]):
                 Reminder.send_at <= now,
             )
             .order_by(Reminder.send_at, Reminder.id)
+            .limit(limit)
+        )
+        reminder_ids = await self._session.scalars(statement)
+        return list(reminder_ids)
+
+    # Sent reminders whose buttons are out of date: the lesson was cancelled, or its call is over.
+    async def list_outdated_button_ids(self, *, call_started_before: datetime, limit: int) -> list[int]:
+        call_is_over = and_(
+            Reminder.call_button_removed_at.is_(None),
+            Lesson.call_url.is_not(None),
+            Lesson.starts_at <= call_started_before,
+        )
+        statement = (
+            select(Reminder.id)
+            .join(Reminder.lesson)
+            .where(
+                Reminder.status == ReminderStatus.SENT,
+                Reminder.message_id.is_not(None),
+                Reminder.buttons_removed_at.is_(None),
+                or_(Lesson.is_cancelled, call_is_over),
+            )
+            .order_by(Reminder.id)
             .limit(limit)
         )
         reminder_ids = await self._session.scalars(statement)

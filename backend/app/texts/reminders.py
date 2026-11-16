@@ -87,9 +87,9 @@ def buttons(reminder: ReminderWithLessonDTO) -> list[ReminderButton]:
 
 
 # The homework reminders open the lesson, not the homework: opening a mock exam starts its timer.
-def lesson_buttons(kind: ReminderKind, lesson: ReminderLesson) -> list[ReminderButton]:
+def lesson_buttons(kind: ReminderKind, lesson: ReminderLesson, *, with_call: bool = True) -> list[ReminderButton]:
     result: list[ReminderButton] = []
-    if kind in _CALL_BUTTON_KINDS and lesson.call_url is not None:
+    if with_call and kind in _CALL_BUTTON_KINDS and lesson.call_url is not None:
         result.append(ReminderButton(text=CALL_BUTTON, url=lesson.call_url))
     if kind in _LESSON_BUTTON_KINDS and lesson.platform_lesson_id is not None:
         result.append(ReminderButton(text=OPEN_LESSON_BUTTON, url=platform_lesson_url(lesson.platform_lesson_id)))

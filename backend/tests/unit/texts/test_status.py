@@ -197,6 +197,8 @@ def _reminder(kind: ReminderKind, send_at: datetime, title: str) -> ReminderWith
         sent_at=None,
         message_id=None,
         error=None,
+        call_button_removed_at=None,
+        buttons_removed_at=None,
         created_at=NOW,
         updated_at=NOW,
         lesson=lesson,
