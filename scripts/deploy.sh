@@ -16,6 +16,10 @@ if [[ -f .env.deploy ]]; then
   source .env.deploy
 fi
 : "${DEPLOY_SSH:?set DEPLOY_SSH in .env.deploy}" "${DEPLOY_PATH:?set DEPLOY_PATH in .env.deploy}"
+# The backend image carries the private platform client: a production build without it would run with the integration off.
+PLATFORM_CLIENT_TOKEN="${PLATFORM_CLIENT_TOKEN:-$(gh auth token 2>/dev/null || true)}"
+: "${PLATFORM_CLIENT_TOKEN:?set PLATFORM_CLIENT_TOKEN in .env.deploy or log in with gh auth login}"
+export PLATFORM_CLIENT_TOKEN
 REVISION="$(git rev-parse -q --verify "refs/tags/$TAG^{commit}")" || { echo "No tag $TAG: git fetch --tags" >&2; exit 1; }
 
 ARCH="$(ssh "$DEPLOY_SSH" uname -m)"
@@ -41,6 +45,8 @@ for image in backend web; do
     --load \
     --label "org.opencontainers.image.version=$VERSION" \
     --label "org.opencontainers.image.revision=$REVISION" \
+    --build-arg PLATFORM_CLIENT=on \
+    --secret id=platform_client_token,env=PLATFORM_CLIENT_TOKEN \
     --file "$WORKTREE/docker/$image.Dockerfile" \
     --tag "$name" \
     "$WORKTREE"

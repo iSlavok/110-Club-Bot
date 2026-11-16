@@ -51,6 +51,8 @@ jobs:
             type=semver,pattern={{version}}
             type=raw,value=latest,enable=${{ !github.event.release.prerelease }}
           flavor: latest=false
+      # GHCR images are public, so the private platform client stays out of them (PLATFORM_CLIENT defaults
+      # to off): a server running this image has the platform integration off. make deploy builds it in.
       - uses: docker/build-push-action@v7
         with:
           context: .
