@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
 import type { LessonResponse, Permission } from '@/shared/api';
-import { makeAdmin, makeLesson, meHandler, pageOf } from '@/test/fixtures';
+import { makeAdmin, makeClub, makeLesson, meHandler, pageOf } from '@/test/fixtures';
 import { renderRoutes } from '@/test/render';
 import { server } from '@/test/server';
 
@@ -15,6 +15,7 @@ function renderCard(lesson: LessonResponse, ...permissions: Permission[]) {
   server.use(
     meHandler(makeAdmin('lessons.view', ...permissions)),
     http.get(`/api/v1/lessons/${lesson.id}`, () => HttpResponse.json(lesson)),
+    http.get('/api/v1/clubs/1', () => HttpResponse.json(makeClub(1, { platform_course_id: 4321 }))),
     http.get('/api/v1/clubs/1/reminders', ({ request }) => {
       reminderRequests.push(new URL(request.url).searchParams);
       return pageOf([], request);
@@ -49,6 +50,15 @@ describe('ClubLessonPage', () => {
       expect(requests.at(-1)?.get('lesson_id')).toBe('5');
     });
     expect(screen.queryByRole('button', { name: 'Отменить урок' })).not.toBeInTheDocument();
+  });
+
+  it('links the platform lesson in the platform admin', async () => {
+    renderCard(makeLesson(6, { title: 'Кислоты', platform_lesson_id: 50002 }));
+
+    expect(await screen.findByRole('link', { name: 'Открыть ↗' })).toHaveAttribute(
+      'href',
+      'https://lk.100points.ru/teacher/course/4321/lesson/50002',
+    );
   });
 
   it('has no call link field for a lesson', async () => {
@@ -90,6 +100,7 @@ describe('ClubLessonPage', () => {
   it('sends a homework reminder now after showing its text', async () => {
     const lesson = makeLesson(7, {
       title: 'Кислоты',
+      platform_lesson_id: 50002,
       homework_deadline_at: '2099-10-06T20:59:00Z',
     });
     const previews: unknown[] = [];
@@ -112,7 +123,11 @@ describe('ClubLessonPage', () => {
     expect(await screen.findByText('ДЗ к уроку «Кислоты»')).toBeInTheDocument();
     expect(previews.at(-1)).toMatchObject({
       kind: 'homework_deadline',
-      lesson: { title: 'Кислоты', homework_deadline_at: '2099-10-06T20:59:00Z' },
+      lesson: {
+        title: 'Кислоты',
+        platform_lesson_id: 50002,
+        homework_deadline_at: '2099-10-06T20:59:00Z',
+      },
     });
     await userEvent.click(screen.getByRole('button', { name: 'Отправить' }));
 

@@ -9,6 +9,7 @@ import type { LessonDescription } from './lessonDescription';
 import type { LessonKind } from './lessonKind';
 import type { LessonTitle } from './lessonTitle';
 import type { Moment } from './moment';
+import type { PositiveInt32 } from './positiveInt32';
 
 export interface LessonDraft {
   /** Teacher's lesson or a call with the curator */
@@ -21,6 +22,8 @@ export interface LessonDraft {
   starts_at: Moment;
   /** Link to the video call, http(s) */
   call_url?: CallUrl | null;
+  /** Lesson id on 100points; reminders get a button that opens it */
+  platform_lesson_id?: PositiveInt32 | null;
   /** Homework deadline; null: no homework */
   homework_deadline_at?: Moment | null;
 }

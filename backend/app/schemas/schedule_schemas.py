@@ -9,6 +9,7 @@ class ScheduleItem(BaseModel):
     moment: datetime
     lesson_kind: LessonKind
     lesson_title: str
+    platform_lesson_id: int | None
     is_homework_deadline: bool
 
 

@@ -139,6 +139,7 @@ def test_reminder_failed_alert() -> None:
         description=None,
         starts_at=NOW,
         call_url=None,
+        platform_lesson_id=None,
         is_cancelled=False,
         reminder_offsets=[],
         homework_deadline_at=NOW,

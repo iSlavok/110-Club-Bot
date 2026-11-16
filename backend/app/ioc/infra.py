@@ -7,7 +7,18 @@ from aiogram.enums import ParseMode
 from dishka import Provider, Scope, from_context, provide
 from redis.asyncio import Redis
 
-from app.clients import HttpxVkClient, LoginThrottle, RedisLoginThrottle, SheetsClient, VkClient, open_sheets_client
+from app.clients import (
+    HttpxVkClient,
+    LoginThrottle,
+    PlatformClient,
+    PlatformHealth,
+    RedisLoginThrottle,
+    RedisPlatformHealth,
+    SheetsClient,
+    VkClient,
+    open_platform_client,
+    open_sheets_client,
+)
 from app.config import (
     AlertsSettings,
     ApiSettings,
@@ -15,6 +26,7 @@ from app.config import (
     BotSettings,
     DatabaseSettings,
     GoogleSettings,
+    PlatformSettings,
     PublicSettings,
     RedisSettings,
     Settings,
@@ -69,6 +81,10 @@ class SettingsProvider(Provider):
         return settings.google
 
     @provide
+    def platform(self, settings: Settings) -> PlatformSettings:
+        return settings.platform
+
+    @provide
     def sync(self, settings: Settings) -> SyncSettings:
         return settings.sync
 
@@ -78,6 +94,7 @@ class InfraProvider(Provider):
 
     clock = provide(SystemClock, provides=Clock)
     login_throttle = provide(RedisLoginThrottle, provides=LoginThrottle)
+    platform_health = provide(RedisPlatformHealth, provides=PlatformHealth)
     admin_alerts = provide(AdminAlerts)
     command_menu = provide(CommandMenu)
 
@@ -111,4 +128,9 @@ class InfraProvider(Provider):
     @provide
     async def sheets_client(self, settings: GoogleSettings) -> AsyncIterator[SheetsClient]:
         async with open_sheets_client(settings) as client:
+            yield client
+
+    @provide
+    async def platform_client(self, settings: PlatformSettings) -> AsyncIterator[PlatformClient]:
+        async with open_platform_client(settings) as client:
             yield client

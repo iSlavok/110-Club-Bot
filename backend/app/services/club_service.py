@@ -27,6 +27,7 @@ class ClubService:
             spreadsheet_id=data.spreadsheet_id,
             sheet_name=data.sheet_name,
             status_sheet_name=data.status_sheet_name,
+            platform_course_id=data.platform_course_id,
             hide_service_messages=data.hide_service_messages,
         )
         self._club_repository.add(club)
@@ -51,6 +52,7 @@ class ClubService:
         club.spreadsheet_id = patch.spreadsheet_id.apply(club.spreadsheet_id)
         club.sheet_name = patch.sheet_name.apply(club.sheet_name)
         club.status_sheet_name = patch.status_sheet_name.apply(club.status_sheet_name)
+        club.platform_course_id = patch.platform_course_id.apply(club.platform_course_id)
         club.is_active = patch.is_active.apply(club.is_active)
         club.hide_service_messages = patch.hide_service_messages.apply(club.hide_service_messages)
         await self._club_repository.flush()

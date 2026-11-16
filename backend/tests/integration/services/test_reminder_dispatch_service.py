@@ -60,12 +60,28 @@ async def test_sends_to_the_reminders_topic(service, db_session, sent_message) -
     assert (kwargs["chat_id"], kwargs["message_thread_id"]) == (CHAT_ID, TOPIC_ID)
     assert kwargs["text"].startswith("<b>Урок «Кислоты»</b>\nЧерез час")
     assert kwargs["link_preview_options"].is_disabled
+    assert kwargs["reply_markup"] is None
     assert (reminder.status, reminder.sent_at, reminder.message_id, reminder.attempts) == (
         ReminderStatus.SENT,
         DEFAULT_NOW,
         321,
         1,
     )
+
+
+async def test_links_go_out_as_buttons_under_the_reminder(service, db_session, sent_message) -> None:
+    reminder = await _due_reminder(
+        db_session,
+        lesson_overrides={"call_url": "https://meet.example.com/abc", "platform_lesson_id": 50002},
+    )
+
+    await service.dispatch(reminder.id)
+
+    [row] = sent_message.call_args.kwargs["reply_markup"].inline_keyboard
+    assert [(button.text, button.url) for button in row] == [
+        ("Подключиться", "https://meet.example.com/abc"),
+        ("Открыть урок", "https://lk.100points.ru/student/lesson/50002"),
+    ]
 
 
 async def test_reminder_not_yet_due_is_left_alone(service, db_session, bot) -> None:

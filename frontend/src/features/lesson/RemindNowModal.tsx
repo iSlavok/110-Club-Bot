@@ -58,6 +58,7 @@ export function RemindNowModal({ lesson, onClose }: RemindNowModalProps) {
               description: lesson.description,
               starts_at: lesson.starts_at,
               call_url: lesson.call_url,
+              platform_lesson_id: lesson.platform_lesson_id,
               homework_deadline_at: lesson.homework_deadline_at,
             },
             kind,

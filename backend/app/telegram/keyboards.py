@@ -2,7 +2,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from app import texts
 from app.enums import RemovalDecision
-from app.schemas import ClubAccess
+from app.schemas import ClubAccess, ReminderButton
 from app.telegram.callbacks import KickApprovalCallback, RemovalRequestCallback
 
 
@@ -32,3 +32,11 @@ def chat_invite_keyboard(access: list[ClubAccess]) -> InlineKeyboardMarkup | Non
         if item.invite_link is not None
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons) if buttons else None
+
+
+def reminder_keyboard(buttons: list[ReminderButton]) -> InlineKeyboardMarkup | None:
+    if not buttons:
+        return None
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text=button.text, url=button.url) for button in buttons]],
+    )

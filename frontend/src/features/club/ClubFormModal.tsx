@@ -1,6 +1,7 @@
 import { Button, Group, Modal, NumberInput, Stack, Switch, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 
+import { parseCourseId } from '@/entities/platform';
 import { useCreateClub, useUpdateClub, type ClubCreate, type ClubResponse } from '@/shared/api';
 import { fieldErrors } from '@/shared/lib/errors';
 import { notifyError, notifySuccess } from '@/shared/lib/notify';
@@ -12,6 +13,7 @@ interface ClubFormValues {
   spreadsheet_id: string;
   sheet_name: string;
   status_sheet_name: string;
+  platform_course: string;
   is_active: boolean;
   hide_service_messages: boolean;
 }
@@ -30,6 +32,7 @@ function toValues(club?: ClubResponse): ClubFormValues {
     spreadsheet_id: club?.spreadsheet_id ?? '',
     sheet_name: club?.sheet_name ?? '',
     status_sheet_name: club?.status_sheet_name ?? '',
+    platform_course: club?.platform_course_id == null ? '' : String(club.platform_course_id),
     is_active: club?.is_active ?? true,
     hide_service_messages: club?.hide_service_messages ?? false,
   };
@@ -44,6 +47,7 @@ function toBody(values: ClubFormValues): ClubCreate {
     spreadsheet_id: values.spreadsheet_id.trim() || null,
     sheet_name: values.sheet_name.trim() || null,
     status_sheet_name: values.status_sheet_name.trim() || null,
+    platform_course_id: parseCourseId(values.platform_course),
     hide_service_messages: values.hide_service_messages,
   };
 }
@@ -51,7 +55,13 @@ function toBody(values: ClubFormValues): ClubCreate {
 export function ClubFormModal({ opened, onClose, club }: ClubFormModalProps) {
   const form = useForm<ClubFormValues>({
     initialValues: toValues(club),
-    validate: { title: (value) => (value.trim() ? null : 'Укажите название') },
+    validate: {
+      title: (value) => (value.trim() ? null : 'Укажите название'),
+      platform_course: (value) =>
+        !value.trim() || parseCourseId(value) !== null
+          ? null
+          : 'Вставьте ссылку на курс из админки платформы или его номер',
+    },
   });
   const handlers = {
     onSuccess: () => {
@@ -101,6 +111,12 @@ export function ClubFormModal({ opened, onClose, club }: ClubFormModalProps) {
             label="Лист статуса учеников"
             description="Бот раз в 10 минут переписывает его: VK без бота, с ботом не в чате, в чате. Пусто — выключено. Сервисному аккаунту нужны права редактора."
             {...form.getInputProps('status_sheet_name')}
+          />
+          <TextInput
+            label="Курс на платформе"
+            description="Ссылка на курс из админки 100points или его номер. Уроки клуба привязываются к урокам этого курса."
+            placeholder="https://lk.100points.ru/teacher/courses/…"
+            {...form.getInputProps('platform_course')}
           />
           <Switch
             label="Скрывать сообщения о входе и выходе"

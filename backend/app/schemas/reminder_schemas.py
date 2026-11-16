@@ -56,6 +56,16 @@ class ReminderWithLessonDTO(ReminderDTO):
         return cls(**dto.model_dump(), lesson=lesson)
 
 
+class ReminderButton(BaseModel):
+    text: str
+    url: str
+
+
+class ReminderMessage(BaseModel):
+    html: str
+    buttons: list[ReminderButton]
+
+
 def _lesson_kind(kind: ReminderKind) -> ReminderKind:
     if kind is ReminderKind.MESSAGE:
         raise ValueError("a message has no lesson to render it from")

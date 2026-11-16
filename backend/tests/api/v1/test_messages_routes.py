@@ -131,7 +131,7 @@ async def test_messages_are_listed_with_reminders(api_client, login_as, db_sessi
     assert [(item["kind"], item["lesson"], item["text"]) for item in listed.json()["items"]] == [
         ("message", None, "<i>Привет</i>"),
     ]
-    assert preview.json() == {"html": "<i>Привет</i>"}
+    assert preview.json() == {"html": "<i>Привет</i>", "buttons": []}
 
 
 async def test_pending_message_can_be_changed(api_client, login_as, db_session, sender, club) -> None:

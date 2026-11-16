@@ -4,10 +4,14 @@ import pytest
 
 from app import texts
 from app.enums import LessonKind, ReminderKind, ReminderStatus
-from app.schemas import LessonDraft, LessonDTO, ReminderWithLessonDTO
+from app.schemas import LessonDraft, LessonDTO, ReminderButton, ReminderWithLessonDTO
 
 # 12:00 in Moscow, Thursday.
 NOW = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
+CALL_URL = "https://meet.example.com/abc"
+PLATFORM_LESSON_ID = 50002
+CALL_BUTTON = ReminderButton(text="Подключиться", url=CALL_URL)
+LESSON_BUTTON = ReminderButton(text="Открыть урок", url="https://lk.100points.ru/student/lesson/50002")
 
 
 def _lesson(**overrides) -> LessonDTO:
@@ -19,6 +23,7 @@ def _lesson(**overrides) -> LessonDTO:
         "description": None,
         "starts_at": datetime(2026, 10, 2, 16, 0, tzinfo=UTC),
         "call_url": None,
+        "platform_lesson_id": None,
         "is_cancelled": False,
         "reminder_offsets": [],
         "homework_deadline_at": None,
@@ -30,7 +35,11 @@ def _lesson(**overrides) -> LessonDTO:
 
 
 def _render(reminder_kind: ReminderKind, /, *, sent_at: datetime = NOW, **lesson) -> str:
-    reminder = ReminderWithLessonDTO(
+    return texts.reminders.render(_reminder(reminder_kind, **lesson), sent_at)
+
+
+def _reminder(reminder_kind: ReminderKind, /, **lesson) -> ReminderWithLessonDTO:
+    return ReminderWithLessonDTO(
         id=1,
         club_id=1,
         lesson_id=1,
@@ -46,22 +55,12 @@ def _render(reminder_kind: ReminderKind, /, *, sent_at: datetime = NOW, **lesson
         updated_at=NOW,
         lesson=_lesson(**lesson),
     )
-    return texts.reminders.render(reminder, sent_at)
 
 
-def test_upcoming_lesson_tomorrow_with_link_and_description() -> None:
-    text = _render(
-        ReminderKind.LESSON_UPCOMING,
-        call_url="https://meet.example.com/abc?x=1&y=2",
-        description="Повторить <оксиды>",
-    )
+def test_upcoming_lesson_tomorrow_with_description() -> None:
+    text = _render(ReminderKind.LESSON_UPCOMING, call_url=CALL_URL, description="Повторить <оксиды>")
 
-    assert text == (
-        "<b>Урок «Кислоты»</b>\n"
-        "Завтра в 19:00\n"
-        'Подключиться: <a href="https://meet.example.com/abc?x=1&amp;y=2">ссылка на созвон</a>\n'
-        "\nПовторить &lt;оксиды&gt;"
-    )
+    assert text == "<b>Урок «Кислоты»</b>\nЗавтра в 19:00\n\nПовторить &lt;оксиды&gt;"
 
 
 @pytest.mark.parametrize(
@@ -101,13 +100,10 @@ def test_curator_call_starting() -> None:
         ReminderKind.LESSON_STARTING,
         kind=LessonKind.CURATOR_CALL,
         title="Разбор <ДЗ>",
-        call_url="https://meet.example.com/abc",
+        call_url=CALL_URL,
     )
 
-    assert text == (
-        "<b>Созвон с куратором «Разбор &lt;ДЗ&gt;» начинается</b>\n"
-        'Подключиться: <a href="https://meet.example.com/abc">ссылка на созвон</a>'
-    )
+    assert text == "<b>Созвон с куратором «Разбор &lt;ДЗ&gt;» начинается</b>"
 
 
 def test_homework_deadline() -> None:
@@ -142,6 +138,44 @@ def test_homework_removed() -> None:
     assert _render(ReminderKind.HOMEWORK_REMOVED) == "<b>ДЗ к уроку «Кислоты» отменено</b>\nСдавать его не нужно."
 
 
+@pytest.mark.parametrize(
+    "kind",
+    [ReminderKind.LESSON_UPCOMING, ReminderKind.LESSON_STARTING, ReminderKind.LESSON_RESCHEDULED],
+)
+def test_lesson_reminders_get_the_call_and_the_platform_lesson_buttons(kind) -> None:
+    reminder = _reminder(kind, call_url=CALL_URL, platform_lesson_id=PLATFORM_LESSON_ID)
+
+    assert texts.reminders.buttons(reminder) == [CALL_BUTTON, LESSON_BUTTON]
+
+
+@pytest.mark.parametrize(
+    ("call_url", "platform_lesson_id", "expected"),
+    [
+        (CALL_URL, None, [CALL_BUTTON]),
+        (None, PLATFORM_LESSON_ID, [LESSON_BUTTON]),
+        (None, None, []),
+    ],
+)
+def test_each_button_needs_only_its_own_link(call_url, platform_lesson_id, expected) -> None:
+    reminder = _reminder(ReminderKind.LESSON_UPCOMING, call_url=call_url, platform_lesson_id=platform_lesson_id)
+
+    assert texts.reminders.buttons(reminder) == expected
+
+
+@pytest.mark.parametrize("kind", [ReminderKind.HOMEWORK_DEADLINE, ReminderKind.HOMEWORK_DEADLINE_CHANGED])
+def test_homework_reminders_open_the_lesson_without_the_call(kind) -> None:
+    reminder = _reminder(kind, call_url=CALL_URL, platform_lesson_id=PLATFORM_LESSON_ID, homework_deadline_at=NOW)
+
+    assert texts.reminders.buttons(reminder) == [LESSON_BUTTON]
+
+
+@pytest.mark.parametrize("kind", [ReminderKind.LESSON_CANCELLED, ReminderKind.HOMEWORK_REMOVED])
+def test_cancellations_have_no_buttons(kind) -> None:
+    reminder = _reminder(kind, call_url=CALL_URL, platform_lesson_id=PLATFORM_LESSON_ID)
+
+    assert texts.reminders.buttons(reminder) == []
+
+
 def test_deadline_reminder_without_homework_is_a_bug() -> None:
     with pytest.raises(ValueError, match="no homework"):
         _render(ReminderKind.HOMEWORK_DEADLINE)
@@ -153,6 +187,18 @@ def test_renders_a_draft_lesson() -> None:
     text = texts.reminders.render_message(ReminderKind.LESSON_UPCOMING, draft, NOW)
 
     assert text == "<b>Урок «Кислоты»</b>\nЧерез 30 минут, в 12:30"
+
+
+def test_draft_lesson_gets_buttons_before_it_is_saved() -> None:
+    draft = LessonDraft(
+        kind=LessonKind.LESSON,
+        title="Кислоты",
+        starts_at=NOW,
+        call_url=CALL_URL,
+        platform_lesson_id=PLATFORM_LESSON_ID,
+    )
+
+    assert texts.reminders.lesson_buttons(ReminderKind.LESSON_STARTING, draft) == [CALL_BUTTON, LESSON_BUTTON]
 
 
 def _message(text: str) -> ReminderWithLessonDTO:
@@ -178,6 +224,10 @@ def test_message_goes_out_as_written() -> None:
     text = '<b>Привет!!</b>\nЗапись уже на платформе: <a href="https://lk.example/1">урок</a>'
 
     assert texts.reminders.render(_message(text), NOW + timedelta(hours=3)) == text
+
+
+def test_message_has_no_buttons() -> None:
+    assert texts.reminders.buttons(_message("Привет")) == []
 
 
 def test_subject_of_a_message_is_its_start_as_plain_text() -> None:

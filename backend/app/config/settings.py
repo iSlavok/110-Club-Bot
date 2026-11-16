@@ -95,6 +95,15 @@ class GoogleSettings(BaseModel):
         return None if value == "" else value
 
 
+class PlatformSettings(BaseModel):
+    token: SecretStr | None = None
+
+    @field_validator("token", mode="before")
+    @classmethod
+    def _empty_is_none(cls, value: object) -> object:
+        return None if value == "" else value
+
+
 class SyncSettings(BaseModel):
     interval_minutes: int = Field(default=10, ge=1)
 
@@ -116,5 +125,6 @@ class Settings(BaseSettings):
     alerts: AlertsSettings = AlertsSettings()
     vk: VkSettings = VkSettings()
     google: GoogleSettings = GoogleSettings()
+    platform: PlatformSettings = PlatformSettings()
     sync: SyncSettings = SyncSettings()
     log: LogSettings = LogSettings()

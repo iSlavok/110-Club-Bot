@@ -22,3 +22,20 @@ class SheetsClientError(ClientError):
 class SheetsNotConfiguredError(SheetsClientError):
     def __init__(self) -> None:
         super().__init__("Google credentials are not configured")
+
+
+class PlatformClientError(ClientError):
+    pass
+
+
+class PlatformNotConfiguredError(PlatformClientError):
+    def __init__(self) -> None:
+        super().__init__("PLATFORM_TOKEN is not set")
+
+
+class PlatformAuthError(PlatformClientError):
+    pass
+
+
+class PlatformNotFoundError(PlatformClientError):
+    pass

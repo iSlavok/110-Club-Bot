@@ -1,7 +1,7 @@
 from aiogram import F, Router
 from aiogram.enums import ChatType
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import LinkPreviewOptions, Message
 from dishka.integrations.aiogram import FromDishka
 
 from app import texts
@@ -16,4 +16,4 @@ async def schedule(message: Message, schedule_service: FromDishka[ScheduleServic
     if message.from_user is None:
         return
     schedules = await schedule_service.build(message.from_user.id)
-    await message.answer(texts.schedule.schedule(schedules))
+    await message.answer(texts.schedule.schedule(schedules), link_preview_options=LinkPreviewOptions(is_disabled=True))

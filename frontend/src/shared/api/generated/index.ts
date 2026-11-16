@@ -3,6 +3,7 @@ export * from './auth/auth';
 export * from './clubs/clubs';
 export * from './lessons/lessons';
 export * from './messages/messages';
+export * from './platform/platform';
 export * from './reminders/reminders';
 export * from './roles/roles';
 export * from './settings/settings';

@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import 'dayjs/locale/ru';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
 
@@ -12,6 +13,15 @@ const PICKER_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
 export function formatDateTime(iso: string): string {
   return dayjs(iso).tz(BUSINESS_TZ).format('DD.MM.YYYY HH:mm');
+}
+
+export function formatTime(iso: string): string {
+  return dayjs(iso).tz(BUSINESS_TZ).format('HH:mm');
+}
+
+/** Short day for lists: «пт 30.10 16:00». */
+export function formatShortDateTime(iso: string): string {
+  return dayjs(iso).tz(BUSINESS_TZ).locale('ru').format('dd DD.MM HH:mm');
 }
 
 export function formatDate(iso: string): string {

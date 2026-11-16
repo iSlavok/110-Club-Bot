@@ -4,11 +4,12 @@ import { useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { LESSON_KIND_LABELS } from '@/entities/lesson';
+import { teacherLessonUrl } from '@/entities/platform';
 import { formatOffset } from '@/entities/reminder';
 import { Can } from '@/entities/session';
 import { LessonFormModal, RemindNowModal, useCancelLessonConfirm } from '@/features/lesson';
 import { ReminderFeed } from '@/features/reminder';
-import { useGetLesson, type LessonResponse } from '@/shared/api';
+import { useGetClub, useGetLesson, type LessonResponse } from '@/shared/api';
 import { routes } from '@/shared/config/routes';
 import { useClubId } from '@/shared/lib/club-id';
 import { formatDateTime } from '@/shared/lib/dates';
@@ -23,6 +24,22 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       </Text>
       {children}
     </div>
+  );
+}
+
+function PlatformLessonLink({ clubId, lessonId }: { clubId: number; lessonId: number | null }) {
+  const club = useGetClub(clubId);
+  if (lessonId === null) {
+    return <Text c="dimmed">не привязан</Text>;
+  }
+  const courseId = club.data?.platform_course_id ?? null;
+  if (courseId === null) {
+    return <Text>#{lessonId}</Text>;
+  }
+  return (
+    <Anchor href={teacherLessonUrl(courseId, lessonId)} target="_blank" rel="noreferrer">
+      Открыть ↗
+    </Anchor>
   );
 }
 
@@ -116,6 +133,9 @@ function LessonCard({ clubId, lesson }: { clubId: number; lesson: LessonResponse
               )}
             </Field>
           )}
+          <Field label="Урок на платформе">
+            <PlatformLessonLink clubId={clubId} lessonId={lesson.platform_lesson_id} />
+          </Field>
           <Field label="Напоминания">{offsets(lesson.reminder_offsets)}</Field>
           <Field label="Дедлайн ДЗ">
             {lesson.homework_deadline_at ? (
