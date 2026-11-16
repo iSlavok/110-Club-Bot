@@ -13,6 +13,7 @@ from worker.jobs import (
     purge_expired_auth,
     purge_sheet_syncs,
     reconcile_chat_access,
+    sync_reminder_buttons,
     sync_sheets,
 )
 
@@ -43,6 +44,12 @@ def create_scheduler(container: AsyncContainer, sync_settings: SyncSettings) -> 
         CronTrigger(second=0, timezone=BUSINESS_TZ),
         kwargs={"container": container},
         id="dispatch_reminders",
+    )
+    scheduler.add_job(
+        sync_reminder_buttons,
+        IntervalTrigger(minutes=1),
+        kwargs={"container": container},
+        id="sync_reminder_buttons",
     )
     scheduler.add_job(
         reconcile_chat_access,

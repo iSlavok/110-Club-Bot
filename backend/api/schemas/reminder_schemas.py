@@ -4,7 +4,7 @@ from typing import Self
 from pydantic import BaseModel, Field
 
 from app.enums import LessonKind, ReminderKind, ReminderStatus, ReminderView
-from app.schemas import LessonDTO, PageParams, ReminderWithLessonDTO
+from app.schemas import LessonDTO, PageParams, ReminderButton, ReminderMessage, ReminderWithLessonDTO
 from app.types import PositiveBigInt
 
 
@@ -64,5 +64,19 @@ class ReminderResponse(BaseModel):
         )
 
 
+class ReminderButtonResponse(BaseModel):
+    text: str = Field(description="Button caption")
+    url: str = Field(description="Link the button opens")
+
+    @classmethod
+    def from_dto(cls, button: ReminderButton) -> Self:
+        return cls(text=button.text, url=button.url)
+
+
 class ReminderPreviewResponse(BaseModel):
     html: str = Field(description="Message text in Telegram HTML, admin-entered parts escaped")
+    buttons: list[ReminderButtonResponse] = Field(description="Link buttons under the message, in one row")
+
+    @classmethod
+    def from_dto(cls, message: ReminderMessage) -> Self:
+        return cls(html=message.html, buttons=[ReminderButtonResponse.from_dto(button) for button in message.buttons])

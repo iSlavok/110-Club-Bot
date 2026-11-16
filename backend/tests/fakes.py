@@ -6,6 +6,9 @@ from datetime import datetime
 from app.clients import (
     CellValue,
     LoginThrottleUnavailableError,
+    PlatformClientError,
+    PlatformNotConfiguredError,
+    PlatformNotFoundError,
     SheetsClientError,
     SheetsNotConfiguredError,
     VkClientError,
@@ -13,6 +16,7 @@ from app.clients import (
     WrittenCell,
 )
 from app.clients.login_throttle import MAX_FAILURES
+from app.schemas import PlatformCourse, PlatformLesson
 
 
 class FrozenClock:
@@ -153,3 +157,43 @@ class FakeSheetsClient:
         if (error := self.errors.get((spreadsheet_id, sheet_name))) is not None:
             raise error
         self.written[spreadsheet_id, sheet_name] = rows
+
+
+class FakePlatformClient:
+    def __init__(self) -> None:
+        self.is_enabled = True
+        self.courses: dict[int, PlatformCourse] = {}
+        self.lessons: dict[int, PlatformLesson] = {}
+        # Raised by every request while set: PlatformAuthError, PlatformClientError.
+        self.error: PlatformClientError | None = None
+
+    async def get_course(self, course_id: int) -> PlatformCourse:
+        self._ensure_available()
+        if (course := self.courses.get(course_id)) is None:
+            raise PlatformNotFoundError(f"No course {course_id}")
+        return course
+
+    async def get_lesson(self, lesson_id: int) -> PlatformLesson:
+        self._ensure_available()
+        if (lesson := self.lessons.get(lesson_id)) is None:
+            raise PlatformNotFoundError(f"No lesson {lesson_id}")
+        return lesson
+
+    def _ensure_available(self) -> None:
+        if not self.is_enabled:
+            raise PlatformNotConfiguredError
+        if self.error is not None:
+            raise self.error
+
+
+class FakePlatformHealth:
+    def __init__(self) -> None:
+        self.is_failing = False
+
+    async def mark_failing(self) -> bool:
+        was_failing, self.is_failing = self.is_failing, True
+        return not was_failing
+
+    async def mark_ok(self) -> bool:
+        was_failing, self.is_failing = self.is_failing, False
+        return was_failing

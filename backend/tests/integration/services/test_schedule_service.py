@@ -11,6 +11,7 @@ from tests.providers import DEFAULT_NOW
 
 TG_ID = 42
 VK_ID = 4242
+PLATFORM_LESSON_ID = 50002
 BLOCK_STARTS_AT = datetime(2026, 9, 1, tzinfo=UTC)
 BLOCK_ENDS_AT = datetime(2026, 10, 31, tzinfo=UTC)
 
@@ -55,6 +56,7 @@ async def test_schedule_runs_to_the_end_of_the_access_block(service, db_session)
         title="Кислоты",
         starts_at=DEFAULT_NOW.replace(day=1, hour=8),
         homework_deadline_at=deadline,
+        platform_lesson_id=PLATFORM_LESSON_ID,
     )
     await make_lesson(db_session, club, title="После блока", starts_at=BLOCK_ENDS_AT)
 
@@ -62,11 +64,18 @@ async def test_schedule_runs_to_the_end_of_the_access_block(service, db_session)
 
     assert (schedule.club_title, schedule.block_title) == ("Химия", "Блок 5")
     assert schedule.items == [
-        ScheduleItem(moment=deadline, lesson_kind=LessonKind.LESSON, lesson_title="Кислоты", is_homework_deadline=True),
+        ScheduleItem(
+            moment=deadline,
+            lesson_kind=LessonKind.LESSON,
+            lesson_title="Кислоты",
+            platform_lesson_id=PLATFORM_LESSON_ID,
+            is_homework_deadline=True,
+        ),
         ScheduleItem(
             moment=call_at,
             lesson_kind=LessonKind.CURATOR_CALL,
             lesson_title="Разбор",
+            platform_lesson_id=None,
             is_homework_deadline=False,
         ),
     ]

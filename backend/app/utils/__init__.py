@@ -1,4 +1,5 @@
 from app.utils.clock import BUSINESS_TZ, Clock, SystemClock
+from app.utils.platform_links import platform_lesson_url
 from app.utils.search import normalize_search_query
 from app.utils.security import (
     LOGIN_CODE_DIGITS,
@@ -33,4 +34,5 @@ __all__ = [
     "normalize_search_query",
     "parse_vk_reference",
     "pkce_code_challenge",
+    "platform_lesson_url",
 ]

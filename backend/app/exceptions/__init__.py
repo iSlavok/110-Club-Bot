@@ -53,6 +53,14 @@ from app.exceptions.lessons import (
     ReminderPreviewUnavailableError,
 )
 from app.exceptions.membership_removals import RemovalRequestDecidedError, RemovalRequestNotFoundError
+from app.exceptions.platform import (
+    ClubHasNoPlatformCourseError,
+    PlatformCourseNotFoundError,
+    PlatformLessonNotFoundError,
+    PlatformLinkingDisabledError,
+    PlatformTokenRejectedError,
+    PlatformUnavailableError,
+)
 from app.exceptions.settings import AppSettingsMissingError, VkLinkModeNotConfiguredError
 from app.exceptions.sheet_syncs import ClubNotSyncableError, SheetSyncDisabledError, StatusSheetWriteError
 from app.exceptions.vk import (
@@ -77,6 +85,7 @@ __all__ = [
     "BlockColumnTakenError",
     "BlockHasMembersError",
     "BlockNotFoundError",
+    "ClubHasNoPlatformCourseError",
     "ClubMessageNotFoundError",
     "ClubMessageNotPendingError",
     "ClubMessageSendTimePassedError",
@@ -104,6 +113,11 @@ __all__ = [
     "OwnerNotEditableError",
     "PermissionDeniedError",
     "PermissionEscalationError",
+    "PlatformCourseNotFoundError",
+    "PlatformLessonNotFoundError",
+    "PlatformLinkingDisabledError",
+    "PlatformTokenRejectedError",
+    "PlatformUnavailableError",
     "ReminderNotFoundError",
     "ReminderNotPendingError",
     "ReminderPreviewUnavailableError",

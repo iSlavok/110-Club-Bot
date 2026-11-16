@@ -4,9 +4,9 @@ from html import escape
 from typing import Protocol
 
 from app.enums import LessonKind, ReminderKind
-from app.schemas import ReminderWithLessonDTO
+from app.schemas import ReminderButton, ReminderWithLessonDTO
 from app.types import telegram_html_to_text
-from app.utils import BUSINESS_TZ
+from app.utils import BUSINESS_TZ, platform_lesson_url
 
 MONTHS = (
     "января",
@@ -33,6 +33,12 @@ KIND_LABELS = {
     ReminderKind.HOMEWORK_REMOVED: "отмена ДЗ",
     ReminderKind.MESSAGE: "сообщение",
 }
+CALL_BUTTON = "Подключиться"
+OPEN_LESSON_BUTTON = "Открыть урок"
+_CALL_BUTTON_KINDS = frozenset(
+    {ReminderKind.LESSON_UPCOMING, ReminderKind.LESSON_STARTING, ReminderKind.LESSON_RESCHEDULED},
+)
+_LESSON_BUTTON_KINDS = _CALL_BUTTON_KINDS | {ReminderKind.HOMEWORK_DEADLINE, ReminderKind.HOMEWORK_DEADLINE_CHANGED}
 _SUBJECTS = {LessonKind.LESSON: "Урок", LessonKind.CURATOR_CALL: "Созвон с куратором"}
 _HOMEWORK_TO = {LessonKind.LESSON: "к уроку", LessonKind.CURATOR_CALL: "к созвону"}
 # Closer than this, "через 45 минут" reads better than a clock time.
@@ -61,6 +67,8 @@ class ReminderLesson(Protocol):
     @property
     def call_url(self) -> str | None: ...
     @property
+    def platform_lesson_id(self) -> int | None: ...
+    @property
     def homework_deadline_at(self) -> datetime | None: ...
 
 
@@ -72,6 +80,20 @@ def render(reminder: ReminderWithLessonDTO, sent_at: datetime) -> str:
     send_at = reminder.send_at
     now = send_at if send_at <= sent_at <= send_at + _ON_TIME_LAG else sent_at
     return render_message(reminder.kind, reminder.lesson, now)
+
+
+def buttons(reminder: ReminderWithLessonDTO) -> list[ReminderButton]:
+    return [] if reminder.lesson is None else lesson_buttons(reminder.kind, reminder.lesson)
+
+
+# The homework reminders open the lesson, not the homework: opening a mock exam starts its timer.
+def lesson_buttons(kind: ReminderKind, lesson: ReminderLesson, *, with_call: bool = True) -> list[ReminderButton]:
+    result: list[ReminderButton] = []
+    if with_call and kind in _CALL_BUTTON_KINDS and lesson.call_url is not None:
+        result.append(ReminderButton(text=CALL_BUTTON, url=lesson.call_url))
+    if kind in _LESSON_BUTTON_KINDS and lesson.platform_lesson_id is not None:
+        result.append(ReminderButton(text=OPEN_LESSON_BUTTON, url=platform_lesson_url(lesson.platform_lesson_id)))
+    return result
 
 
 # What a reminder is about, for admin lists and alerts: the lesson or the start of the message.
@@ -93,13 +115,12 @@ def _lesson_upcoming(lesson: ReminderLesson, now: datetime) -> str:
     return _join(
         f"<b>{_name(lesson)}</b>",
         _capitalize(_when(lesson.starts_at, now)),
-        _call_link(lesson),
         _description(lesson),
     )
 
 
 def _lesson_starting(lesson: ReminderLesson, _now: datetime) -> str:
-    return _join(f"<b>{_name(lesson)} начинается</b>", _call_link(lesson), _description(lesson))
+    return _join(f"<b>{_name(lesson)} начинается</b>", _description(lesson))
 
 
 def _homework_deadline(lesson: ReminderLesson, now: datetime) -> str:
@@ -110,7 +131,6 @@ def _lesson_rescheduled(lesson: ReminderLesson, now: datetime) -> str:
     return _join(
         f"<b>{_name(lesson)} перенесён</b>",
         f"Новое время: {_when(lesson.starts_at, now)}",
-        _call_link(lesson),
     )
 
 
@@ -147,12 +167,6 @@ def _homework(lesson: ReminderLesson) -> str:
 
 def short_time(moment: datetime) -> str:
     return f"{moment.astimezone(BUSINESS_TZ):%d.%m %H:%M}"
-
-
-def _call_link(lesson: ReminderLesson) -> str | None:
-    if lesson.call_url is None:
-        return None
-    return f'Подключиться: <a href="{escape(lesson.call_url)}">ссылка на созвон</a>'
 
 
 def _description(lesson: ReminderLesson) -> str | None:

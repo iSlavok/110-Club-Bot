@@ -1,5 +1,5 @@
 from collections.abc import Collection
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from sqlalchemy import ColumnElement, UnaryExpression, and_, func, or_, select, update
@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload
 
 from app.database import BaseRepository, PageResult
 from app.enums import ReminderKind, ReminderStatus, ReminderView
-from app.models import Reminder
+from app.models import Lesson, Reminder
 
 
 class ReminderRepository(BaseRepository[Reminder]):
@@ -23,6 +23,33 @@ class ReminderRepository(BaseRepository[Reminder]):
                 Reminder.send_at <= now,
             )
             .order_by(Reminder.send_at, Reminder.id)
+            .limit(limit)
+        )
+        reminder_ids = await self._session.scalars(statement)
+        return list(reminder_ids)
+
+    # Sent lesson reminders whose buttons may be out of date: never checked, the lesson changed since the check,
+    # or the call ended after it. Newest first: the messages people still read are fixed first.
+    async def list_stale_button_ids(self, *, now: datetime, call_lifetime: timedelta, limit: int) -> list[int]:
+        call_ends_at = Lesson.starts_at + call_lifetime
+        call_ended_since_check = and_(
+            Lesson.call_url.is_not(None),
+            call_ends_at <= now,
+            Reminder.buttons_checked_at < call_ends_at,
+        )
+        statement = (
+            select(Reminder.id)
+            .join(Reminder.lesson)
+            .where(
+                Reminder.status == ReminderStatus.SENT,
+                Reminder.message_id.is_not(None),
+                or_(
+                    Reminder.buttons_checked_at.is_(None),
+                    Reminder.buttons_lesson_version.is_distinct_from(Lesson.updated_at),
+                    call_ended_since_check,
+                ),
+            )
+            .order_by(Reminder.id.desc())
             .limit(limit)
         )
         reminder_ids = await self._session.scalars(statement)

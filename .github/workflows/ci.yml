@@ -34,10 +34,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # No uv cache: it would keep the built private client, and caches of a public repo are readable by PRs from forks.
       - uses: astral-sh/setup-uv@v10.2.0
-        with:
-          enable-cache: true
-      - run: uv sync --frozen
+      - name: Install, with the private platform client
+        run: uv sync --frozen
+        env:
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: url.https://x-access-token:${{ secrets.PLATFORM_CLIENT_TOKEN }}@github.com/.insteadOf
+          GIT_CONFIG_VALUE_0: https://github.com/
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run pyright
@@ -57,10 +61,14 @@ jobs:
           --health-interval 2s --health-timeout 3s --health-retries 15
     steps:
       - uses: actions/checkout@v7
+      # No uv cache: it would keep the built private client, and caches of a public repo are readable by PRs from forks.
       - uses: astral-sh/setup-uv@v10.2.0
-        with:
-          enable-cache: true
-      - run: uv sync --frozen
+      - name: Install, with the private platform client
+        run: uv sync --frozen
+        env:
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: url.https://x-access-token:${{ secrets.PLATFORM_CLIENT_TOKEN }}@github.com/.insteadOf
+          GIT_CONFIG_VALUE_0: https://github.com/
       - name: Alembic models are in sync with migrations
         run: |
           export DB_HOST=localhost DB_PORT=5433 DB_NAME=test DB_USER=test DB_PASSWORD=test
@@ -88,7 +96,7 @@ jobs:
       - run: npm ci
       - name: Generated API client matches the backend schema
         run: |
-          (cd ../backend && uv sync --frozen && uv run python -m api.openapi_export) > openapi.json
+          (cd ../backend && uv sync --frozen --no-group platform && uv run python -m api.openapi_export) > openapi.json
           npm run gen
           git diff --exit-code -- . || (echo "Run 'make gen' and commit the result" && exit 1)
       - run: npm run lint
@@ -97,6 +105,7 @@ jobs:
       - run: npm run build
 
   # One job for both images: its name is a required status check in the branch rulesets.
+  # Built without the private platform client (PLATFORM_CLIENT defaults to off): no secret on a check build.
   docker:
     runs-on: ubuntu-latest
     steps:

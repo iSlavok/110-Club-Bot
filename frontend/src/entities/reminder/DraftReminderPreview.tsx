@@ -14,7 +14,7 @@ export function DraftReminderPreview({ request }: { request: ReminderDraftPrevie
   });
   return (
     <QueryState data={preview.data} error={preview.error} isPending={preview.isPending}>
-      {(data) => <ReminderMessage html={data.html} />}
+      {(data) => <ReminderMessage html={data.html} buttons={data.buttons} />}
     </QueryState>
   );
 }

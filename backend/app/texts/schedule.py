@@ -5,7 +5,7 @@ from itertools import groupby
 from app.enums import LessonKind
 from app.schemas import ClubSchedule, ScheduleItem
 from app.texts.reminders import MONTHS, WEEKDAYS
-from app.utils import BUSINESS_TZ
+from app.utils import BUSINESS_TZ, platform_lesson_url
 
 NO_CLUBS = "Расписание видно участникам клуба. Проверь свой доступ: /status."
 EMPTY = "До конца блока уроков и дедлайнов нет."
@@ -41,7 +41,9 @@ def _day(day: date) -> str:
 
 def _item(item: ScheduleItem) -> str:
     clock = f"{item.moment.astimezone(BUSINESS_TZ):%H:%M}"
-    title = escape(item.lesson_title)
+    title = f"«{escape(item.lesson_title)}»"
+    if item.platform_lesson_id is not None:
+        title = f'<a href="{platform_lesson_url(item.platform_lesson_id)}">{title}</a>'
     if item.is_homework_deadline:
-        return f"• {clock} — дедлайн ДЗ {_HOMEWORK_TO[item.lesson_kind]} «{title}»"
-    return f"• {clock} — {_SUBJECTS[item.lesson_kind]} «{title}»"
+        return f"• {clock} — дедлайн ДЗ {_HOMEWORK_TO[item.lesson_kind]} {title}"
+    return f"• {clock} — {_SUBJECTS[item.lesson_kind]} {title}"

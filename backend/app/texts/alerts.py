@@ -148,6 +148,25 @@ def chat_recovered(club_title: str) -> str:
     return f"✅ <b>Клуб {escape(club_title)}</b>: бот снова управляет чатом клуба."
 
 
+def platform_token_rejected() -> str:
+    return (
+        "⚠️ <b>Платформа 100points</b> не принимает токен: в админке не открываются уроки платформы.\n"
+        "Обнови <code>PLATFORM_TOKEN</code> в .env и перезапусти бота. Напишу, когда заработает."
+    )
+
+
+def platform_failed(error: str) -> str:
+    return (
+        "⚠️ <b>Платформа 100points</b> не отвечает: в админке не открываются уроки платформы.\n"
+        f"Ошибка: {escape(error)}\n"
+        "Напишу, когда заработает."
+    )
+
+
+def platform_recovered() -> str:
+    return "✅ <b>Платформа 100points</b> снова отвечает."
+
+
 def _removal_status(alert: RemovalRequestAlert) -> str:
     count = _people(len(alert.candidates))
     detected = f"Пропали из таблицы {_moscow(alert.created_at)}"

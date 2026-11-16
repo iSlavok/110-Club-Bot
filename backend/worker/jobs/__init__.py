@@ -1,7 +1,7 @@
 from worker.jobs.auth_cleanup import purge_expired_auth
 from worker.jobs.chat_access import reconcile_chat_access
 from worker.jobs.rate_limit_cleanup import cleanup_rate_limiters
-from worker.jobs.reminders import dispatch_reminders
+from worker.jobs.reminders import dispatch_reminders, sync_reminder_buttons
 from worker.jobs.sheet_sync import purge_sheet_syncs, sync_sheets
 from worker.jobs.status_sheet import publish_status_sheets
 
@@ -12,5 +12,6 @@ __all__ = [
     "purge_expired_auth",
     "purge_sheet_syncs",
     "reconcile_chat_access",
+    "sync_reminder_buttons",
     "sync_sheets",
 ]

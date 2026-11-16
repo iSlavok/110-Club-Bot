@@ -10,7 +10,7 @@ from app.enums import ReminderKind, ReminderStatus
 from app.models import Lesson, Reminder
 from app.repositories import ReminderRepository
 from app.schemas import ReminderWithLessonDTO
-from app.telegram import AdminAlerts
+from app.telegram import AdminAlerts, reminder_keyboard
 from app.utils import Clock
 
 DUE_BATCH_SIZE = 50
@@ -71,12 +71,15 @@ class ReminderDispatchService:
         await self._reminder_repository.flush()
 
     async def _send(self, reminder: Reminder, *, chat_id: int, topic_id: int, now: datetime) -> None:
-        text = texts.reminders.render(ReminderWithLessonDTO.from_orm_obj_with_lesson(reminder), now)
+        dto = ReminderWithLessonDTO.from_orm_obj_with_lesson(reminder)
+        text = texts.reminders.render(dto, now)
+        buttons = texts.reminders.buttons(dto)
         try:
             message = await self._bot.send_message(
                 chat_id=chat_id,
                 text=text,
                 message_thread_id=topic_id,
+                reply_markup=reminder_keyboard(buttons),
                 link_preview_options=LinkPreviewOptions(is_disabled=True),
             )
         except TelegramRetryAfter as error:
@@ -90,6 +93,8 @@ class ReminderDispatchService:
             reminder.status = ReminderStatus.SENT
             reminder.sent_at = now
             reminder.message_id = message.message_id
+            # Not marked as checked: ReminderButtonsService compares them with the lesson on its next run.
+            reminder.buttons = [button.model_dump() for button in buttons]
             reminder.attempts += 1
             reminder.error = None
 

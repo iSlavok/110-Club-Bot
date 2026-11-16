@@ -32,8 +32,8 @@ make test        # pytest против postgres-test (:5433) + vitest; аргу�
 make gen         # OpenAPI из backend → frontend/openapi.json → orval-клиент
 make migration m="add lessons"   # alembic autogenerate против dev-базы
 make migrate     # alembic upgrade head
-make build       # docker-образы ghcr.io/islavok/110-club-bot-{backend,web}:latest (те же имена, что публикует релиз)
-make deploy v=1.3.0   # деплой тега без Actions: сборка образов здесь, docker load на сервер по SSH (DEPLOY_SSH, DEPLOY_PATH — в .env.deploy)
+make build       # docker-образы ghcr.io/islavok/110-club-bot-{backend,web}:latest (те же имена, что публикует релиз); клиент платформы — с токеном из PLATFORM_CLIENT_TOKEN или gh auth
+make deploy v=1.3.0   # деплой тега без Actions: сборка образов здесь, docker load на сервер по SSH (DEPLOY_SSH, DEPLOY_PATH, PLATFORM_CLIENT_TOKEN — в .env.deploy; без токена берёт gh auth token)
 ```
 
 Env — `.env` в корне (шаблон `.env.example`). Там только секреты и имена; хосты по умолчанию (`postgres`, `redis`) заданы в `Settings` под docker-сеть. Запуск на хосте: `Makefile` подставляет `DB_HOST=localhost REDIS_HOST=localhost`, запускает `uv run --env-file ../.env` из `backend/`. Run configuration в PyCharm — то же: `.env` + эти две переменные. Python-окружение — `backend/.venv`.
@@ -86,7 +86,7 @@ backend/
     queries/      read-агрегации по нескольким моделям (+ rows/)
     services/     use-cases, бизнес-логика; не коммитят — транзакция на весь запрос
     schemas/      pydantic: DTO моделей, команды (XCreate / XUpdate) и прочее, что сервисы принимают и отдают
-    clients/      внешние API: Google Sheets, VK, хранилище файлов
+    clients/      внешние API: Google Sheets, VK, платформа 100points, хранилище файлов
     telegram/     Telegram вне хендлеров: лимиты запросов (`rate_limit/`), алерты владельцу, callback data кнопок ядра
     exceptions/   доменные исключения
     texts/        все тексты для пользователей: ответы бота, напоминания, алерты
@@ -186,11 +186,19 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 - Алерты владельцу — `AdminAlerts` (APP scope): `send(text, reply_markup=None) -> message_id | None`, `edit(message_id, text, reply_markup=None)` (без `reply_markup` кнопки пропадают) в чат `ALERTS_CHAT_ID`. Не задан → только лог. Ошибки Telegram логируются и наверх не идут: алерт не ломает действие, которое его вызвало. Пишем при смене состояния (сломалось / починилось, появилась проблема), не на каждом запуске. Тексты — `app/texts/alerts.py`, HTML с экранированием.
 - Callback data кнопок в сообщениях, которые шлёт ядро (алерт с подтверждением), — `app/telegram/callbacks.py`; бот импортирует их оттуда в фильтры хендлеров.
 
+### Платформа 100points
+
+- Клиент API платформы — приватный пакет `points_api` (репо `iSlavok/100points-api-client`): dependency group `platform`, тег в `[tool.uv.sources]`. В нём только устройство API, без логики бота; новая ручка → сначала в библиотеку, новый тег, затем подъём тега здесь.
+- `points_api` импортирует только `app/clients/points_platform_client.py`: адаптер в DTO `app/schemas` и логика бота (Zoom-ссылка = созвон, заметки и ссылки из блоков). Остальной код знает лишь протокол `PlatformClient`.
+- Нет `PLATFORM_TOKEN` или пакета → `DisabledPlatformClient` и warning, процесс не падает (`open_platform_client`).
+- Образ backend получает пакет при `--build-arg PLATFORM_CLIENT=on` + секрет `platform_client_token` (токен с чтением приватного репо); `on` без секрета — ошибка сборки. Решает build-arg, не секрет: секреты не входят в ключ кэша BuildKit. GHCR-образы приватные: `release.yml` собирает backend с клиентом по секрету `PLATFORM_CLIENT_TOKEN`, `deploy.yml` логинится на сервере в GHCR секретом `GHCR_PULL_TOKEN` (classic PAT, `read:packages`) только на время `pull`. CI ставит пакет по тому же `PLATFORM_CLIENT_TOKEN`. Слои и uv-кэш с клиентом в кэш Actions не пишем: репо публичный, кэш читают PR из форков.
+
 ### Worker
 
 - Задача — плоская функция с параметрами `FromDishka[...]`: вызывает сервис, сама ничего не собирает. Каждый запуск — новый request scope.
 - Задача над многими элементами ловит исключение на каждый элемент: один сломанный не останавливает остальные. Scope на элемент открывается от контейнера приложения: `create_scheduler` передаёт его в `add_job(..., kwargs={"container": container})` (контейнер из `FromDishka` — уже request scope). У такой задачи всё равно нужен хоть один `FromDishka`-параметр: без них apscheduler-dishka не оборачивает функцию и не убирает свой `dishka_container` из kwargs → `TypeError` (пример — `worker/jobs/sheet_sync.py`).
 - Задачи идемпотентны: повторный запуск после падения не шлёт дублей. Состояние «отправлено / не отправлено» — в БД, не в памяти планировщика.
+- Кнопки отправленных напоминаний сверяет с уроком `ReminderButtonsService` (задача `sync_reminder_buttons`, раз в минуту): ссылки на созвон и урок следуют за правками урока, «Подключиться» убирается через 3 ч после начала, у отменённого урока — все кнопки. Сверяются ни разу не проверенные (в т.ч. отправленные до этой фичи), с уроком, изменённым после проверки (`lessons.updated_at` ≠ `reminders.buttons_lesson_version`), и те, у кого после проверки закончился созвон. Что на сообщении сейчас — `reminders.buttons` (null — неизвестно, правится вслепую).
 
 ### Исключения
 

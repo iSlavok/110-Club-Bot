@@ -33,7 +33,15 @@ jobs:
       packages: write
     strategy:
       matrix:
-        image: [backend, web]
+        include:
+          # Only backend carries the private platform client; its layers stay out of the Actions cache, which
+          # PRs from forks of this public repo can read.
+          - image: backend
+            build-args: PLATFORM_CLIENT=on
+            cache-to: ""
+          - image: web
+            build-args: ""
+            cache-to: type=gha,mode=max,scope=web
     steps:
       - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v4
@@ -51,6 +59,7 @@ jobs:
             type=semver,pattern={{version}}
             type=raw,value=latest,enable=${{ !github.event.release.prerelease }}
           flavor: latest=false
+      # GHCR images are private: the server pulls them with GHCR_PULL_TOKEN (deploy.yml).
       - uses: docker/build-push-action@v7
         with:
           context: .
@@ -58,9 +67,11 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: ${{ matrix.build-args }}
+          secrets: platform_client_token=${{ secrets.PLATFORM_CLIENT_TOKEN }}
           # Same cache scopes as the docker job in ci.yml.
           cache-from: type=gha,scope=${{ matrix.image }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          cache-to: ${{ matrix.cache-to }}
 
   deploy:
     needs: [version, images]

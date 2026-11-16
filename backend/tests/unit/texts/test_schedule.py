@@ -9,9 +9,20 @@ MOMENT = datetime(2026, 10, 12, 16, 0, tzinfo=UTC)
 
 
 def _item(
-    moment: datetime, title: str, *, kind: LessonKind = LessonKind.LESSON, deadline: bool = False
+    moment: datetime,
+    title: str,
+    *,
+    kind: LessonKind = LessonKind.LESSON,
+    deadline: bool = False,
+    platform_lesson_id: int | None = None,
 ) -> ScheduleItem:
-    return ScheduleItem(moment=moment, lesson_kind=kind, lesson_title=title, is_homework_deadline=deadline)
+    return ScheduleItem(
+        moment=moment,
+        lesson_kind=kind,
+        lesson_title=title,
+        platform_lesson_id=platform_lesson_id,
+        is_homework_deadline=deadline,
+    )
 
 
 def test_items_are_grouped_by_moscow_day() -> None:
@@ -51,3 +62,19 @@ def test_long_schedule_is_cut() -> None:
 
     assert text.count("• ") == texts.schedule.MAX_ITEMS
     assert text.endswith("…и ещё 3")
+
+
+def test_linked_lesson_title_opens_the_platform_lesson() -> None:
+    schedule = ClubSchedule(
+        club_title="Химия",
+        block_title="5",
+        items=[
+            _item(MOMENT, "Кислоты <1>", platform_lesson_id=50002),
+            _item(MOMENT, "Кислоты <1>", deadline=True, platform_lesson_id=50002),
+        ],
+    )
+
+    assert texts.schedule.schedule([schedule]).splitlines()[-2:] == [
+        '• 19:00 — урок <a href="https://lk.100points.ru/student/lesson/50002">«Кислоты &lt;1&gt;»</a>',
+        '• 19:00 — дедлайн ДЗ к уроку <a href="https://lk.100points.ru/student/lesson/50002">«Кислоты &lt;1&gt;»</a>',
+    ]

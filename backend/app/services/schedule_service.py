@@ -43,6 +43,7 @@ def _items(lesson: Lesson) -> list[ScheduleItem]:
             moment=lesson.starts_at,
             lesson_kind=lesson.kind,
             lesson_title=lesson.title,
+            platform_lesson_id=lesson.platform_lesson_id,
             is_homework_deadline=False,
         ),
     ]
@@ -52,6 +53,7 @@ def _items(lesson: Lesson) -> list[ScheduleItem]:
                 moment=lesson.homework_deadline_at,
                 lesson_kind=lesson.kind,
                 lesson_title=lesson.title,
+                platform_lesson_id=lesson.platform_lesson_id,
                 is_homework_deadline=True,
             ),
         )

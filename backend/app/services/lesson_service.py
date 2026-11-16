@@ -115,6 +115,7 @@ class LessonService:
             description=data.description,
             starts_at=data.starts_at,
             call_url=data.call_url,
+            platform_lesson_id=data.platform_lesson_id,
             reminder_offsets=_or_default(data.reminder_offsets, defaults.default_lesson_offsets),
             homework_deadline_at=data.homework_deadline_at,
             homework_reminder_offsets=_or_default(data.homework_reminder_offsets, defaults.default_homework_offsets),
@@ -136,6 +137,7 @@ class LessonService:
         lesson.description = patch.description.apply(lesson.description)
         lesson.starts_at = patch.starts_at.apply(lesson.starts_at)
         lesson.call_url = patch.call_url.apply(lesson.call_url)
+        lesson.platform_lesson_id = patch.platform_lesson_id.apply(lesson.platform_lesson_id)
         lesson.reminder_offsets = patch.reminder_offsets.apply(lesson.reminder_offsets)
         lesson.homework_deadline_at = patch.homework_deadline_at.apply(lesson.homework_deadline_at)
         lesson.homework_reminder_offsets = patch.homework_reminder_offsets.apply(lesson.homework_reminder_offsets)

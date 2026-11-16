@@ -12,6 +12,7 @@ from app.types import BigInt, PositiveInt32
 # Annotated form, not bare AwareDatetime: the bare class loses its tz check when wrapped in Maybe.
 type Moment = Annotated[datetime, AwareDatetime, AfterValidator(lambda value: value.astimezone(UTC))]
 HIDE_SERVICE_MESSAGES_DESCRIPTION = "Bot deletes the join and leave messages in the club chat"
+PLATFORM_COURSE_DESCRIPTION = "Course id on 100points; lessons of the club are linked to its lessons"
 STATUS_SHEET_DESCRIPTION = (
     "Sheet in the same spreadsheet the bot rewrites with the VK links of the access block by funnel step; "
     "empty turns it off"
@@ -28,6 +29,7 @@ class ClubDTO(BaseModel):
     spreadsheet_id: str | None
     sheet_name: str | None
     status_sheet_name: str | None
+    platform_course_id: int | None
     is_active: bool
     hide_service_messages: bool
     chat_kicks_on_hold: bool
@@ -47,6 +49,7 @@ class ClubDTO(BaseModel):
             spreadsheet_id=club.spreadsheet_id,
             sheet_name=club.sheet_name,
             status_sheet_name=club.status_sheet_name,
+            platform_course_id=club.platform_course_id,
             is_active=club.is_active,
             hide_service_messages=club.hide_service_messages,
             chat_kicks_on_hold=club.chat_kicks_on_hold,
@@ -65,6 +68,7 @@ class ClubCreate(BaseModel):
     spreadsheet_id: ClubText | None = Field(default=None, description="Google Sheets document id")
     sheet_name: ClubText | None = Field(default=None, description="Sheet with block columns")
     status_sheet_name: ClubText | None = Field(default=None, description=STATUS_SHEET_DESCRIPTION)
+    platform_course_id: PositiveInt32 | None = Field(default=None, description=PLATFORM_COURSE_DESCRIPTION)
     hide_service_messages: bool = Field(default=False, description=HIDE_SERVICE_MESSAGES_DESCRIPTION)
 
 
@@ -75,6 +79,7 @@ class ClubUpdate(PatchSchema):
     spreadsheet_id: Maybe[ClubText | None] = Field(description="Google Sheets document id")
     sheet_name: Maybe[ClubText | None] = Field(description="Sheet with block columns")
     status_sheet_name: Maybe[ClubText | None] = Field(description=STATUS_SHEET_DESCRIPTION)
+    platform_course_id: Maybe[PositiveInt32 | None] = Field(description=PLATFORM_COURSE_DESCRIPTION)
     is_active: Maybe[bool] = Field(description="Inactive clubs are skipped by the bot")
     hide_service_messages: Maybe[bool] = Field(description=HIDE_SERVICE_MESSAGES_DESCRIPTION)
 

@@ -11,6 +11,11 @@ from app.schemas.patch_schemas import Maybe, PatchSchema
 from app.types import TelegramHtml
 
 
+class ReminderButton(BaseModel):
+    text: str
+    url: str
+
+
 class ReminderDTO(BaseModel):
     id: int
     club_id: int
@@ -23,6 +28,9 @@ class ReminderDTO(BaseModel):
     sent_at: datetime | None
     message_id: int | None
     error: str | None
+    buttons: list[ReminderButton] | None
+    buttons_checked_at: datetime | None
+    buttons_lesson_version: datetime | None
     created_at: datetime
     updated_at: datetime
 
@@ -40,6 +48,9 @@ class ReminderDTO(BaseModel):
             sent_at=reminder.sent_at,
             message_id=reminder.message_id,
             error=reminder.error,
+            buttons=None if reminder.buttons is None else [ReminderButton(**button) for button in reminder.buttons],
+            buttons_checked_at=reminder.buttons_checked_at,
+            buttons_lesson_version=reminder.buttons_lesson_version,
             created_at=reminder.created_at,
             updated_at=reminder.updated_at,
         )
@@ -54,6 +65,11 @@ class ReminderWithLessonDTO(ReminderDTO):
         dto = ReminderDTO.from_orm_obj(reminder)
         lesson = None if reminder.lesson is None else LessonDTO.from_orm_obj(reminder.lesson)
         return cls(**dto.model_dump(), lesson=lesson)
+
+
+class ReminderMessage(BaseModel):
+    html: str
+    buttons: list[ReminderButton]
 
 
 def _lesson_kind(kind: ReminderKind) -> ReminderKind:

@@ -36,8 +36,8 @@ async def preview_reminder(
     reminder_id: IdPath,
     reminder_service: FromDishka[ReminderService],
 ) -> ReminderPreviewResponse:
-    html = await reminder_service.preview(reminder_id)
-    return ReminderPreviewResponse(html=html)
+    message = await reminder_service.preview(reminder_id)
+    return ReminderPreviewResponse.from_dto(message)
 
 
 @router.post("/reminders/preview", dependencies=[require(Permission.LESSONS_VIEW)])
@@ -45,8 +45,8 @@ async def preview_draft_reminder(
     body: ReminderDraftPreview,
     reminder_service: FromDishka[ReminderService],
 ) -> ReminderPreviewResponse:
-    html = reminder_service.preview_draft(body)
-    return ReminderPreviewResponse(html=html)
+    message = reminder_service.preview_draft(body)
+    return ReminderPreviewResponse.from_dto(message)
 
 
 @router.post("/reminders/{reminder_id}/cancel", dependencies=[require(Permission.LESSONS_EDIT)])
