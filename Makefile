@@ -80,8 +80,14 @@ migrate:
 
 build: build-backend build-web
 
+# The private platform client gets into the image only with a token: PLATFORM_CLIENT_TOKEN or the gh login.
 build-backend:
-	docker build -f docker/backend.Dockerfile -t $(IMAGE_PREFIX)-backend:latest .
+	@token="$${PLATFORM_CLIENT_TOKEN:-$$(gh auth token 2>/dev/null)}"; \
+	if [ -n "$$token" ]; then client=on; else client=off; echo "No token: building without the platform client"; fi; \
+	PLATFORM_CLIENT_TOKEN="$$token" docker build \
+		--build-arg PLATFORM_CLIENT=$$client \
+		--secret id=platform_client_token,env=PLATFORM_CLIENT_TOKEN \
+		-f docker/backend.Dockerfile -t $(IMAGE_PREFIX)-backend:latest .
 
 build-web:
 	docker build -f docker/web.Dockerfile -t $(IMAGE_PREFIX)-web:latest .

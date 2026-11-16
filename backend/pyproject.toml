@@ -34,9 +34,14 @@ test = [
     "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
 ]
+# The client of the platform API lives in a private repository: without access the bot runs with the integration off.
+platform = ["points-api"]
 
 [tool.uv]
-default-groups = ["dev", "test"]
+default-groups = ["dev", "test", "platform"]
+
+[tool.uv.sources]
+points-api = { git = "https://github.com/iSlavok/100points-api-client", tag = "v0.1.0" }
 
 [tool.ruff]
 line-length = 120
@@ -71,6 +76,7 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app", "api", "bot", "worker"]
+known-third-party = ["points_api"]
 
 [tool.pyright]
 pythonVersion = "3.13"

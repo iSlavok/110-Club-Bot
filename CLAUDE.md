@@ -32,8 +32,8 @@ make test        # pytest против postgres-test (:5433) + vitest; аргу�
 make gen         # OpenAPI из backend → frontend/openapi.json → orval-клиент
 make migration m="add lessons"   # alembic autogenerate против dev-базы
 make migrate     # alembic upgrade head
-make build       # docker-образы ghcr.io/islavok/110-club-bot-{backend,web}:latest (те же имена, что публикует релиз)
-make deploy v=1.3.0   # деплой тега без Actions: сборка образов здесь, docker load на сервер по SSH (DEPLOY_SSH, DEPLOY_PATH — в .env.deploy)
+make build       # docker-образы ghcr.io/islavok/110-club-bot-{backend,web}:latest (те же имена, что публикует релиз); клиент платформы — с токеном из PLATFORM_CLIENT_TOKEN или gh auth
+make deploy v=1.3.0   # деплой тега без Actions: сборка образов здесь, docker load на сервер по SSH (DEPLOY_SSH, DEPLOY_PATH, PLATFORM_CLIENT_TOKEN — в .env.deploy; без токена берёт gh auth token)
 ```
 
 Env — `.env` в корне (шаблон `.env.example`). Там только секреты и имена; хосты по умолчанию (`postgres`, `redis`) заданы в `Settings` под docker-сеть. Запуск на хосте: `Makefile` подставляет `DB_HOST=localhost REDIS_HOST=localhost`, запускает `uv run --env-file ../.env` из `backend/`. Run configuration в PyCharm — то же: `.env` + эти две переменные. Python-окружение — `backend/.venv`.
