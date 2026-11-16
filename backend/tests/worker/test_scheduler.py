@@ -54,10 +54,10 @@ async def test_chat_access_is_reconciled_every_five_minutes_with_app_container(c
     assert job.kwargs == {"container": container}
 
 
-async def test_reminder_buttons_are_trimmed_every_minute_with_app_container(container) -> None:
+async def test_reminder_buttons_are_synced_every_minute_with_app_container(container) -> None:
     scheduler = create_scheduler(container, SyncSettings())
 
-    job = scheduler.get_job("trim_reminder_buttons")
+    job = scheduler.get_job("sync_reminder_buttons")
 
     assert job is not None
     assert isinstance(job.trigger, IntervalTrigger)

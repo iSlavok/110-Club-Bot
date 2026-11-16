@@ -13,8 +13,8 @@ from worker.jobs import (
     purge_expired_auth,
     purge_sheet_syncs,
     reconcile_chat_access,
+    sync_reminder_buttons,
     sync_sheets,
-    trim_reminder_buttons,
 )
 
 CHAT_RECONCILE_INTERVAL = 5
@@ -46,10 +46,10 @@ def create_scheduler(container: AsyncContainer, sync_settings: SyncSettings) -> 
         id="dispatch_reminders",
     )
     scheduler.add_job(
-        trim_reminder_buttons,
+        sync_reminder_buttons,
         IntervalTrigger(minutes=1),
         kwargs={"container": container},
-        id="trim_reminder_buttons",
+        id="sync_reminder_buttons",
     )
     scheduler.add_job(
         reconcile_chat_access,

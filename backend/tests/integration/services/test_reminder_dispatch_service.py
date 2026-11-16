@@ -82,6 +82,11 @@ async def test_links_go_out_as_buttons_under_the_reminder(service, db_session, s
         ("Подключиться", "https://meet.example.com/abc"),
         ("Открыть урок", "https://lk.100points.ru/student/lesson/50002"),
     ]
+    assert reminder.buttons == [
+        {"text": "Подключиться", "url": "https://meet.example.com/abc"},
+        {"text": "Открыть урок", "url": "https://lk.100points.ru/student/lesson/50002"},
+    ]
+    assert (reminder.buttons_checked_at, reminder.buttons_lesson_version) == (None, None)
 
 
 async def test_reminder_not_yet_due_is_left_alone(service, db_session, bot) -> None:

@@ -1,7 +1,8 @@
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, Index, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base, str_enum
@@ -35,8 +36,10 @@ class Reminder(Base):
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     message_id: Mapped[int | None] = mapped_column(BigInteger)
     error: Mapped[str | None] = mapped_column(Text)
-    call_button_removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    buttons_removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Buttons on the sent message and the lesson state they were checked against; null buttons: not known.
+    buttons: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
+    buttons_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    buttons_lesson_version: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     club: Mapped["Club"] = relationship(lazy="raise")
     lesson: Mapped["Lesson | None"] = relationship(lazy="raise")
