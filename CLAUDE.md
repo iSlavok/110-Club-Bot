@@ -191,7 +191,7 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 - Клиент API платформы — приватный пакет `points_api` (репо `iSlavok/100points-api-client`): dependency group `platform`, тег в `[tool.uv.sources]`. В нём только устройство API, без логики бота; новая ручка → сначала в библиотеку, новый тег, затем подъём тега здесь.
 - `points_api` импортирует только `app/clients/points_platform_client.py`: адаптер в DTO `app/schemas` и логика бота (Zoom-ссылка = созвон, заметки и ссылки из блоков). Остальной код знает лишь протокол `PlatformClient`.
 - Нет `PLATFORM_TOKEN` или пакета → `DisabledPlatformClient` и warning, процесс не падает (`open_platform_client`).
-- Образ backend получает пакет при `--build-arg PLATFORM_CLIENT=on` + секрет `platform_client_token` (токен с чтением приватного репо); `on` без секрета — ошибка сборки. Решает build-arg, не секрет: секреты не входят в ключ кэша BuildKit. GHCR-образы публичные → `release.yml` собирает без клиента; прод с интеграцией — через `make deploy`. CI ставит пакет по секрету `PLATFORM_CLIENT_TOKEN`.
+- Образ backend получает пакет при `--build-arg PLATFORM_CLIENT=on` + секрет `platform_client_token` (токен с чтением приватного репо); `on` без секрета — ошибка сборки. Решает build-arg, не секрет: секреты не входят в ключ кэша BuildKit. GHCR-образы приватные: `release.yml` собирает backend с клиентом по секрету `PLATFORM_CLIENT_TOKEN`, `deploy.yml` логинится на сервере в GHCR секретом `GHCR_PULL_TOKEN` (classic PAT, `read:packages`) только на время `pull`. CI ставит пакет по тому же `PLATFORM_CLIENT_TOKEN`. Слои и uv-кэш с клиентом в кэш Actions не пишем: репо публичный, кэш читают PR из форков.
 
 ### Worker
 
