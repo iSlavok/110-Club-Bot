@@ -86,7 +86,7 @@ backend/
     queries/      read-агрегации по нескольким моделям (+ rows/)
     services/     use-cases, бизнес-логика; не коммитят — транзакция на весь запрос
     schemas/      pydantic: DTO моделей, команды (XCreate / XUpdate) и прочее, что сервисы принимают и отдают
-    clients/      внешние API: Google Sheets, VK, хранилище файлов
+    clients/      внешние API: Google Sheets, VK, платформа 100points, хранилище файлов
     telegram/     Telegram вне хендлеров: лимиты запросов (`rate_limit/`), алерты владельцу, callback data кнопок ядра
     exceptions/   доменные исключения
     texts/        все тексты для пользователей: ответы бота, напоминания, алерты
@@ -185,6 +185,13 @@ Backend — один процесс: `backend/main.py` (composition root) чит
 - Сервис, которому нужно написать в Telegram (напоминание в чат клуба), зовёт `Bot` из DI напрямую. В личку пользователю — только `DirectMessageService.send` → `MessageDelivery`: он ставит `users.bot_blocked_at`, когда Telegram отвечает «бот заблокирован», и снимает при доставке. Блокировку и разблокировку ещё ловит `my_chat_member` (`bot/handlers/bot_blocking.py`) и `/start`.
 - Алерты владельцу — `AdminAlerts` (APP scope): `send(text, reply_markup=None) -> message_id | None`, `edit(message_id, text, reply_markup=None)` (без `reply_markup` кнопки пропадают) в чат `ALERTS_CHAT_ID`. Не задан → только лог. Ошибки Telegram логируются и наверх не идут: алерт не ломает действие, которое его вызвало. Пишем при смене состояния (сломалось / починилось, появилась проблема), не на каждом запуске. Тексты — `app/texts/alerts.py`, HTML с экранированием.
 - Callback data кнопок в сообщениях, которые шлёт ядро (алерт с подтверждением), — `app/telegram/callbacks.py`; бот импортирует их оттуда в фильтры хендлеров.
+
+### Платформа 100points
+
+- Клиент API платформы — приватный пакет `points_api` (репо `iSlavok/100points-api-client`): dependency group `platform`, тег в `[tool.uv.sources]`. В нём только устройство API, без логики бота; новая ручка → сначала в библиотеку, новый тег, затем подъём тега здесь.
+- `points_api` импортирует только `app/clients/points_platform_client.py`: адаптер в DTO `app/schemas` и логика бота (Zoom-ссылка = созвон, заметки и ссылки из блоков). Остальной код знает лишь протокол `PlatformClient`.
+- Нет `PLATFORM_TOKEN` или пакета → `DisabledPlatformClient` и warning, процесс не падает (`open_platform_client`).
+- Образ backend получает пакет при `--build-arg PLATFORM_CLIENT=on` + секрет `platform_client_token` (токен с чтением приватного репо); `on` без секрета — ошибка сборки. Решает build-arg, не секрет: секреты не входят в ключ кэша BuildKit. GHCR-образы публичные → `release.yml` собирает без клиента; прод с интеграцией — через `make deploy`. CI ставит пакет по секрету `PLATFORM_CLIENT_TOKEN`.
 
 ### Worker
 

@@ -4,8 +4,11 @@
  * 110 Club Admin API
  * OpenAPI spec version: 0.1.0
  */
+import type { ReminderButtonResponse } from './reminderButtonResponse';
 
 export interface ReminderPreviewResponse {
   /** Message text in Telegram HTML, admin-entered parts escaped */
   html: string;
+  /** Link buttons under the message, in one row */
+  buttons: ReminderButtonResponse[];
 }

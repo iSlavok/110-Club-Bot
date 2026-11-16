@@ -10,11 +10,19 @@ from pydantic import SecretStr
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, async_sessionmaker
 
-from app.clients import LoginThrottle, SheetsClient, VkClient
+from app.clients import LoginThrottle, PlatformClient, PlatformHealth, SheetsClient, VkClient
 from app.config import AlertsSettings, AuthSettings, BotSettings, DatabaseSettings, PublicSettings, VkSettings
 from app.telegram import AdminAlerts, CommandMenu, RateLimitMiddleware
 from app.utils import Clock
-from tests.fakes import FakeLoginThrottle, FakeSheetsClient, FakeTimer, FakeVkClient, FrozenClock
+from tests.fakes import (
+    FakeLoginThrottle,
+    FakePlatformClient,
+    FakePlatformHealth,
+    FakeSheetsClient,
+    FakeTimer,
+    FakeVkClient,
+    FrozenClock,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -106,6 +114,14 @@ class TestInfraProvider(Provider):
     @provide
     def sheets_client(self) -> SheetsClient:
         return FakeSheetsClient()
+
+    @provide
+    def platform_client(self) -> PlatformClient:
+        return FakePlatformClient()
+
+    @provide
+    def platform_health(self) -> PlatformHealth:
+        return FakePlatformHealth()
 
     @provide
     def bot(self) -> Bot:

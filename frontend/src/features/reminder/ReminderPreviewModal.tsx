@@ -14,7 +14,7 @@ export function ReminderPreviewModal({ reminderId, onClose }: ReminderPreviewMod
   return (
     <Modal opened onClose={onClose} title="Текст напоминания" size="lg">
       <QueryState data={preview.data} error={preview.error} isPending={preview.isPending}>
-        {(data) => <ReminderMessage html={data.html} />}
+        {(data) => <ReminderMessage html={data.html} buttons={data.buttons} />}
       </QueryState>
     </Modal>
   );

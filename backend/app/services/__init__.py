@@ -15,6 +15,7 @@ from app.services.health_service import HealthService
 from app.services.lesson_service import LessonService
 from app.services.login_service import LoginService
 from app.services.membership_removal_service import MembershipRemovalService
+from app.services.platform_service import PlatformService
 from app.services.reminder_dispatch_service import ReminderDispatchService
 from app.services.reminder_planner import ReminderPlanner
 from app.services.reminder_service import ReminderService
@@ -46,6 +47,7 @@ __all__ = [
     "LessonService",
     "LoginService",
     "MembershipRemovalService",
+    "PlatformService",
     "ReminderDispatchService",
     "ReminderPlanner",
     "ReminderService",

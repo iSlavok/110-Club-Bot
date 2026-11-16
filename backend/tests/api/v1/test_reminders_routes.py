@@ -109,12 +109,18 @@ async def test_preview_renders_the_message_as_it_will_go_out(api_client, login_a
     response = await api_client.get(f"/api/v1/reminders/{reminder.id}/preview")
 
     assert response.status_code == 200
-    assert response.json() == {"html": "<b>Урок «Кислоты»</b>\nЧерез час, в 13:00"}
+    assert response.json() == {"html": "<b>Урок «Кислоты»</b>\nЧерез час, в 13:00", "buttons": []}
 
 
 async def test_preview_of_a_sent_reminder_uses_its_send_time(api_client, login_as, db_session, editor) -> None:
     club = await make_club(db_session)
-    lesson = await make_lesson(db_session, club, title="Кислоты", starts_at=DEFAULT_NOW - timedelta(hours=1))
+    lesson = await make_lesson(
+        db_session,
+        club,
+        title="Кислоты",
+        starts_at=DEFAULT_NOW - timedelta(hours=1),
+        platform_lesson_id=50002,
+    )
     reminder = await make_reminder(
         db_session,
         lesson,
@@ -127,7 +133,10 @@ async def test_preview_of_a_sent_reminder_uses_its_send_time(api_client, login_a
 
     response = await api_client.get(f"/api/v1/reminders/{reminder.id}/preview")
 
-    assert response.json() == {"html": "<b>Урок «Кислоты» начинается</b>"}
+    assert response.json() == {
+        "html": "<b>Урок «Кислоты» начинается</b>",
+        "buttons": [{"text": "Открыть урок", "url": "https://lk.100points.ru/student/lesson/50002"}],
+    }
 
 
 async def test_preview_of_a_reminder_about_removed_homework_is_refused(
@@ -172,10 +181,8 @@ async def test_draft_preview_counts_from_the_send_time(api_client, login_as, edi
 
     assert response.status_code == 200
     assert response.json() == {
-        "html": (
-            "<b>Созвон с куратором «Кислоты»</b>\nЧерез час, в 13:00\n"
-            'Подключиться: <a href="https://meet.example.com/a">ссылка на созвон</a>'
-        ),
+        "html": "<b>Созвон с куратором «Кислоты»</b>\nЧерез час, в 13:00",
+        "buttons": [{"text": "Подключиться", "url": "https://meet.example.com/a"}],
     }
 
 
@@ -189,7 +196,7 @@ async def test_draft_preview_without_a_future_send_time_counts_from_now(api_clie
         json={"lesson": lesson, "kind": "lesson_upcoming", "send_at": send_at},
     )
 
-    assert response.json() == {"html": "<b>Урок «Кислоты»</b>\nЧерез 45 минут, в 12:45"}
+    assert response.json() == {"html": "<b>Урок «Кислоты»</b>\nЧерез 45 минут, в 12:45", "buttons": []}
 
 
 async def test_draft_preview_of_homework_without_a_deadline_is_refused(api_client, login_as, editor) -> None:

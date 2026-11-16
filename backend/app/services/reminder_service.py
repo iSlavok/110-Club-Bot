@@ -7,7 +7,7 @@ from app.exceptions import (
     ReminderPreviewUnavailableError,
 )
 from app.repositories import ClubRepository, ReminderRepository
-from app.schemas import PageParams, Paginated, ReminderDraftPreview, ReminderWithLessonDTO
+from app.schemas import PageParams, Paginated, ReminderDraftPreview, ReminderMessage, ReminderWithLessonDTO
 from app.utils import Clock
 
 HOMEWORK_DEADLINE_KINDS = frozenset({ReminderKind.HOMEWORK_DEADLINE, ReminderKind.HOMEWORK_DEADLINE_CHANGED})
@@ -48,7 +48,7 @@ class ReminderService:
         return Paginated(items=items, total=reminders.total)
 
     # Rendered for the moment it went or will go out, so "через час" reads as it does in the chat.
-    async def preview(self, reminder_id: int) -> str:
+    async def preview(self, reminder_id: int) -> ReminderMessage:
         reminder = await self._reminder_repository.get_with_lesson(reminder_id)
         if reminder is None:
             raise ReminderNotFoundError(reminder_id)
@@ -61,14 +61,18 @@ class ReminderService:
             moment = max(reminder.send_at, self._clock.now())
         else:
             moment = reminder.send_at
-        return texts.reminders.render(ReminderWithLessonDTO.from_orm_obj_with_lesson(reminder), moment)
+        dto = ReminderWithLessonDTO.from_orm_obj_with_lesson(reminder)
+        return ReminderMessage(html=texts.reminders.render(dto, moment), buttons=texts.reminders.buttons(dto))
 
-    def preview_draft(self, draft: ReminderDraftPreview) -> str:
+    def preview_draft(self, draft: ReminderDraftPreview) -> ReminderMessage:
         if draft.kind in HOMEWORK_DEADLINE_KINDS and draft.lesson.homework_deadline_at is None:
             raise ReminderPreviewUnavailableError
         now = self._clock.now()
         moment = now if draft.send_at is None else max(draft.send_at, now)
-        return texts.reminders.render_message(draft.kind, draft.lesson, moment)
+        return ReminderMessage(
+            html=texts.reminders.render_message(draft.kind, draft.lesson, moment),
+            buttons=texts.reminders.lesson_buttons(draft.kind, draft.lesson),
+        )
 
     # Messages written by admins are cancelled through ClubMessageService, under their own permission.
     async def cancel(self, reminder_id: int) -> ReminderWithLessonDTO:

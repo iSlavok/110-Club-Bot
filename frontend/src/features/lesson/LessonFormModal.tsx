@@ -13,10 +13,12 @@ import {
 } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { useForm } from '@mantine/form';
+import { useMediaQuery } from '@mantine/hooks';
 import { IconEye } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { LESSON_KIND_LABELS } from '@/entities/lesson';
+import { PlatformLessonCard, PlatformLessonSelect } from '@/entities/platform';
 import {
   DraftReminderPreviewModal,
   formatOffset,
@@ -26,11 +28,14 @@ import {
 } from '@/entities/reminder';
 import {
   useCreateLesson,
+  useGetClub,
+  useGetPlatformLesson,
   useGetSettings,
   useUpdateLesson,
   type LessonDraft,
   type LessonKind,
   type LessonResponse,
+  type PlatformLessonResponse,
   type ReminderDraftPreview,
 } from '@/shared/api';
 import { fromPickerValue, toPickerValue } from '@/shared/lib/dates';
@@ -38,6 +43,7 @@ import { fieldErrors } from '@/shared/lib/errors';
 import { notifyError, notifySuccess } from '@/shared/lib/notify';
 
 import { askNotifyChat } from './askNotifyChat';
+import classes from './LessonFormModal.module.css';
 import { chatNotices, homeworkRemindersBeforeStart, minutesBefore, minutesUntil } from './model';
 
 interface LessonFormValues {
@@ -45,6 +51,7 @@ interface LessonFormValues {
   title: string;
   starts_at: string | null;
   call_url: string;
+  platform_lesson_id: number | null;
   description: string;
   reminder_offsets: number[];
   remind_now: boolean;
@@ -66,13 +73,27 @@ const KINDS: { value: LessonKind; label: string }[] = [
 
 export function LessonFormModal({ onClose, clubId, lesson }: LessonFormModalProps) {
   const settings = useGetSettings();
+  const club = useGetClub(clubId);
+  const linking = club.data?.platform_course_id != null || lesson?.platform_lesson_id != null;
+  // Read at once: a first render without the side column would animate the modal on every open.
+  const wide = useMediaQuery('(min-width: 75em)', false, { getInitialValueInEffect: false });
+  const beside = linking && wide;
   return (
-    <Modal opened onClose={onClose} title={lesson ? 'Урок' : 'Новый урок'} size="lg">
-      {lesson || settings.data ? (
+    <Modal
+      opened
+      onClose={onClose}
+      title={lesson ? 'Урок' : 'Новый урок'}
+      size={beside ? 'auto' : 'lg'}
+      classNames={beside ? { inner: classes.inner } : undefined}
+    >
+      {(lesson || settings.data) && !club.isPending ? (
         <LessonForm
           onClose={onClose}
           clubId={clubId}
           lesson={lesson}
+          linking={linking}
+          beside={beside}
+          courseId={club.data?.platform_course_id ?? null}
           defaults={{
             reminder_offsets:
               lesson?.reminder_offsets ?? settings.data?.default_lesson_offsets ?? [],
@@ -94,6 +115,11 @@ export function LessonFormModal({ onClose, clubId, lesson }: LessonFormModalProp
 }
 
 interface LessonFormProps extends LessonFormModalProps {
+  /** The club has a platform course: the form links the lesson and shows the platform lesson. */
+  linking: boolean;
+  /** The platform lesson goes in a column to the right of the form, not under it. */
+  beside: boolean;
+  courseId: number | null;
   defaults: { reminder_offsets: number[]; homework_reminder_offsets: number[] };
   /** Time set when a day is picked in an empty picker; an edited lesson may render before settings load. */
   times: { lesson?: string; homework?: string };
@@ -104,7 +130,16 @@ interface Preview {
   request: ReminderDraftPreview;
 }
 
-function LessonForm({ onClose, clubId, lesson, defaults, times }: LessonFormProps) {
+function LessonForm({
+  onClose,
+  clubId,
+  lesson,
+  linking,
+  beside,
+  courseId,
+  defaults,
+  times,
+}: LessonFormProps) {
   const [preview, setPreview] = useState<Preview | null>(null);
   const form = useForm<LessonFormValues>({
     initialValues: {
@@ -112,6 +147,7 @@ function LessonForm({ onClose, clubId, lesson, defaults, times }: LessonFormProp
       title: lesson?.title ?? '',
       starts_at: lesson ? toPickerValue(lesson.starts_at) : null,
       call_url: lesson?.call_url ?? '',
+      platform_lesson_id: lesson?.platform_lesson_id ?? null,
       description: lesson?.description ?? '',
       reminder_offsets: defaults.reminder_offsets,
       remind_now: false,
@@ -148,6 +184,12 @@ function LessonForm({ onClose, clubId, lesson, defaults, times }: LessonFormProp
   const update = useUpdateLesson({ mutation: handlers });
 
   const { values } = form;
+  const linked = values.platform_lesson_id !== null;
+  // The card keeps the last linked lesson while its column folds away after an unlink.
+  const [cardLessonId, setCardLessonId] = useState(values.platform_lesson_id);
+  if (values.platform_lesson_id !== null && values.platform_lesson_id !== cardLessonId) {
+    setCardLessonId(values.platform_lesson_id);
+  }
   const earlyHomework =
     values.has_homework && values.starts_at && values.homework_deadline_at
       ? homeworkRemindersBeforeStart(
@@ -168,6 +210,7 @@ function LessonForm({ onClose, clubId, lesson, defaults, times }: LessonFormProp
       title: values.title.trim(),
       starts_at: fromPickerValue(values.starts_at),
       call_url: values.kind === 'curator_call' ? values.call_url.trim() || null : null,
+      platform_lesson_id: values.platform_lesson_id,
       description: values.description.trim() || null,
       homework_deadline_at:
         values.has_homework && values.homework_deadline_at
@@ -208,6 +251,55 @@ function LessonForm({ onClose, clubId, lesson, defaults, times }: LessonFormProp
     }
   };
 
+  const takeStart = (iso: string) => {
+    form.setFieldValue('starts_at', toPickerValue(iso));
+  };
+  const takeDeadline = (iso: string) => {
+    form.setFieldValue('has_homework', true);
+    form.setFieldValue('homework_deadline_at', toPickerValue(iso));
+  };
+  const takeCall = (url: string) => {
+    form.setFieldValue('kind', 'curator_call');
+    form.setFieldValue('call_url', url);
+  };
+  // Only empty fields: what the admin typed wins, differences stay visible on the card.
+  const prefill = (platformLesson: PlatformLessonResponse) => {
+    const current = form.getValues();
+    if (platformLesson.call_url) {
+      form.setFieldValue('kind', 'curator_call');
+      if (!current.call_url.trim()) {
+        form.setFieldValue('call_url', platformLesson.call_url);
+      }
+    }
+    if (!current.starts_at && platformLesson.starts_at) {
+      takeStart(platformLesson.starts_at);
+    }
+    const deadline = platformLesson.homework?.deadline_at;
+    if (deadline && !(current.has_homework && current.homework_deadline_at)) {
+      takeDeadline(deadline);
+    }
+  };
+  // The lesson the card shows: one request for both. Awaiting a separate fetch of the same query lost the
+  // prefill when the card's observer unmounted and cancelled the shared request.
+  const platformLesson = useGetPlatformLesson(values.platform_lesson_id ?? 0, {
+    query: { enabled: values.platform_lesson_id !== null },
+  });
+  // Prefill once per pick: an opened lesson keeps its fields, and a refetch must not refill what was cleared.
+  const prefilledFor = useRef(lesson?.platform_lesson_id ?? null);
+  useEffect(() => {
+    const data = platformLesson.data;
+    if (data?.id === values.platform_lesson_id && prefilledFor.current !== data.id) {
+      prefilledFor.current = data.id;
+      prefill(data);
+    }
+  });
+  const linkPlatformLesson = (platformLessonId: number | null) => {
+    form.setFieldValue('platform_lesson_id', platformLessonId);
+    if (platformLessonId === null) {
+      prefilledFor.current = null;
+    }
+  };
+
   const submit = form.onSubmit(async (submitted) => {
     if (!submitted.starts_at) {
       return;
@@ -234,6 +326,7 @@ function LessonForm({ onClose, clubId, lesson, defaults, times }: LessonFormProp
       title: submitted.title.trim(),
       starts_at: startsAt,
       call_url: submitted.kind === 'curator_call' ? submitted.call_url.trim() || null : null,
+      platform_lesson_id: submitted.platform_lesson_id,
       description: submitted.description.trim() || null,
       reminder_offsets: reminderOffsets,
       homework_deadline_at: homeworkDeadline,
@@ -257,112 +350,153 @@ function LessonForm({ onClose, clubId, lesson, defaults, times }: LessonFormProp
     }
   });
 
+  const fields = (
+    <Stack>
+      <SegmentedControl
+        aria-label="Тип"
+        data={KINDS}
+        value={values.kind}
+        onChange={(value) => {
+          form.setFieldValue('kind', value);
+        }}
+      />
+      {linking && (
+        <PlatformLessonSelect
+          clubId={clubId}
+          lessonId={lesson?.id}
+          value={values.platform_lesson_id}
+          onChange={(platformLessonId) => {
+            linkPlatformLesson(platformLessonId);
+          }}
+        />
+      )}
+      <TextInput label="Тема" withAsterisk {...form.getInputProps('title')} />
+      <DateTimePicker
+        label="Начало"
+        valueFormat="DD.MM.YYYY HH:mm"
+        defaultTimeValue={times.lesson}
+        withAsterisk
+        {...form.getInputProps('starts_at')}
+      />
+      {values.kind === 'curator_call' && (
+        <TextInput
+          label="Ссылка на созвон"
+          placeholder="https://…"
+          {...form.getInputProps('call_url')}
+        />
+      )}
+      <Textarea
+        label="Описание"
+        autosize
+        minRows={2}
+        maxRows={6}
+        {...form.getInputProps('description')}
+      />
+      <ReminderOffsetsInput
+        label="Напоминания об уроке"
+        value={values.reminder_offsets}
+        onChange={(value) => {
+          form.setFieldValue('reminder_offsets', value);
+        }}
+        error={form.errors.reminder_offsets}
+        onPreview={previewLesson}
+      />
+      <Group gap="xs" wrap="nowrap">
+        <Checkbox
+          label="Ещё напомнить сейчас — сразу после сохранения"
+          {...form.getInputProps('remind_now', { type: 'checkbox' })}
+        />
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          aria-label="Текст напоминания «сейчас»"
+          onClick={() => {
+            previewLesson(null);
+          }}
+        >
+          <IconEye size={16} />
+        </ActionIcon>
+      </Group>
+      <Switch label="Есть ДЗ" {...form.getInputProps('has_homework', { type: 'checkbox' })} />
+      {values.has_homework && (
+        <>
+          <DateTimePicker
+            label="Дедлайн ДЗ"
+            valueFormat="DD.MM.YYYY HH:mm"
+            defaultTimeValue={times.homework}
+            withAsterisk
+            {...form.getInputProps('homework_deadline_at')}
+          />
+          <ReminderOffsetsInput
+            label="Напоминания о дедлайне"
+            zeroLabel="в момент дедлайна"
+            value={values.homework_reminder_offsets}
+            onChange={(value) => {
+              form.setFieldValue('homework_reminder_offsets', value);
+            }}
+            error={form.errors.homework_reminder_offsets}
+            onPreview={previewHomework}
+          />
+          {earlyHomework.length > 0 && (
+            <Alert color="yellow" title="Напоминание о ДЗ раньше урока">
+              {earlyHomework.map((offset) => formatOffset(offset, 'в момент дедлайна')).join(', ')}{' '}
+              — уйдёт в чат ещё до начала урока. Сохранить так можно.
+            </Alert>
+          )}
+        </>
+      )}
+      {preview && (
+        <DraftReminderPreviewModal
+          title={preview.title}
+          request={preview.request}
+          onClose={() => {
+            setPreview(null);
+          }}
+        />
+      )}
+      <Group justify="flex-end">
+        <Button variant="default" onClick={onClose}>
+          Отмена
+        </Button>
+        <Button type="submit" loading={create.isPending || update.isPending}>
+          Сохранить
+        </Button>
+      </Group>
+    </Stack>
+  );
+
+  const card = cardLessonId !== null && (
+    <PlatformLessonCard
+      lessonId={cardLessonId}
+      courseId={courseId}
+      startsAt={values.starts_at ? fromPickerValue(values.starts_at) : null}
+      deadline={
+        values.has_homework && values.homework_deadline_at
+          ? fromPickerValue(values.homework_deadline_at)
+          : null
+      }
+      callUrl={values.kind === 'curator_call' ? values.call_url : null}
+      onTakeStart={takeStart}
+      onTakeDeadline={takeDeadline}
+      onTakeCall={takeCall}
+    />
+  );
+  if (!beside) {
+    return (
+      <form onSubmit={submit}>
+        <Stack>
+          {fields}
+          {linked && card}
+        </Stack>
+      </form>
+    );
+  }
   return (
-    <form onSubmit={submit}>
-      <Stack>
-        <SegmentedControl
-          aria-label="Тип"
-          data={KINDS}
-          value={values.kind}
-          onChange={(value) => {
-            form.setFieldValue('kind', value);
-          }}
-        />
-        <TextInput label="Тема" withAsterisk {...form.getInputProps('title')} />
-        <DateTimePicker
-          label="Начало"
-          valueFormat="DD.MM.YYYY HH:mm"
-          defaultTimeValue={times.lesson}
-          withAsterisk
-          {...form.getInputProps('starts_at')}
-        />
-        {values.kind === 'curator_call' && (
-          <TextInput
-            label="Ссылка на созвон"
-            placeholder="https://…"
-            {...form.getInputProps('call_url')}
-          />
-        )}
-        <Textarea
-          label="Описание"
-          autosize
-          minRows={2}
-          maxRows={6}
-          {...form.getInputProps('description')}
-        />
-        <ReminderOffsetsInput
-          label="Напоминания об уроке"
-          value={values.reminder_offsets}
-          onChange={(value) => {
-            form.setFieldValue('reminder_offsets', value);
-          }}
-          error={form.errors.reminder_offsets}
-          onPreview={previewLesson}
-        />
-        <Group gap="xs" wrap="nowrap">
-          <Checkbox
-            label="Ещё напомнить сейчас — сразу после сохранения"
-            {...form.getInputProps('remind_now', { type: 'checkbox' })}
-          />
-          <ActionIcon
-            variant="subtle"
-            color="gray"
-            aria-label="Текст напоминания «сейчас»"
-            onClick={() => {
-              previewLesson(null);
-            }}
-          >
-            <IconEye size={16} />
-          </ActionIcon>
-        </Group>
-        <Switch label="Есть ДЗ" {...form.getInputProps('has_homework', { type: 'checkbox' })} />
-        {values.has_homework && (
-          <>
-            <DateTimePicker
-              label="Дедлайн ДЗ"
-              valueFormat="DD.MM.YYYY HH:mm"
-              defaultTimeValue={times.homework}
-              withAsterisk
-              {...form.getInputProps('homework_deadline_at')}
-            />
-            <ReminderOffsetsInput
-              label="Напоминания о дедлайне"
-              zeroLabel="в момент дедлайна"
-              value={values.homework_reminder_offsets}
-              onChange={(value) => {
-                form.setFieldValue('homework_reminder_offsets', value);
-              }}
-              error={form.errors.homework_reminder_offsets}
-              onPreview={previewHomework}
-            />
-            {earlyHomework.length > 0 && (
-              <Alert color="yellow" title="Напоминание о ДЗ раньше урока">
-                {earlyHomework
-                  .map((offset) => formatOffset(offset, 'в момент дедлайна'))
-                  .join(', ')}{' '}
-                — уйдёт в чат ещё до начала урока. Сохранить так можно.
-              </Alert>
-            )}
-          </>
-        )}
-        {preview && (
-          <DraftReminderPreviewModal
-            title={preview.title}
-            request={preview.request}
-            onClose={() => {
-              setPreview(null);
-            }}
-          />
-        )}
-        <Group justify="flex-end">
-          <Button variant="default" onClick={onClose}>
-            Отмена
-          </Button>
-          <Button type="submit" loading={create.isPending || update.isPending}>
-            Сохранить
-          </Button>
-        </Group>
-      </Stack>
+    <form onSubmit={submit} className={classes.row}>
+      <div className={classes.fields}>{fields}</div>
+      <div className={classes.side} data-open={linked || undefined}>
+        <div className={classes.card}>{card}</div>
+      </div>
     </form>
   );
 }

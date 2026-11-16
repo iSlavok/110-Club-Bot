@@ -20,6 +20,7 @@ class Lesson(Base):
     description: Mapped[str | None] = mapped_column(Text)
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     call_url: Mapped[str | None] = mapped_column(String(CALL_URL_MAX_LEN))
+    platform_lesson_id: Mapped[int | None]
     is_cancelled: Mapped[bool] = mapped_column(server_default=false())
     # Minutes before starts_at, one reminder each; 0 is the "lesson is starting" message.
     reminder_offsets: Mapped[list[int]] = mapped_column(ARRAY(Integer), server_default="{}")

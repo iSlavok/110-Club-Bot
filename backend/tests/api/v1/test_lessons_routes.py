@@ -12,6 +12,7 @@ LESSON = {
     "title": "Кислоты",
     "starts_at": "2026-10-03T19:00:00+03:00",
     "call_url": "https://meet.example.com/abc",
+    "platform_lesson_id": 50002,
 }
 
 
@@ -34,7 +35,11 @@ async def test_lesson_flow(api_client, login_as, db_session, editor) -> None:
     patched = await api_client.patch(
         f"/api/v1/lessons/{lesson_id}",
         params={"notify_chat": "true"},
-        json={"starts_at": "2026-10-04T19:00:00+03:00", "homework_deadline_at": "2026-10-06T23:59:00+03:00"},
+        json={
+            "starts_at": "2026-10-04T19:00:00+03:00",
+            "homework_deadline_at": "2026-10-06T23:59:00+03:00",
+            "platform_lesson_id": None,
+        },
     )
     fetched = await api_client.get(f"/api/v1/lessons/{lesson_id}")
     cancelled = await api_client.post(f"/api/v1/lessons/{lesson_id}/cancel", json={"notify_chat": True})
@@ -52,6 +57,7 @@ async def test_lesson_flow(api_client, login_as, db_session, editor) -> None:
         "description": None,
         "starts_at": "2026-10-03T16:00:00Z",
         "call_url": "https://meet.example.com/abc",
+        "platform_lesson_id": 50002,
         "is_cancelled": False,
         "reminder_offsets": [1440, 60, 0],
         "homework_deadline_at": None,
@@ -59,6 +65,7 @@ async def test_lesson_flow(api_client, login_as, db_session, editor) -> None:
     }
     assert patched.status_code == 200
     assert patched.json()["homework_deadline_at"] == "2026-10-06T20:59:00Z"
+    assert patched.json()["platform_lesson_id"] is None
     assert fetched.json()["starts_at"] == "2026-10-04T16:00:00Z"
     assert cancelled.json()["is_cancelled"] is True
     # The unsent reschedule notice is cancelled with the lesson: only the cancellation goes out.

@@ -13,10 +13,10 @@ from sqlalchemy import Connection, text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from app.clients import SheetsClient, VkClient
+from app.clients import PlatformClient, PlatformHealth, SheetsClient, VkClient
 from app.ioc import QueriesProvider, RepositoriesProvider, ServicesProvider
 from app.utils import Clock
-from tests.fakes import FakeSheetsClient, FakeVkClient, FrozenClock
+from tests.fakes import FakePlatformClient, FakePlatformHealth, FakeSheetsClient, FakeVkClient, FrozenClock
 from tests.providers import TestDatabaseProvider, TestInfraProvider
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -98,3 +98,13 @@ async def vk(container: AsyncContainer) -> FakeVkClient:
 @pytest.fixture
 async def sheets_client(container: AsyncContainer) -> FakeSheetsClient:
     return cast("FakeSheetsClient", await container.get(SheetsClient))
+
+
+@pytest.fixture
+async def platform(container: AsyncContainer) -> FakePlatformClient:
+    return cast("FakePlatformClient", await container.get(PlatformClient))
+
+
+@pytest.fixture
+async def platform_health(container: AsyncContainer) -> FakePlatformHealth:
+    return cast("FakePlatformHealth", await container.get(PlatformHealth))

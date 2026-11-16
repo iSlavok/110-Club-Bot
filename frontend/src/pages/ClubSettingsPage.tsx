@@ -51,6 +51,7 @@ function ClubSettings({ club }: { club: ClubResponse }) {
           <Field label="Google-таблица" value={club.spreadsheet_id} />
           <Field label="Лист" value={club.sheet_name} />
           <Field label="Лист статуса учеников" value={club.status_sheet_name} />
+          <Field label="Курс на платформе" value={club.platform_course_id} />
           <Field
             label="Сообщения о входе и выходе"
             value={club.hide_service_messages ? 'Скрываются' : 'Показываются'}

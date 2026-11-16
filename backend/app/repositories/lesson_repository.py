@@ -70,3 +70,15 @@ class LessonRepository(BaseRepository[Lesson]):
         )
         lessons = await self._session.scalars(statement)
         return list(lessons)
+
+    async def list_linked_to_platform(self, *, club_id: int) -> list[Lesson]:
+        statement = (
+            select(Lesson)
+            .where(
+                Lesson.club_id == club_id,
+                Lesson.platform_lesson_id.is_not(None),
+            )
+            .order_by(Lesson.starts_at, Lesson.id)
+        )
+        lessons = await self._session.scalars(statement)
+        return list(lessons)

@@ -1,0 +1,59 @@
+/* The modal starts where a centered lg modal would, and the platform column grows to the right. The left
+   edge moves only by what does not fit: centering the growing modal moved the form both ways. Animated on
+   inner: Mantine's open transition sets an inline transition on the content. 5vw is Mantine's side offset. */
+.inner {
+  --form-width: calc(38.75rem * var(--mantine-scale));
+  --side-width: calc(26rem * var(--mantine-scale) + var(--mantine-spacing-xl));
+
+  justify-content: flex-start;
+  padding-left: max(5vw, (100vw - var(--form-width)) / 2);
+  transition: padding-left 250ms ease;
+}
+
+.inner:has(.side[data-open]) {
+  padding-left: max(
+    5vw,
+    min((100vw - var(--form-width)) / 2, 95vw - var(--form-width) - var(--side-width))
+  );
+}
+
+.row {
+  display: flex;
+  align-items: stretch;
+}
+
+/* Matches the lg modal, so the form keeps its width with the side column open or closed. */
+.fields {
+  flex: 0 0 calc(36.75rem * var(--mantine-scale));
+}
+
+/* clip, not hidden: hidden makes the column a scroll container and the sticky card stops sticking. */
+.side {
+  flex: 0 0 auto;
+  width: 0;
+  opacity: 0;
+  overflow: clip;
+  transition:
+    width 250ms ease,
+    opacity 250ms ease;
+}
+
+.side[data-open] {
+  width: var(--side-width);
+  opacity: 1;
+}
+
+/* Below the sticky modal header, whose min-height is 3.75rem. */
+.card {
+  position: sticky;
+  top: calc(3.75rem * var(--mantine-scale));
+  width: calc(26rem * var(--mantine-scale));
+  margin-left: var(--mantine-spacing-xl);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inner,
+  .side {
+    transition: none;
+  }
+}

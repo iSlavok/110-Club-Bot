@@ -36,6 +36,13 @@ const MESSAGES: Record<string, string> = {
   VK_LINK_MODE_NOT_CONFIGURED: 'Этот способ привязки VK не настроен на сервере.',
   CLUB_NOT_SYNCABLE: 'Клуб выключен или у него не указаны таблица и лист.',
   SHEET_SYNC_DISABLED: 'Синк выключен: на сервере не настроен ключ Google.',
+  CLUB_HAS_NO_PLATFORM_COURSE: 'В настройках клуба не указан курс на платформе.',
+  PLATFORM_COURSE_NOT_FOUND:
+    'Курс клуба не найден на платформе — проверьте ссылку в настройках клуба.',
+  PLATFORM_LESSON_NOT_FOUND: 'Урок не найден на платформе.',
+  PLATFORM_LINKING_DISABLED: 'Платформа не подключена: на сервере не задан токен.',
+  PLATFORM_TOKEN_REJECTED: 'Платформа не принимает токен. Владелец уже получил алерт.',
+  PLATFORM_UNAVAILABLE: 'Платформа не отвечает. Урок можно сохранить без привязки.',
   VALIDATION_FAILED: 'Проверьте заполнение полей.',
 };
 

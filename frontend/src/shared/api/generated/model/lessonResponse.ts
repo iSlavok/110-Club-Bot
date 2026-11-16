@@ -21,6 +21,8 @@ export interface LessonResponse {
   starts_at: string;
   /** Link to the video call */
   call_url: string | null;
+  /** Lesson id on 100points */
+  platform_lesson_id: number | null;
   /** Cancelled lessons can no longer be changed */
   is_cancelled: boolean;
   /** Minutes before the start to remind at, latest first */

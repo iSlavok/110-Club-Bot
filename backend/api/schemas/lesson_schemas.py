@@ -23,6 +23,7 @@ class LessonResponse(BaseModel):
     description: str | None = Field(description="Shown in the reminders")
     starts_at: datetime = Field(description="Start time, UTC")
     call_url: str | None = Field(description="Link to the video call")
+    platform_lesson_id: int | None = Field(description="Lesson id on 100points")
     is_cancelled: bool = Field(description="Cancelled lessons can no longer be changed")
     reminder_offsets: list[int] = Field(description="Minutes before the start to remind at, latest first")
     homework_deadline_at: datetime | None = Field(description="Homework deadline, UTC; null: no homework")
@@ -40,6 +41,7 @@ class LessonResponse(BaseModel):
             description=lesson.description,
             starts_at=lesson.starts_at,
             call_url=lesson.call_url,
+            platform_lesson_id=lesson.platform_lesson_id,
             is_cancelled=lesson.is_cancelled,
             reminder_offsets=lesson.reminder_offsets,
             homework_deadline_at=lesson.homework_deadline_at,

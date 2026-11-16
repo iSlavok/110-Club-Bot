@@ -2750,6 +2750,124 @@
         }
       }
     },
+    "/api/v1/clubs/{club_id}/platform-course": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "Get Club Platform Course",
+        "operationId": "get_club_platform_course",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "club_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Club Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformCourseResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/platform/lessons/{platform_lesson_id}": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "Get Platform Lesson",
+        "operationId": "get_platform_lesson",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "platform_lesson_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Platform Lesson Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformLessonResponse"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Domain or auth error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users": {
       "get": {
         "tags": [
@@ -3618,6 +3736,17 @@
             ],
             "description": "Sheet in the same spreadsheet the bot rewrites with the VK links of the access block by funnel step; empty turns it off"
           },
+          "platform_course_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositiveInt32"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Course id on 100points; lessons of the club are linked to its lessons"
+          },
           "hide_service_messages": {
             "type": "boolean",
             "title": "Hide Service Messages",
@@ -3751,6 +3880,18 @@
             "title": "Status Sheet Name",
             "description": "Sheet in the same spreadsheet the bot rewrites with the VK links of the access block by funnel step; empty turns it off"
           },
+          "platform_course_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Course Id",
+            "description": "Course id on 100points; lessons of the club are linked to its lessons"
+          },
           "is_active": {
             "type": "boolean",
             "title": "Is Active",
@@ -3771,6 +3912,7 @@
           "spreadsheet_id",
           "sheet_name",
           "status_sheet_name",
+          "platform_course_id",
           "is_active",
           "hide_service_messages"
         ],
@@ -3879,6 +4021,18 @@
             ],
             "title": "Status Sheet Name",
             "description": "Sheet in the same spreadsheet the bot rewrites with the VK links of the access block by funnel step; empty turns it off"
+          },
+          "platform_course_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositiveInt32"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Course Id",
+            "description": "Course id on 100points; lessons of the club are linked to its lessons"
           },
           "is_active": {
             "type": "boolean",
@@ -4059,6 +4213,17 @@
             ],
             "description": "Link to the video call, http(s)"
           },
+          "platform_lesson_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositiveInt32"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Lesson id on 100points; reminders get a button that opens it"
+          },
           "reminder_offsets": {
             "anyOf": [
               {
@@ -4141,6 +4306,17 @@
               }
             ],
             "description": "Link to the video call, http(s)"
+          },
+          "platform_lesson_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositiveInt32"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Lesson id on 100points; reminders get a button that opens it"
           },
           "homework_deadline_at": {
             "anyOf": [
@@ -4234,6 +4410,18 @@
             "title": "Call Url",
             "description": "Link to the video call"
           },
+          "platform_lesson_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Lesson Id",
+            "description": "Lesson id on 100points"
+          },
           "is_cancelled": {
             "type": "boolean",
             "title": "Is Cancelled",
@@ -4278,6 +4466,7 @@
           "description",
           "starts_at",
           "call_url",
+          "platform_lesson_id",
           "is_cancelled",
           "reminder_offsets",
           "homework_deadline_at",
@@ -4331,6 +4520,18 @@
             "title": "Call Url",
             "description": "Link to the video call, http(s)"
           },
+          "platform_lesson_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositiveInt32"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Lesson Id",
+            "description": "Lesson id on 100points; reminders get a button that opens it"
+          },
           "reminder_offsets": {
             "$ref": "#/components/schemas/ReminderOffsets",
             "title": "Reminder Offsets",
@@ -4366,6 +4567,39 @@
           "all"
         ],
         "title": "LessonView"
+      },
+      "LinkedLessonResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Club lesson linked to the platform lesson"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Lesson topic"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At",
+            "description": "Start time, UTC"
+          },
+          "is_cancelled": {
+            "type": "boolean",
+            "title": "Is Cancelled",
+            "description": "Whether the lesson is cancelled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "starts_at",
+          "is_cancelled"
+        ],
+        "title": "LinkedLessonResponse"
       },
       "LoginCodeRequest": {
         "properties": {
@@ -4775,6 +5009,430 @@
         ],
         "title": "PermissionResponse"
       },
+      "PlatformCourseResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Platform course id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Course title"
+          },
+          "modules": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformModuleResponse"
+            },
+            "type": "array",
+            "title": "Modules",
+            "description": "Modules in the platform order"
+          },
+          "suggested_lesson_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Lesson Id",
+            "description": "Lesson after the last linked one, or the next to start when none is linked"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "modules",
+          "suggested_lesson_id"
+        ],
+        "title": "PlatformCourseResponse"
+      },
+      "PlatformHomeworkLevelResponse": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Level, e.g. Базовый уровень"
+          },
+          "is_required": {
+            "type": "boolean",
+            "title": "Is Required",
+            "description": "Students must do it"
+          },
+          "is_trial": {
+            "type": "boolean",
+            "title": "Is Trial",
+            "description": "A mock exam: the timer starts when it is opened"
+          },
+          "time_limit_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Limit Seconds",
+            "description": "Time to do it; null: unlimited"
+          },
+          "task_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Count",
+            "description": "Tasks in it"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "is_required",
+          "is_trial",
+          "time_limit_seconds",
+          "task_count"
+        ],
+        "title": "PlatformHomeworkLevelResponse"
+      },
+      "PlatformHomeworkResponse": {
+        "properties": {
+          "deadline_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline At",
+            "description": "Deadline, UTC; null: none"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary",
+            "description": "What to do, as the platform tells students"
+          },
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformHomeworkLevelResponse"
+            },
+            "type": "array",
+            "title": "Levels",
+            "description": "Homework levels"
+          }
+        },
+        "type": "object",
+        "required": [
+          "deadline_at",
+          "summary",
+          "levels"
+        ],
+        "title": "PlatformHomeworkResponse"
+      },
+      "PlatformLessonOptionResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Platform lesson id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Lesson title on the platform"
+          },
+          "is_published": {
+            "type": "boolean",
+            "title": "Is Published",
+            "description": "false: a draft students do not see"
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At",
+            "description": "Start time, UTC; null when the platform has none"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At",
+            "description": "End time, UTC"
+          },
+          "linked": {
+            "items": {
+              "$ref": "#/components/schemas/LinkedLessonResponse"
+            },
+            "type": "array",
+            "title": "Linked",
+            "description": "Club lessons already linked to it, by start time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "is_published",
+          "starts_at",
+          "ends_at",
+          "linked"
+        ],
+        "title": "PlatformLessonOptionResponse"
+      },
+      "PlatformLessonResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Platform lesson id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Lesson title on the platform"
+          },
+          "course_title": {
+            "type": "string",
+            "title": "Course Title",
+            "description": "Course title"
+          },
+          "module_title": {
+            "type": "string",
+            "title": "Module Title",
+            "description": "Module title"
+          },
+          "is_published": {
+            "type": "boolean",
+            "title": "Is Published",
+            "description": "false: a draft students do not see"
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At",
+            "description": "Start time, UTC"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At",
+            "description": "End time, UTC"
+          },
+          "publish_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publish At",
+            "description": "When it opens to students, UTC"
+          },
+          "is_stop_lesson": {
+            "type": "boolean",
+            "title": "Is Stop Lesson",
+            "description": "Students cannot go further until they finish it"
+          },
+          "call_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Url",
+            "description": "Zoom link found anywhere in the lesson: the lesson is a call"
+          },
+          "homework": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlatformHomeworkResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null: the lesson has no homework"
+          },
+          "webinar": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformLinkResponse"
+            },
+            "type": "array",
+            "title": "Webinar",
+            "description": "Webinar links"
+          },
+          "videos": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformLinkResponse"
+            },
+            "type": "array",
+            "title": "Videos",
+            "description": "Video links"
+          },
+          "materials": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformLinkResponse"
+            },
+            "type": "array",
+            "title": "Materials",
+            "description": "Files and links of the useful materials"
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformNoteResponse"
+            },
+            "type": "array",
+            "title": "Notes",
+            "description": "Texts of the lesson blocks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "course_title",
+          "module_title",
+          "is_published",
+          "starts_at",
+          "ends_at",
+          "publish_at",
+          "is_stop_lesson",
+          "call_url",
+          "homework",
+          "webinar",
+          "videos",
+          "materials",
+          "notes"
+        ],
+        "title": "PlatformLessonResponse"
+      },
+      "PlatformLinkResponse": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "File name, link caption or site"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "http(s) link"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "url"
+        ],
+        "title": "PlatformLinkResponse"
+      },
+      "PlatformModuleResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Platform module id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Module title, a block of the course"
+          },
+          "lessons": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformLessonOptionResponse"
+            },
+            "type": "array",
+            "title": "Lessons",
+            "description": "Lessons in the platform order"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "lessons"
+        ],
+        "title": "PlatformModuleResponse"
+      },
+      "PlatformNoteResponse": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title",
+            "description": "Heading of a text block"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "Plain text with line breaks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "text"
+        ],
+        "title": "PlatformNoteResponse"
+      },
       "PositiveBigInt": {
         "type": "integer",
         "maximum": 9.223372036854776e+18,
@@ -4784,6 +5442,26 @@
         "type": "integer",
         "maximum": 2147483647.0,
         "minimum": 1.0
+      },
+      "ReminderButtonResponse": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "Button caption"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "Link the button opens"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "url"
+        ],
+        "title": "ReminderButtonResponse"
       },
       "ReminderDraftPreview": {
         "properties": {
@@ -4884,11 +5562,20 @@
             "type": "string",
             "title": "Html",
             "description": "Message text in Telegram HTML, admin-entered parts escaped"
+          },
+          "buttons": {
+            "items": {
+              "$ref": "#/components/schemas/ReminderButtonResponse"
+            },
+            "type": "array",
+            "title": "Buttons",
+            "description": "Link buttons under the message, in one row"
           }
         },
         "type": "object",
         "required": [
-          "html"
+          "html",
+          "buttons"
         ],
         "title": "ReminderPreviewResponse"
       },

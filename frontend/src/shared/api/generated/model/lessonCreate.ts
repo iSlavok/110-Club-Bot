@@ -9,6 +9,7 @@ import type { LessonDescription } from './lessonDescription';
 import type { LessonKind } from './lessonKind';
 import type { LessonTitle } from './lessonTitle';
 import type { Moment } from './moment';
+import type { PositiveInt32 } from './positiveInt32';
 import type { ReminderOffsets } from './reminderOffsets';
 
 export interface LessonCreate {
@@ -22,6 +23,8 @@ export interface LessonCreate {
   starts_at: Moment;
   /** Link to the video call, http(s) */
   call_url?: CallUrl | null;
+  /** Lesson id on 100points; reminders get a button that opens it */
+  platform_lesson_id?: PositiveInt32 | null;
   /** Minutes before the start to remind at, unique; 0 means at the start. Omitted: bot settings */
   reminder_offsets?: ReminderOffsets | null;
   /** Homework deadline; null: no homework */
